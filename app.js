@@ -152,7 +152,7 @@ function render(){if(!PROF&&view!=="ob")return startOnboarding();if(view==="ob")
 const lastLog=id=>{const h=store[id]||[];return h[h.length-1]};
 function macroBlock(T,got){const r=52,C=2*Math.PI*r,k=Math.min(1,got.k/T.kcal);const b=(l,v,t,c)=>`<div>${l}<span>${Math.round(v)} / ${t} g</span><div class="bar"><i style="width:${Math.min(100,v/t*100)}%;background:${c}"></i></div></div>`;
  return `<div class="row" style="gap:16px"><div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="gp"><stop offset="0" stop-color="#FF7A6E"/><stop offset="1" stop-color="#E0242F"/></linearGradient></defs><circle class="b" cx="60" cy="60" r="${r}"/><circle class="f" cx="60" cy="60" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-k)}"/></svg><div><b>${fr(got.k)}</b><small>/ ${fr(T.kcal)} kcal</small></div></div>
- <div class="mac">${b("Protéines",got.P,T.p,"#FF7A6E")}${b("Glucides",got.C,T.c,"#FFB547")}${b("Lipides",got.F,T.f,"#9B5CFF")}</div></div>`}
+ <div class="mac">${b("Protéines",got.P,T.p,"#FF7A6E")}${b("Glucides",got.C,T.c,"#FFB547")}${b("Lipides",got.F,T.f,"#FF8A3D")}</div></div>`}
 function mealRow(m,d,check){const ek=LS.get("coach-eaten",{})[todayKey()]||{},on=!!ek[m.slot];
  return `<div class="row">${check?`<button class="chk ${on?"on":""}" data-eat="${m.slot}" aria-label="Repas mangé : ${esc(m.r.n)}" aria-pressed="${on}">${on?"✓":""}</button>`:""}<button class="meal" data-rec="${m.r.id}" data-slot="${m.slot}" data-day="${d}"><span class="ph">${m.r.e}</span><span class="sp"><small>${m.l}${m.left?" · restes d'hier":""}</small><b>${esc(m.r.n)}</b><small>${m.r.min} min · ${eur(m.e)}</small></span><span class="k">${fr(m.k)} kcal</span></button></div>`}
 function vToday(){const d=new Date().getDay(),S=TRAIN[d],T=targets(),M=dayMeals(d),ek=LS.get("coach-eaten",{})[todayKey()]||{};
@@ -342,5 +342,5 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
 render();
 if(PROF&&G)gOpen();
-if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+if("serviceWorker"in navigator)addEventListener("load",()=>{const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload()})});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
