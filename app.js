@@ -57,7 +57,7 @@ const RM={};
 function rmac(r){if(RM[r.id])return RM[r.id];let k=0,P=0,C=0,F=0,e=0;for(const [i,g] of r.i){const d=ING[i];k+=d[1]*g/100;P+=d[2]*g/100;C+=d[3]*g/100;F+=d[4]*g/100;e+=d[5]*g/1000}return RM[r.id]={k,P,C,F,e}}
 const storeF=()=>(STORES.find(s=>s.v===PROF.store)||{f:1}).f;
 const dietOk=r=>PROF.diet==="vege"?r.v==="vege":PROF.diet==="pesco"?r.v!=="omni":true;
-const PG=new Set(["poulet","dinde","boeuf","thon","saumon","oeuf","tofu","fblanc","skyr","whey"]),CG=new Set(["riz","pates","semoule","avoine","painc","wrap","painb","pdt","patd","banane","pomme","miel","lentilles","poischi","harico","mais","frouges","lait"]);
+const PG=new Set(["poulet","dinde","boeuf","thon","saumon","oeuf","tofu","fblanc","skyr","whey","porc","jambon","cabil"]),CG=new Set(["riz","pates","semoule","avoine","painc","wrap","painb","pdt","patd","banane","pomme","miel","lentilles","poischi","harico","mais","frouges","lait","galriz","quinoa","nouilles","bveg"]);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 /* Portions : on ajuste séparément les aliments protéinés et les féculents pour viser à la fois les calories et les protéines du repas. */
 function portion(rid,slot){const T=targets(),sl=mealSlots().find(s=>s[0]===slot),r=RECI[rid],K=T.kcal*sl[2],Pt=T.p*sl[2];
@@ -68,16 +68,33 @@ function portion(rid,slot){const T=targets(),sl=mealSlots().find(s=>s[0]===slot)
  fp=Math.round(fp*20)/20;fc=Math.round(fc*20)/20;const fi=i=>PG.has(i)?fp:CG.has(i)?fc:1;
  let k=0,P=0,C=0,F=0,e=0;for(const [i,g] of r.i){const d=ING[i],q=g*fi(i);k+=d[1]*q/100;P+=d[2]*q/100;C+=d[3]*q/100;F+=d[4]*q/100;e+=d[5]*q/1000}
  return{r,fi,f:1,k,P,C,F,e:e*storeF()}}
+/* Goûts : allergies exclues d'office, aliments refusés et recettes « je n'aime pas » écartés tant qu'il reste du choix, aliments aimés favorisés. */
+const TF=Object.fromEntries([...TASTE.P,...TASTE.C,...TASTE.L].map(o=>[o.v,o.i])),AF=Object.fromEntries(ALLERG.map(o=>[o.v,o.i||[]]));
+const has=(r,ids)=>r.i.some(([i])=>ids.includes(i));
+function pool(m){const p=PROF,t=p.taste||{},al=(p.allerg||[]).flatMap(a=>AF[a]||[]),hate=Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[]),no=p.nope||[];
+ const base=REC.filter(r=>r.m===m&&dietOk(r)),safe=base.filter(r=>!has(r,al));
+ let c=safe.filter(r=>!no.includes(r.id)&&!has(r,hate)&&!(p.spice===0&&r.hot>1));
+ if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;return c.length?c:base}
+function tasteScore(r){const p=PROF,t=p.taste||{};let s=0;for(const k in t)if(t[k]>0&&has(r,TF[k]||[]))s+=.5;
+ if((p.cuis||[]).includes(r.cu))s+=.6;if(r.m==="pdj"&&(p.pdjT==="sucre"||p.pdjT==="sale"))s+=r.sw===p.pdjT?1.2:-1.2;
+ if(r.m==="main"&&p.ckt&&p.batch!=="oui"&&r.min>p.ckt)s-=(r.min-p.ckt)/10;if(r.hot)s+=p.spice===2?.4*r.hot:p.spice===0?-.8:0;return s}
 function genWeek(seed){const R=rng(seed),T=targets(),slots=mealSlots(),B=PROF.budget/(7*slots.length);
- const pick=(m,n,styled)=>{let c=REC.filter(r=>r.m===m&&dietOk(r));if(styled&&PROF.styles.length){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
-  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*storeF()*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4}}).sort((a,b)=>b.s-a.s);
+ const pick=(m,n,styled)=>{let c=pool(m);if(styled&&PROF.styles.length){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
+  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*storeF()*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)}}).sort((a,b)=>b.s-a.s);
   const out=[];for(let i=0;out.length<n;i++)out.push(sc[i%sc.length].r.id);return out};
- const dinners=pick("main",8,true),pdj=pick("pdj",2),snk=pick("snack",2),days=[];
- for(let i=0;i<7;i++)days.push({pdj:pdj[i%2],snack:snk[i%2],din:dinners[i],dej:i===0?dinners[7]:dinners[i-1],left:i>0});
+ const pdj=pick("pdj",2),snk=pick("snack",2),days=[];
+ if(PROF.batch==="oui"){const M=pick("main",4,true);/* 2 plats cuisinés le dimanche pour lun–mer, 2 le mercredi soir pour jeu–dim */
+  for(let i=0;i<7;i++){const [a,b]=i<3?[M[0],M[1]]:[M[2],M[3]],sw=i%2;days.push({pdj:pdj[i%2],snack:snk[i%2],dej:sw?b:a,din:sw?a:b,bt:1})}}
+ else{const dinners=pick("main",8,true);for(let i=0;i<7;i++)days.push({pdj:pdj[i%2],snack:snk[i%2],din:dinners[i],dej:i===0?dinners[7]:dinners[i-1],left:i>0})}
  return{seed,days}}
+/* « Je n'aime pas » : la recette est exclue pour de bon et remplacée partout dans la semaine. */
+function dislike(rid){const r=RECI[rid];PROF.nope=[...new Set([...(PROF.nope||[]),rid])];LS.set("coach-profile",PROF);
+ const W=week(),used=new Set(W.days.flatMap(d=>[d.pdj,d.dej,d.din,d.snack])),R=rng(Date.now()%1e9);
+ const c=pool(r.m).filter(x=>x.id!==rid).map(x=>({x,s:R()*.5+tasteScore(x)-(used.has(x.id)?2:0)})).sort((a,b)=>b.s-a.s),nw=c.length?c[0].x:null;
+ if(nw)for(const d of W.days)for(const k of ["pdj","dej","din","snack"])if(d[k]===rid)d[k]=nw.id;LS.set("coach-week",W);return nw}
 function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2};LS.set("coach-week",W)}return W}
 const wIdx=d=>(d+6)%7;
-function dayMeals(d){const D=week().days[wIdx(d)];return mealSlots().map(([k,l])=>({slot:k,l,...portion(D[k],k),left:k==="dej"&&D.left}))}
+function dayMeals(d){const D=week().days[wIdx(d)];return mealSlots().map(([k,l])=>({slot:k,l,...portion(D[k],k),left:k==="dej"&&D.left,bt:k!=="pdj"&&k!=="snack"&&D.bt}))}
 function weekCost(){let t=0;for(const d of WEEK)for(const m of dayMeals(d))t+=m.e;return t}
 function shopping(){const tot={};for(const d of WEEK)for(const m of dayMeals(d))for(const [i,g] of m.r.i)tot[i]=(tot[i]||0)+g*m.fi(i);
  const by={};for(const i in tot){const d=ING[i],g=tot[i];(by[d[6]]=by[d[6]]||[]).push({i,n:d[0],g,q:i==="oeuf"?`${Math.ceil(g/60)} œufs`:i==="lait"?`${fr(Math.ceil(g/250)/4,2)} L`:g>=1000?`${fr(Math.ceil(g/100)/10,1)} kg`:`${Math.ceil(g/50)*50} g`,e:g/1000*d[5]*storeF()})}
@@ -101,6 +118,19 @@ const ACTS=[{v:"low",e:"🪑",l:"Plutôt assis",s:"Bureau, études, peu de march
 const DIETS=[{v:"omni",e:"🍗",l:"Je mange de tout"},{v:"pesco",e:"🐟",l:"Pas de viande, mais du poisson"},{v:"vege",e:"🥦",l:"Végétarien"}];
 const opts=(key,list,multi)=>`<div class="opts">${list.map(o=>`<button class="opt" data-${multi?"m":"o"}="${key}" data-v="${o.v}" aria-pressed="${multi?(A[key]||[]).includes(o.v)||(o.v==="none"&&!(A[key]||[]).length):A[key]===o.v}"><span class="e">${o.e}</span><span><b>${o.l}</b>${o.s?`<small>${o.s}</small>`:""}</span></button>`).join("")}</div>`;
 const slider=(key,label,min,max,step,unit)=>`<div class="sl"><div class="row"><label for="s-${key}" class="sp">${label}</label><b id="v-${key}">${fr(A[key],step<1?1:0)} ${unit}</b></div><input type="range" id="s-${key}" data-s="${key}" data-u="${unit}" min="${min}" max="${max}" step="${step}" value="${A[key]}"></div>`;
+/* Goûts : touche une fois = j'adore, deux fois = jamais, trois fois = neutre. */
+const tri=list=>`<div class="grid2">${list.map(o=>{const v=(A.taste||{})[o.v]||0;return `<button class="tile" data-t="${o.v}" aria-pressed="${v!==0}"${v<0?' style="opacity:.6"':""}><span class="e">${o.e}</span><b>${o.l}</b><small>${v>0?"❤️ J'adore":v<0?"🚫 Jamais":"Neutre"}</small></button>`}).join("")}</div>`;
+const GOUTS=[
+ {t:"Les protéines",s:"Touche une fois : tu adores ❤️. Deux fois : jamais 🚫. Ton coach compose tes repas avec ce que tu aimes.",h:()=>tri(TASTE.P),ok:()=>true},
+ {t:"Les féculents",s:"Même principe : ❤️ tu adores, 🚫 jamais.",h:()=>tri(TASTE.C),ok:()=>true},
+ {t:"Les légumes",s:"Un 🚫 sur ceux que tu ne supportes pas, un ❤️ sur ceux que tu adores.",h:()=>tri(TASTE.L),ok:()=>true},
+ {t:"Allergies ou intolérances ?",s:"Les recettes qui en contiennent sont exclues, sans exception.",h:()=>opts("allerg",ALLERG,true),ok:()=>true},
+ {t:"Tes cuisines préférées",s:"Elles reviendront plus souvent. Rien de coché : un peu de tout.",h:()=>`<div class="grid2">${CUIS.map(c=>`<button class="tile" data-m="cuis" data-v="${c.v}" aria-pressed="${(A.cuis||[]).includes(c.v)}"><span class="e">${c.e}</span><b>${c.l}</b></button>`).join("")}</div>`,ok:()=>true},
+ {t:"Le matin, plutôt…",s:"Pour un petit-déjeuner qui donne envie de se lever.",h:()=>opts("pdjT",[{v:"sucre",e:"🥞",l:"Sucré",s:"Porridge, pancakes, tartines"},{v:"sale",e:"🍳",l:"Salé",s:"Œufs, avocat, jambon"},{v:"both",e:"🔀",l:"Les deux me vont"}]),ok:()=>!!A.pdjT},
+ {t:"Combien de temps pour cuisiner par jour ?",s:"Ton coach choisit des recettes qui tiennent dans ce temps.",h:()=>opts("ckt",[{v:15,e:"⚡",l:"15 min maximum",s:"Rapide, peu de vaisselle"},{v:30,e:"🍳",l:"Environ 30 min"},{v:45,e:"👨‍🍳",l:"45 min"},{v:60,e:"🧑‍🍳",l:"1 h ou plus",s:"J'aime cuisiner"}]),ok:()=>!!A.ckt},
+ {t:"Batch cooking ?",s:"Cuisiner en grande quantité deux fois par semaine, et avoir ses repas prêts.",h:()=>opts("batch",[{v:"oui",e:"📦",l:"Oui, je prépare à l'avance",s:"2 plats le dimanche, 2 le mercredi soir"},{v:"non",e:"🍽️",l:"Non, au jour le jour",s:"Le dîner en double sert de déjeuner le lendemain"}]),ok:()=>!!A.batch},
+ {t:"Et le piquant ?",s:"Épices et piment dans tes plats.",h:()=>opts("spice",[{v:0,e:"🧊",l:"Pas du tout"},{v:1,e:"🌶️",l:"Un peu, ça va"},{v:2,e:"🔥",l:"J'adore quand ça pique"}])+(FLOW===GOUTS&&(A.nope||[]).length?`<button class="btn ghost sm" id="nope-clr" style="margin-top:12px">Remettre les ${A.nope.length} recette${A.nope.length>1?"s":""} écartée${A.nope.length>1?"s":""}</button>`:""),ok:()=>A.spice!=null}
+];
 const STEPS=[
  {t:"Comment tu t'appelles ?",s:"Ton coach construit ton programme et tes repas à partir de tes réponses. Ça prend 2 minutes.",h:()=>`<input class="txt" id="i-name" maxlength="20" autocomplete="given-name" placeholder="Ton prénom" value="${esc(A.name)}">`,ok:()=>A.name.trim().length>0},
  {t:"Tu es…",s:"Pour calculer tes besoins en calories.",h:()=>opts("sex",[{v:"h",e:"👨",l:"Un homme"},{v:"f",e:"👩",l:"Une femme"}]),ok:()=>!!A.sex},
@@ -111,6 +141,7 @@ const STEPS=[
   h:()=>{if(A.tw==null||A.twg!==A.goal){A.tw=Math.round(A.w+{masse:6,seche:-5,recompo:0,force:2}[A.goal]);A.twg=A.goal}
    return slider("tw","Poids visé",Math.round(A.w-30),Math.round(A.w+30),.5,"kg")+`<div class="lab" style="margin-top:6px">En combien de temps ?</div><div class="row" style="flex-wrap:wrap">${[2,3,4,6,9,12].map(n=>`<button class="chip" data-c="months" data-v="${n}" aria-pressed="${A.months===n}" style="flex:1">${n} mois</button>`).join("")}</div><div id="gp">${gpBox(A)}</div>`},
   ok:()=>goalPlan(A).ok},
+ {t:"Les jours où tu peux vraiment aller à la salle",s:"Décoche les jours impossibles. Ton coach place tes séances parmi ceux qui restent.",h:()=>{A.avail=A.avail||[...WEEK];const n=A.avail.length;return `<div class="week">${WEEK.map(d=>`<button data-av="${d}" aria-pressed="${A.avail.includes(d)}">${DN[d]}<small>${A.avail.includes(d)?"Dispo":"Non"}</small></button>`).join("")}</div><div class="hintbox"><span style="font-size:26px">🗓️</span><span><b>${n} jour${n>1?"s":""} possible${n>1?"s":""}</b><br><small class="muted">${n<2?"Il faut au moins 2 jours.":n>=6?"Presque tous les jours : ton coach peut viser plus de séances si ton objectif le demande.":"Ton coach répartit les séances pour laisser récupérer chaque muscle."}</small></span></div>`},ok:()=>(A.avail||WEEK).length>=2},
  {t:"Où tu t'entraînes ?",s:"Choisis ta salle : on pré-remplit les machines qu'on y trouve d'habitude.",h:()=>`<div class="grid2">${GYMS.slice(0,6).map(g=>`<button class="store" data-gym="${g.v}" aria-pressed="${A.gym===g.v}">${g.l}</button>`).join("")}</div><div class="opts" style="margin-top:10px">${GYMS.slice(6).map(g=>`<button class="opt" data-gym="${g.v}" aria-pressed="${A.gym===g.v}"><span class="e">${g.e}</span><span><b>${g.l}</b><small>${g.s}</small></span></button>`).join("")}</div>`,ok:()=>!!A.gym},
  {t:"Le matériel de ta salle",s:()=>A.gym==="bw"?"Sans matériel : programme au poids du corps. Coche quand même ce que tu as sous la main.":A.gym==="home"||A.gym==="autre"?"Coche tout ce que tu as à disposition.":`On a pré-coché l'équipement habituel des salles ${GYMS.find(g=>g.v===A.gym).l}. Décoche ce qui manque dans la tienne, coche ce qu'elle a en plus.`,
   h:()=>`<div class="opts">${EQUIP.map(([c,l,x])=>`<button class="opt" data-eq="${c}" aria-pressed="${A.equip.includes(c)}" style="min-height:52px;padding:10px 14px"><span class="e" style="font-size:20px">${A.equip.includes(c)?"✅":"⬜"}</span><span><b>${l}</b>${x?`<small>${x}</small>`:""}</span></button>`).join("")}</div>`,ok:()=>true},
@@ -123,7 +154,8 @@ const STEPS=[
    <input type="range" id="s-budget" data-s="budget" data-u="€" min="15" max="150" step="5" value="${A.budget}" aria-label="Budget par semaine">
    <div class="row small muted"><span class="sp">Serré</span><span>Confortable</span><span class="sp" style="text-align:right">Large</span></div>
    <div class="hintbox"><span style="font-size:30px">🍱</span><span><b id="v-pm">${eur(pm)} / repas</b> · <span id="v-lvl">${lvl}</span><br><small class="muted">${A.meals*7} repas dans la semaine. Budget serré : on mise sur les basiques (riz, pâtes, œufs, légumineuses, thon).</small></span></div>`},ok:()=>true},
- {t:"Quel style de plats ?",s:"Choisis-en un ou plusieurs. Rien de coché : un mélange de tout.",h:()=>`<div class="grid2">${STYLES.map(s=>`<button class="tile" data-m="styles" data-v="${s.v}" aria-pressed="${A.styles.includes(s.v)}"><span class="e">${s.e}</span><b>${s.l}</b></button>`).join("")}</div>`,ok:()=>true}
+ {t:"Quel style de plats ?",s:"Choisis-en un ou plusieurs. Rien de coché : un mélange de tout.",h:()=>`<div class="grid2">${STYLES.map(s=>`<button class="tile" data-m="styles" data-v="${s.v}" aria-pressed="${A.styles.includes(s.v)}"><span class="e">${s.e}</span><b>${s.l}</b></button>`).join("")}</div>`,ok:()=>true},
+ ...GOUTS
 ];
 /* ================= Le coach décide ================= */
 /* Vitesse de progression par mois : réaliste / maximum encore sain. Prise : selon le niveau. Perte : en % du poids. */
@@ -146,16 +178,25 @@ function goalAdj(p){const base={masse:300,force:200,seche:-450,recompo:-150}[p.g
  return Math.round(Math.min(lim[1],Math.max(lim[0],d))/10)*10}
 const DAYSET={2:[1,4],3:[1,3,5],4:[1,2,4,5],5:[1,2,3,5,6],6:[1,2,3,4,5,6]};
 /* Nombre de séances, durée, répartition : décidés par le coach (principes Ektyron : 2–3 séries lourdes, 8–12 reps, 2–3 min de repos, récupération 48 h petits muscles / 72 h gros). */
-function coachDecide(p){const g=goalPlan(p);
+function recN(p){const g=goalPlan(p),av=p.avail&&p.avail.length>=2?p.avail:WEEK,L={deb:"débutant",int:"intermédiaire",av:"confirmé"}[p.level];
  let n={deb:3,int:4,av:5}[p.level];
  if((p.goal==="masse"||p.goal==="recompo")&&g.fast)n++;
  if(p.goal==="force")n=Math.min(n,4);
  n=Math.max(3,Math.min(p.level==="deb"?4:6,n));
- const dur=p.level==="deb"||p.goal==="seche"?60:75;
- p.rec=n;p.recDur=dur;p.days=DAYSET[n];p.dur=dur;p.split="auto";p.prio=p.prio||[];p.custom={};return p}
+ let why=`en ${L}${g.fast?" avec un objectif ambitieux":""}, c'est le bon dosage : assez pour progresser vite, avec 48 h de repos pour les petits muscles et 72 h pour les gros`;
+ const big=p.tw!=null&&g.diff>=8;
+ if(big&&av.length>=6&&n<5){n=5;why="c'est un gros objectif et tu peux venir presque tous les jours : 5 séances donnent le volume qu'il faut, chaque muscle travaillé 2 fois par semaine"}
+ else if(big&&n<4){n=4;why=`un gros objectif demande au moins 4 séances${p.level==="deb"?", même en débutant":""} : chaque muscle est travaillé 2 fois par semaine`}
+ if(n>av.length){n=av.length;why=`tu n'es disponible que ${n} jours, ton coach les utilise tous`}
+ return{n,why,av}}
+/* Choisit n jours parmi les jours dispo, le plus espacés possible. */
+function spreadDays(n,av){if(DAYSET[n]&&DAYSET[n].every(d=>av.includes(d)))return DAYSET[n];let best=av.slice(0,n),bs=-99;
+ for(let m=0;m<128;m++){const ds=WEEK.filter(d=>m>>d&1);if(ds.length!==n||!ds.every(d=>av.includes(d)))continue;const o=ds.map(d=>(d+6)%7),g=o.map((x,i)=>((o[(i+1)%n]-x+7)%7)||7),sc=Math.min(...g)*10-Math.max(...g);if(sc>bs){bs=sc;best=ds}}return best}
+function coachDecide(p){const {n,av}=recN(p),dur=p.level==="deb"||p.goal==="seche"?60:75;
+ p.rec=n;p.recDur=dur;p.days=spreadDays(n,av);p.dur=dur;p.split="auto";p.prio=p.prio||[];p.custom={};return p}
 function planWhy(p){const g=goalPlan(p),T=targets(),n=p.days.length,sp=splitName(p),L={deb:"débutant",int:"intermédiaire",av:"confirmé"}[p.level];
  const out=[];
- out.push(["🗓️",`${n} séances par semaine`,n===p.rec?`En ${L}${g.fast?" avec un objectif ambitieux":""}, c'est le bon dosage : assez pour progresser vite, avec 48 h de repos pour les petits muscles et 72 h pour les gros.`:`Ton coach recommandait ${p.rec} séances. Tu en as choisi ${n} pour coller à ton emploi du temps.`]);
+ out.push(["🗓️",`${n} séances par semaine`,n===p.rec?(R=>R.n===p.rec?R.why[0].toUpperCase()+R.why.slice(1)+".":`En ${L}${g.fast?" avec un objectif ambitieux":""}, c'est le bon dosage : assez pour progresser vite, avec 48 h de repos pour les petits muscles et 72 h pour les gros.`)(recN(p)):`Ton coach recommandait ${p.rec} séances. Tu en as choisi ${n} pour coller à ton emploi du temps.`]);
  out.push(["🧩",sp,{full:"Tout le corps à chaque séance : chaque muscle est travaillé souvent, idéal pour apprendre les mouvements.",ul:"Haut du corps puis bas du corps : chaque muscle 2 fois par semaine, avec le temps de récupérer.",ppl:"Pousser, tirer, jambes : séances ciblées, chaque muscle 2 fois par semaine.",pplul:"Pousser, tirer, jambes, puis haut et bas : beaucoup de volume, chaque muscle 2 fois par semaine."}[splitOf(p)]]);
  out.push(["⏱️",`${p.dur} min par séance`,"2 à 3 séries lourdes par exercice, 8 à 12 répétitions, 2 à 3 min de repos. Ajoute 2,5 kg dès que tu fais 12 reps sur toutes les séries."]);
  out.push(["🍽️",`${fr(T.kcal)} kcal et ${T.p} g de protéines par jour`,Math.abs(g.diff)<.5?"Calories autour de ta maintenance pour garder ton poids.":`${goalAdj(p)>0?"+":""}${goalAdj(p)} kcal par rapport à ta dépense, pour ${g.diff>0?"prendre":"perdre"} ${fr(Math.abs(g.pm),1)} kg par mois. Ton coach réajuste chaque semaine selon ta pesée.`]);
@@ -168,11 +209,13 @@ function showPlan(){view="plan";document.body.className="ob";const p=PROF,g=goal
  <div class="stack">${planWhy(p).map(([e,h,s])=>`<div class="card" style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:26px">${e}</span><span><b>${h}</b><br><small class="muted">${s}</small></span></div>`).join("")}</div></div>
  <div class="ob-foot stack"><button class="btn" id="plan-go">C'est parti</button><button class="btn ghost" id="plan-adj">Adapter à mon emploi du temps</button></div></div>`;window.scrollTo(0,0)}
 function startAdjust(){A=JSON.parse(JSON.stringify(PROF));if(!A.rec){A.rec=A.days.length;A.recDur=A.dur}FLOW=ADJ;obI=0;view="ob";renderOb()}
+function startTastes(){A=JSON.parse(JSON.stringify(PROF));A.taste=A.taste||{};FLOW=GOUTS;obI=0;view="ob";renderOb()}
+function saveTastes(){PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{});FLOW=STEPS;view="food";nutTab="week";render();toast("Goûts enregistrés : nouvelle semaine de repas")}
 function saveAdjust(){A.freq=A.days.length;if(JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);FLOW=STEPS;showPlan();toast("Programme adapté")}
 
-function startOnboarding(edit){FLOW=STEPS;const dr=!edit&&!PROF&&LS.get("coach-draft",null);if(dr&&dr.A){A=dr.A;obI=dr.obI||0;view="ob";return render()}A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,store:"",budget:45,styles:[]};obI=0;view="ob";render()}
+function startOnboarding(edit){FLOW=STEPS;const dr=!edit&&!PROF&&LS.get("coach-draft",null);if(dr&&dr.A){A=dr.A;obI=dr.obI||0;view="ob";return render()}A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,store:"",budget:45,styles:[],avail:[...WEEK],taste:{},allerg:[],cuis:[],pdjT:"",ckt:0,batch:"",spice:null,nope:[]};obI=0;view="ob";render()}
 const ADJ=[
- {t:"Quels jours tu t'entraînes ?",s:()=>`Ton coach recommande ${A.rec||4} séances de ${A.recDur||60} min. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`,h:()=>`<div class="week">${WEEK.map(d=>`<button data-wd="${d}" aria-pressed="${A.days.includes(d)}">${DN[d]}<small>${A.days.includes(d)?"Séance":"Repos"}</small></button>`).join("")}</div>
+ {t:"Quels jours tu t'entraînes ?",s:()=>{const R=recN(A),g=goalPlan(A),who=A.tw!=null&&Math.abs(g.diff)>=.5?`Pour ${g.diff>0?"+":"−"}${fr(Math.abs(g.diff),1)} kg, ton coach`:"Ton coach";return R.n===A.rec?`${who} recommande ${A.rec} séances de ${A.recDur||60} min parce que ${R.why}. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`:`Ton coach recommande ${A.rec||4} séances de ${A.recDur||60} min. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`},h:()=>`<div class="week">${WEEK.map(d=>`<button data-wd="${d}" aria-pressed="${A.days.includes(d)}">${DN[d]}<small>${A.days.includes(d)?"Séance":"Repos"}</small></button>`).join("")}</div>
    <div class="hintbox"><span style="font-size:26px">🗓️</span><span><b>${A.days.length} séance${A.days.length>1?"s":""} par semaine</b><br><small class="muted">${A.days.length<2?"Choisis au moins 2 jours.":A.days.length>6?"Garde au moins un jour de repos complet.":A.days.length<(A.rec||0)?`En dessous de la recommandation : ta progression sera plus lente que prévu.`:A.days.length>(A.rec||9)?"Au-dessus de la recommandation : veille à bien dormir et à manger tout ton plan.":"C'est ce que ton coach recommande."}</small></span></div>
    <div class="lab" style="margin-top:6px">Durée d'une séance</div><div class="row">${[45,60,75,90].map(n=>`<button class="chip" data-c="dur" data-v="${n}" aria-pressed="${A.dur===n}" style="flex:1">${n} min</button>`).join("")}</div>`,ok:()=>A.days.length>=2&&A.days.length<=6},
  {t:"Comment organiser ta semaine ?",s:"Choisis ta répartition, ou laisse le coach décider.",h:()=>opts("split",SPLITS)+`<div class="hintbox"><span style="font-size:26px">📋</span><span><b>Ta semaine</b><br><small class="muted">${seqFor(A).map(([d,k])=>`${DN[d]} : ${TPL[k].t}`).join(" · ")}</small></span></div>`,ok:()=>!!A.split},
@@ -186,7 +229,7 @@ function obNotice(){return `${INAPP?`<div class="hintbox" style="border-color:va
 function renderOb(){const S=FLOW[obI];if(FLOW===STEPS&&!PROF)LS.set("coach-draft",{A,obI});document.body.className="ob";
  $("#app").innerHTML=`<div class="ob"><div class="ob-top"><button class="back" id="ob-back" aria-label="Retour" ${obI===0&&!PROF?"style=visibility:hidden":""}>‹</button><div class="ob-bar"><i style="width:${(obI+1)/FLOW.length*100}%"></i></div><span class="ob-step">${obI+1}/${FLOW.length}</span></div>
  <div class="ob-body"><h1>${S.t}</h1><p class="muted" style="margin:0">${typeof S.s==="function"?S.s():S.s}</p>${S.h()}${obI===0&&FLOW===STEPS&&!PROF?obNotice():""}</div>
- <div class="ob-foot"><button class="btn" id="ob-next" ${S.ok()?"":"disabled"}>${obI===FLOW.length-1?(FLOW===ADJ?"Valider mon programme":"Construire mon plan"):"Continuer"}</button></div></div>`;
+ <div class="ob-foot"><button class="btn" id="ob-next" ${S.ok()?"":"disabled"}>${obI===FLOW.length-1?(FLOW===ADJ?"Valider mon programme":FLOW===GOUTS?"Enregistrer mes goûts":"Construire mon plan"):"Continuer"}</button></div></div>`;
  const n=$("#i-name");if(n&&!A.name)setTimeout(()=>n.focus(),50)}
 function obRefresh(){const b=$("#ob-next");if(b)b.disabled=!FLOW[obI].ok()}
 function buildScreen(){document.body.className="ob";const L=["Lecture de tes réponses","Analyse de ton objectif et de ton délai","Choix du nombre de séances et de leur durée","Choix des exercices selon ta salle","Séries, reps et repos selon ton objectif","Calcul de tes calories et macros","Choix des recettes à ton goût","Optimisation pour ton budget","Liste de courses de la semaine"];
@@ -260,8 +303,8 @@ function vProg(){const W=LS.get("coach-weights",[]),X=xpProf(),vol=X.games.reduc
  <div class="row"><input class="txt" id="w-in" inputmode="decimal" placeholder="Poids du jour" style="flex:1;font-size:17px;padding:12px"><button class="btn sm" id="w-save">Ajouter</button></div>${LS.get("coach-msg","")?`<div class="coachmsg">${esc(LS.get("coach-msg",""))}</div>`:""}</div>
  <div class="card stack"><div class="lab">Tes records</div>${recs.length?`<ul class="list">${recs.map(r=>`<li><span class="sp">${r.n}</span><b class="mono">${r.b.k} kg × ${r.b.r}</b></li>`).join("")}</ul>`:`<p class="small muted" style="margin:0">Joue ta première séance pour poser tes premières marques.</p>`}</div>`}
 function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b>${v}</b></li>`;
- return `<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Courses",`${STORES.find(s=>s.v===p.store).l} · ${p.budget} € / semaine`)}</ul></div>
- <button class="btn" id="plan-see">Voir mon plan et pourquoi</button><button class="btn ghost" id="adj">Adapter à mon emploi du temps</button><button class="btn ghost" id="redo">Refaire le questionnaire</button>
+ return `<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Goûts",(t=>`${t.filter(v=>v>0).length} ❤️ · ${t.filter(v=>v<0).length} 🚫${(p.allerg||[]).length?" · sans "+p.allerg.map(a=>ALLERG.find(x=>x.v===a).l.toLowerCase()).join(", "):""}`)(Object.values(p.taste||{})))}${row("Courses",`${STORES.find(s=>s.v===p.store).l} · ${p.budget} € / semaine`)}</ul></div>
+ <button class="btn" id="plan-see">Voir mon plan et pourquoi</button><button class="btn ghost" id="tastes">Mes goûts</button><button class="btn ghost" id="adj">Adapter à mon emploi du temps</button><button class="btn ghost" id="redo">Refaire le questionnaire</button>
  <details class="card"><summary class="lab" style="cursor:pointer">Sauvegarder ou transférer mes données</summary><p class="small muted">Tout reste sur ce téléphone. Copie ce code dans tes notes pour le garder, ou colle un code pour restaurer.</p><textarea id="bk-t" aria-label="Code de sauvegarde"></textarea><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="bk-x" style="flex:1">Copier mes données</button><button class="btn ghost sm" id="bk-i" style="flex:1">Restaurer</button></div><p class="small" id="bk-m"></p></details>
  <button class="link" id="wipe">Tout effacer et recommencer</button>`}
 
@@ -271,7 +314,7 @@ function openRecipe(rid,slot,day){const m=dayMeals(+day).find(x=>x.slot===slot&&
  <div class="stack"><div class="lab">${m.l||""} · ${r.min} min · ${eur(m.e)}</div><h2 style="text-transform:none;font-family:var(--body);font-weight:600;font-size:24px">${esc(r.n)}</h2>
  <div class="kpis"><div><strong>${fr(m.k)}</strong><small>kcal</small></div><div><strong>${fr(m.P)} g</strong><small>protéines</small></div><div><strong>${fr(m.C)} / ${fr(m.F)}</strong><small>glucides / lipides</small></div></div>
  <div class="lab">Ce qu'il te faut · portion calculée pour toi</div><ul class="list">${r.i.map(([i,g])=>`<li><span class="sp">${ING[i][0]}</span><b class="mono">${i==="oeuf"?`${Math.max(1,Math.round(g*m.fi(i)/60))} œuf(s)`:`${Math.round(g*m.fi(i)/5)*5} g`}</b></li>`).join("")}</ul>
- <div class="lab">Préparation</div><p style="margin:0">${r.p}</p>${m.left?`<p class="small muted">Prépare une double portion la veille au dîner : c'est ton déjeuner du lendemain.</p>`:""}</div></div>`;
+ <div class="lab">Préparation</div><p style="margin:0">${r.p}</p>${m.bt?`<p class="small muted">Batch cooking : cuisine 3 à 4 portions d'un coup (dimanche, puis mercredi soir). Elles se gardent 3 jours au frigo.</p>`:m.left?`<p class="small muted">Prépare une double portion la veille au dîner : c'est ton déjeuner du lendemain.</p>`:""}<button class="btn ghost" data-nope="${r.id}">👎 Je n'aime pas, remplace-la</button></div></div>`;
  document.body.appendChild(el)}
 
 /* ================= Mode partie ================= */
@@ -362,8 +405,11 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   if(D.o){A[D.o]=isNaN(+D.v)?D.v:+D.v;if(D.o==="split")return renderOb();$$(`[data-o="${D.o}"]`).forEach(b=>b.setAttribute("aria-pressed",b===t));obRefresh();return}
   if(D.m){let a=A[D.m]||[];if(D.v==="none")a=[];else a=a.includes(D.v)?a.filter(x=>x!==D.v):[...a,D.v];A[D.m]=a;renderOb();return}
   if(D.c){A[D.c]=+D.v;renderOb();return}
+  if(D.t){A.taste=A.taste||{};const v=A.taste[D.t]||0,n=v===0?1:v===1?-1:0;if(n)A.taste[D.t]=n;else delete A.taste[D.t];renderOb();return}
+  if(D.av!==undefined){const w=+D.av,a=A.avail||[...WEEK];A.avail=a.includes(w)?a.filter(x=>x!==w):[...a,w];renderOb();return}
+  if(t.id==="nope-clr"){A.nope=[];renderOb();return}
   if(t.id==="ob-back"){if(obI>0){obI--;renderOb()}else if(PROF){view=FLOW===ADJ?"train":"me";render()}return}
-  if(t.id==="ob-next"){if(!FLOW[obI].ok())return;if(obI<FLOW.length-1){obI++;renderOb();window.scrollTo(0,0)}else if(FLOW===ADJ)saveAdjust();else buildScreen();return}
+  if(t.id==="ob-next"){if(!FLOW[obI].ok())return;if(obI<FLOW.length-1){obI++;renderOb();window.scrollTo(0,0)}else if(FLOW===ADJ)saveAdjust();else if(FLOW===GOUTS)saveTastes();else buildScreen();return}
   return}
  /* partie */
  if(G&&t.closest("#game")){auUnlock();
@@ -382,6 +428,8 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.nday!==undefined){nutDay=+D.nday;render();return}
  if(D.nt){nutTab=D.nt;render();return}
  if(D.rec){openRecipe(D.rec,D.slot,D.day);return}
+ if(D.nope){const old=RECI[D.nope],nw=dislike(D.nope);$("#sheet")?.remove();render();toast(nw?`${old.n} : remplacé par ${nw.n}. Il ne reviendra plus.`:"Recette écartée.");return}
+ if(t.id==="tastes"){startTastes();return}
  if(D.eat){const E=LS.get("coach-eaten",{}),k=todayKey();E[k]=E[k]||{};E[k][D.eat]=!E[k][D.eat];for(const d in E)if(d<new Date(Date.now()-14*DAY).toISOString().slice(0,10))delete E[d];LS.set("coach-eaten",E);render();return}
  if(D.shop){const c=LS.get("coach-shop",{});c[D.shop]=!c[D.shop];LS.set("coach-shop",c);render();return}
  if(t.id==="shop-reset"){LS.set("coach-shop",{});render();return}
