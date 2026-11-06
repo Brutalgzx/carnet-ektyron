@@ -1,8 +1,8 @@
 :root{
   --bg:#140B18; --bg2:#1C1022; --card:#24152B; --card2:#2E1B37; --line:#3F2849; --ink:#F8ECF5; --muted:#B79DB8;
-  --pink:#FF3D8B; --pink2:#FF7AB6; --violet:#9B5CFF; --good:#3DDC97; --warn:#FFB547; --bad:#FF6B6B;
-  --grad:linear-gradient(135deg,#FF5FA2 0%,#E0306F 55%,#B0175A 100%);
-  --glow:0 0 0 1px rgba(255,61,139,.55),0 8px 28px -6px rgba(255,61,139,.55);
+  --pink:#FF2E3A; --pink2:#FF7A6E; --violet:#9B5CFF; --good:#3DDC97; --warn:#FFB547; --bad:#FF6B6B;
+  --grad:linear-gradient(135deg,#FF5A4E 0%,#E0242F 55%,#A8121C 100%);
+  --glow:0 0 0 1px rgba(255,46,58,.55),0 8px 28px -6px rgba(255,46,58,.55);
   --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
   color-scheme:dark;
 }
@@ -21,7 +21,7 @@ h1{font-weight:800;font-size:32px} h2{font-weight:800;font-size:26px} h3{font-we
 .row{display:flex;gap:10px;align-items:center} .sp{flex:1}
 .stack{display:flex;flex-direction:column;gap:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
-.card.hot{background:linear-gradient(160deg,#3A1840,#24152B 70%);border-color:rgba(255,61,139,.45)}
+.card.hot{background:linear-gradient(160deg,#3A1840,#24152B 70%);border-color:rgba(255,46,58,.45)}
 .lab{font:600 11.5px var(--mono);letter-spacing:.8px;text-transform:uppercase;color:var(--pink2)}
 .btn{display:block;width:100%;border:0;border-radius:16px;padding:16px;background:var(--grad);color:#fff;font:800 20px/1 var(--display);text-transform:uppercase;letter-spacing:.6px;box-shadow:var(--glow)}
 .btn:disabled{opacity:.4;box-shadow:none}
@@ -63,7 +63,7 @@ input[type=range]{width:100%;margin:12px 0 4px;accent-color:var(--pink);height:2
 
 /* Construction du plan */
 .build{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 0;text-align:center;min-height:100vh;justify-content:center}
-.build svg{width:180px;filter:drop-shadow(0 0 22px rgba(255,61,139,.75));animation:float 2.4s ease-in-out infinite}
+.build svg{width:180px;filter:drop-shadow(0 0 22px rgba(255,46,58,.75));animation:float 2.4s ease-in-out infinite}
 .build h1{font-size:40px} .build h1 span{display:block;color:var(--pink);font-size:52px}
 .steps{list-style:none;padding:0;margin:0;text-align:left;display:flex;flex-direction:column;gap:8px;width:100%;max-width:330px}
 .steps li{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:14px}
