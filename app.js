@@ -38,14 +38,14 @@ function buildTraining(p){const days={},nMax={45:5,60:6,75:7,90:8}[p.dur]||6;
  return days}
 function migrate(p){if(!p)return p;const old={full:"mcshldbxp",small:"dbxpc",home:"db",bw:""};
  if(p.equip==null){p.equip=old[p.gym]??"mcdbxp";if(p.gym==="full"||p.gym==="small")p.gym="autre"}
- if(!p.days)p.days=SPLIT[p.freq].map(x=>x[0]);if(!p.split)p.split="auto";if(!p.prio)p.prio=[];p.freq=p.days.length;return p}
+ if(!p.days)p.days=SPLIT[p.freq].map(x=>x[0]);if(!p.split)p.split="auto";if(!p.prio)p.prio=[];p.freq=p.days.length;if(!p.rec){p.rec=p.days.length;p.recDur=p.dur}if(!p.months)p.months=6;return p}
 const sessMin=s=>Math.round(s.x.reduce((m,e)=>m+e.s*(0.75+e.rest/60),0)+8);
 
 /* ================= Nutrition ================= */
 function curWeight(){const W=LS.get("coach-weights",[]);return W.length?W[W.length-1].kg:PROF.w}
 function targets(){const p=PROF,w=curWeight();
  const bmr=10*w+6.25*p.h-5*p.age+(p.sex==="f"?-161:5), act={low:1.3,mid:1.45,high:1.6}[p.act]+0.035*p.freq, tdee=bmr*act;
- const adj={masse:300,force:200,seche:-450,recompo:-150}[p.goal]+LS.get("coach-kadj",0);
+ const adj=goalAdj(p)+LS.get("coach-kadj",0);
  const kcal=Math.max(Math.round(bmr*1.1/10)*10,Math.round((tdee+adj)/10)*10);
  const pr=Math.round(w*(p.goal==="seche"?2.2:2)),fat=Math.round(w*(p.goal==="seche"?.8:.9)),carb=Math.max(60,Math.round((kcal-pr*4-fat*9)/4));
  return{bmr:Math.round(bmr),tdee:Math.round(tdee),kcal,p:pr,f:fat,c:carb}}
@@ -107,14 +107,13 @@ const STEPS=[
  {t:"Ta taille, ton poids, ton âge",s:"Le calcul de tes calories part de là.",h:()=>slider("h","Taille",140,210,1,"cm")+slider("w","Poids",40,150,.5,"kg")+slider("age","Âge",14,75,1,"ans"),ok:()=>true},
  {t:"Ton objectif ?",s:"On adapte les séries, les reps, les repos et tes calories.",h:()=>opts("goal",GOALS),ok:()=>!!A.goal},
  {t:"Ton niveau en muscu ?",s:"Pour doser le volume de chaque séance.",h:()=>opts("level",LEVELS),ok:()=>!!A.level},
+ {t:"Ton objectif en chiffres",s:"Le poids que tu veux atteindre, et en combien de temps. Ton coach te dit si c'est réaliste.",live:1,
+  h:()=>{if(A.tw==null||A.twg!==A.goal){A.tw=Math.round(A.w+{masse:6,seche:-5,recompo:0,force:2}[A.goal]);A.twg=A.goal}
+   return slider("tw","Poids visé",Math.round(A.w-30),Math.round(A.w+30),.5,"kg")+`<div class="lab" style="margin-top:6px">En combien de temps ?</div><div class="row" style="flex-wrap:wrap">${[2,3,4,6,9,12].map(n=>`<button class="chip" data-c="months" data-v="${n}" aria-pressed="${A.months===n}" style="flex:1">${n} mois</button>`).join("")}</div><div id="gp">${gpBox(A)}</div>`},
+  ok:()=>goalPlan(A).ok},
  {t:"Où tu t'entraînes ?",s:"Choisis ta salle : on pré-remplit les machines qu'on y trouve d'habitude.",h:()=>`<div class="grid2">${GYMS.slice(0,6).map(g=>`<button class="store" data-gym="${g.v}" aria-pressed="${A.gym===g.v}">${g.l}</button>`).join("")}</div><div class="opts" style="margin-top:10px">${GYMS.slice(6).map(g=>`<button class="opt" data-gym="${g.v}" aria-pressed="${A.gym===g.v}"><span class="e">${g.e}</span><span><b>${g.l}</b><small>${g.s}</small></span></button>`).join("")}</div>`,ok:()=>!!A.gym},
  {t:"Le matériel de ta salle",s:()=>A.gym==="bw"?"Sans matériel : programme au poids du corps. Coche quand même ce que tu as sous la main.":A.gym==="home"||A.gym==="autre"?"Coche tout ce que tu as à disposition.":`On a pré-coché l'équipement habituel des salles ${GYMS.find(g=>g.v===A.gym).l}. Décoche ce qui manque dans la tienne, coche ce qu'elle a en plus.`,
   h:()=>`<div class="opts">${EQUIP.map(([c,l,x])=>`<button class="opt" data-eq="${c}" aria-pressed="${A.equip.includes(c)}" style="min-height:52px;padding:10px 14px"><span class="e" style="font-size:20px">${A.equip.includes(c)?"✅":"⬜"}</span><span><b>${l}</b>${x?`<small>${x}</small>`:""}</span></button>`).join("")}</div>`,ok:()=>true},
- {t:"Quels jours tu t'entraînes ?",s:"Choisis de 2 à 6 jours. Le coach place les séances pour que chaque muscle récupère.",h:()=>`<div class="week">${WEEK.map(d=>`<button data-wd="${d}" aria-pressed="${A.days.includes(d)}">${DN[d]}<small>${A.days.includes(d)?"Séance":"Repos"}</small></button>`).join("")}</div>
-   <div class="hintbox"><span style="font-size:26px">🗓️</span><span><b>${A.days.length} séance${A.days.length>1?"s":""} par semaine</b><br><small class="muted">${A.days.length<2?"Choisis au moins 2 jours.":A.days.length>6?"Garde au moins un jour de repos complet.":"Tu pourras changer ça quand tu veux."}</small></span></div>
-   <div class="lab" style="margin-top:6px">Durée d'une séance</div><div class="row">${[45,60,75,90].map(n=>`<button class="chip" data-c="dur" data-v="${n}" aria-pressed="${A.dur===n}" style="flex:1">${n} min</button>`).join("")}</div>`,ok:()=>A.days.length>=2&&A.days.length<=6},
- {t:"Comment organiser ta semaine ?",s:"Choisis ta répartition, ou laisse le coach décider.",h:()=>opts("split",SPLITS)+`<div class="hintbox"><span style="font-size:26px">📋</span><span><b>Ta semaine</b><br><small class="muted">${seqFor(A).map(([d,k])=>`${DN[d]} : ${TPL[k].t}`).join(" · ")}</small></span></div>`,ok:()=>!!A.split},
- {t:"Des muscles à mettre en avant ?",s:"Ils passent en début de séance, avec une série de plus.",h:()=>opts("prio",PRIOS,true),ok:()=>true},
  {t:"Une zone à ménager ?",s:"Le coach écarte les exercices qui la sollicitent trop. En cas de douleur qui dure, consulte un kiné.",h:()=>opts("pain",PAINS,true),ok:()=>true},
  {t:"En dehors de la salle, tu es…",s:"Ta dépense de la journée compte autant que tes séances.",h:()=>opts("act",ACTS),ok:()=>!!A.act},
  {t:"Ce que tu manges",s:"Les recettes de ta semaine respectent ton choix.",h:()=>opts("diet",DIETS),ok:()=>!!A.diet},
@@ -126,25 +125,78 @@ const STEPS=[
    <div class="hintbox"><span style="font-size:30px">🍱</span><span><b id="v-pm">${eur(pm)} / repas</b> · <span id="v-lvl">${lvl}</span><br><small class="muted">${A.meals*7} repas dans la semaine. Budget serré : on mise sur les basiques (riz, pâtes, œufs, légumineuses, thon).</small></span></div>`},ok:()=>true},
  {t:"Quel style de plats ?",s:"Choisis-en un ou plusieurs. Rien de coché : un mélange de tout.",h:()=>`<div class="grid2">${STYLES.map(s=>`<button class="tile" data-m="styles" data-v="${s.v}" aria-pressed="${A.styles.includes(s.v)}"><span class="e">${s.e}</span><b>${s.l}</b></button>`).join("")}</div>`,ok:()=>true}
 ];
-function startOnboarding(edit){A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,store:"",budget:45,styles:[]};obI=0;view="ob";render()}
-function renderOb(){const S=STEPS[obI];document.body.className="ob";
- $("#app").innerHTML=`<div class="ob"><div class="ob-top"><button class="back" id="ob-back" aria-label="Retour" ${obI===0&&!PROF?"style=visibility:hidden":""}>‹</button><div class="ob-bar"><i style="width:${(obI+1)/STEPS.length*100}%"></i></div><span class="ob-step">${obI+1}/${STEPS.length}</span></div>
+/* ================= Le coach décide ================= */
+/* Vitesse de progression par mois : réaliste / maximum encore sain. Prise : selon le niveau. Perte : en % du poids. */
+function goalPlan(p){const diff=+(p.tw-p.w).toFixed(1),m=p.months||6,pm=diff/m,gain=diff>0;
+ const [re,mx]=gain?{deb:[1,2],int:[.6,1.2],av:[.3,.7]}[p.level||"deb"]:[p.w*.03,p.w*.045];
+ const a=Math.abs(pm),need=Math.ceil(Math.abs(diff)/mx);
+ let ok=true,msg,tone;
+ if(p.goal==="masse"&&diff<=0){ok=false;msg="Pour une prise de muscle, vise un poids au-dessus du tien.";tone="bad"}
+ else if(p.goal==="seche"&&diff>=0){ok=false;msg="Pour perdre du gras, vise un poids en dessous du tien.";tone="bad"}
+ else if(Math.abs(diff)<.5){msg=p.goal==="recompo"?"Poids stable : tu perds du gras et prends du muscle en même temps. La balance bouge peu, le miroir beaucoup.":"Poids stable : ton coach mise tout sur la force.";tone="good"}
+ else if(a<=re){msg=`Réaliste. ${gain?"+":"−"}${fr(a,1)} kg par mois : du ${gain?"muscle":"gras"} en ${gain?"gagnant":"perdant"} le moins ${gain?"de gras":"de muscle"} possible.`;tone="good"}
+ else if(a<=mx){msg=`Ambitieux mais faisable. ${gain?"+":"−"}${fr(a,1)} kg par mois : il faudra être carré sur les repas et ne rater aucune séance.`;tone="warn"}
+ else{msg=`Trop rapide : ${gain?"+":"−"}${fr(a,1)} kg par mois, ce serait surtout du ${gain?"gras":"muscle et de l'eau"}. Ton coach conseille au moins ${need} mois.`;tone="bad";ok=false}
+ return{ok,msg,tone,diff,pm,re,mx,need,fast:a>re}}
+const gpBox=p=>{const g=goalPlan(p),c={good:"var(--good)",warn:"var(--warn)",bad:"var(--bad)"}[g.tone];
+ return `<div class="hintbox" style="border-color:${c}"><span style="font-size:26px">${{good:"✅",warn:"⚡",bad:"⛔"}[g.tone]}</span><span><b style="color:${c}">${g.diff>0?"+":""}${fr(g.diff,1)} kg en ${p.months} mois</b><br><small class="muted">${g.msg}</small></span></div>`};
+/* Surplus ou déficit calorique tiré de la vitesse visée (7 700 kcal ≈ 1 kg). */
+function goalAdj(p){const base={masse:300,force:200,seche:-450,recompo:-150}[p.goal];if(p.tw==null)return base;
+ const d=(p.tw-p.w)/(p.months*30.4)*7700,lim={masse:[200,650],force:[100,400],seche:[-800,-250],recompo:[-300,100]}[p.goal];
+ return Math.round(Math.min(lim[1],Math.max(lim[0],d))/10)*10}
+const DAYSET={2:[1,4],3:[1,3,5],4:[1,2,4,5],5:[1,2,3,5,6],6:[1,2,3,4,5,6]};
+/* Nombre de séances, durée, répartition : décidés par le coach (principes Ektyron : 2–3 séries lourdes, 8–12 reps, 2–3 min de repos, récupération 48 h petits muscles / 72 h gros). */
+function coachDecide(p){const g=goalPlan(p);
+ let n={deb:3,int:4,av:5}[p.level];
+ if((p.goal==="masse"||p.goal==="recompo")&&g.fast)n++;
+ if(p.goal==="force")n=Math.min(n,4);
+ n=Math.max(3,Math.min(p.level==="deb"?4:6,n));
+ const dur=p.level==="deb"||p.goal==="seche"?60:75;
+ p.rec=n;p.recDur=dur;p.days=DAYSET[n];p.dur=dur;p.split="auto";p.prio=p.prio||[];p.custom={};return p}
+function planWhy(p){const g=goalPlan(p),T=targets(),n=p.days.length,sp=splitName(p),L={deb:"débutant",int:"intermédiaire",av:"confirmé"}[p.level];
+ const out=[];
+ out.push(["🗓️",`${n} séances par semaine`,n===p.rec?`En ${L}${g.fast?" avec un objectif ambitieux":""}, c'est le bon dosage : assez pour progresser vite, avec 48 h de repos pour les petits muscles et 72 h pour les gros.`:`Ton coach recommandait ${p.rec} séances. Tu en as choisi ${n} pour coller à ton emploi du temps.`]);
+ out.push(["🧩",sp,{full:"Tout le corps à chaque séance : chaque muscle est travaillé souvent, idéal pour apprendre les mouvements.",ul:"Haut du corps puis bas du corps : chaque muscle 2 fois par semaine, avec le temps de récupérer.",ppl:"Pousser, tirer, jambes : séances ciblées, chaque muscle 2 fois par semaine.",pplul:"Pousser, tirer, jambes, puis haut et bas : beaucoup de volume, chaque muscle 2 fois par semaine."}[splitOf(p)]]);
+ out.push(["⏱️",`${p.dur} min par séance`,"2 à 3 séries lourdes par exercice, 8 à 12 répétitions, 2 à 3 min de repos. Ajoute 2,5 kg dès que tu fais 12 reps sur toutes les séries."]);
+ out.push(["🍽️",`${fr(T.kcal)} kcal et ${T.p} g de protéines par jour`,Math.abs(g.diff)<.5?"Calories autour de ta maintenance pour garder ton poids.":`${goalAdj(p)>0?"+":""}${goalAdj(p)} kcal par rapport à ta dépense, pour ${g.diff>0?"prendre":"perdre"} ${fr(Math.abs(g.pm),1)} kg par mois. Ton coach réajuste chaque semaine selon ta pesée.`]);
+ out.push(["💊","Créatine 5 g par jour","Tous les jours, même les jours de repos. Et 2,5 à 3 L d'eau."]);
+ return out}
+function showPlan(){view="plan";document.body.className="ob";const p=PROF,g=goalPlan(p),end=new Date(Date.now()+p.months*30.4*864e5);
+ $("#app").innerHTML=`<div class="ob"><div class="ob-body" style="padding-top:20px"><div class="lab">Ton plan</div><h1>${esc(p.name)}, voilà ce qu'il te faut</h1>
+ ${p.tw!=null?`<div class="hintbox"><span style="font-size:26px">🎯</span><span><b>${fr(p.w,1)} → ${fr(p.tw,1)} kg</b><br><small class="muted">Objectif vers ${end.toLocaleDateString("fr-FR",{month:"long",year:"numeric"})} · ${g.msg}</small></span></div>`:""}
+ <div class="week" style="margin:6px 0">${WEEK.map(d=>`<button tabindex="-1" aria-pressed="${p.days.includes(d)}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
+ <div class="stack">${planWhy(p).map(([e,h,s])=>`<div class="card" style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:26px">${e}</span><span><b>${h}</b><br><small class="muted">${s}</small></span></div>`).join("")}</div></div>
+ <div class="ob-foot stack"><button class="btn" id="plan-go">C'est parti</button><button class="btn ghost" id="plan-adj">Adapter à mon emploi du temps</button></div></div>`;window.scrollTo(0,0)}
+function startAdjust(){A=JSON.parse(JSON.stringify(PROF));if(!A.rec){A.rec=A.days.length;A.recDur=A.dur}FLOW=ADJ;obI=0;view="ob";renderOb()}
+function saveAdjust(){A.freq=A.days.length;if(JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);FLOW=STEPS;showPlan();toast("Programme adapté")}
+
+function startOnboarding(edit){FLOW=STEPS;A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,store:"",budget:45,styles:[]};obI=0;view="ob";render()}
+const ADJ=[
+ {t:"Quels jours tu t'entraînes ?",s:()=>`Ton coach recommande ${A.rec||4} séances de ${A.recDur||60} min. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`,h:()=>`<div class="week">${WEEK.map(d=>`<button data-wd="${d}" aria-pressed="${A.days.includes(d)}">${DN[d]}<small>${A.days.includes(d)?"Séance":"Repos"}</small></button>`).join("")}</div>
+   <div class="hintbox"><span style="font-size:26px">🗓️</span><span><b>${A.days.length} séance${A.days.length>1?"s":""} par semaine</b><br><small class="muted">${A.days.length<2?"Choisis au moins 2 jours.":A.days.length>6?"Garde au moins un jour de repos complet.":A.days.length<(A.rec||0)?`En dessous de la recommandation : ta progression sera plus lente que prévu.`:A.days.length>(A.rec||9)?"Au-dessus de la recommandation : veille à bien dormir et à manger tout ton plan.":"C'est ce que ton coach recommande."}</small></span></div>
+   <div class="lab" style="margin-top:6px">Durée d'une séance</div><div class="row">${[45,60,75,90].map(n=>`<button class="chip" data-c="dur" data-v="${n}" aria-pressed="${A.dur===n}" style="flex:1">${n} min</button>`).join("")}</div>`,ok:()=>A.days.length>=2&&A.days.length<=6},
+ {t:"Comment organiser ta semaine ?",s:"Choisis ta répartition, ou laisse le coach décider.",h:()=>opts("split",SPLITS)+`<div class="hintbox"><span style="font-size:26px">📋</span><span><b>Ta semaine</b><br><small class="muted">${seqFor(A).map(([d,k])=>`${DN[d]} : ${TPL[k].t}`).join(" · ")}</small></span></div>`,ok:()=>!!A.split},
+ {t:"Des muscles à mettre en avant ?",s:"Ils passent en début de séance, avec une série de plus.",h:()=>opts("prio",PRIOS,true),ok:()=>true},
+];
+let FLOW=STEPS;
+function renderOb(){const S=FLOW[obI];document.body.className="ob";
+ $("#app").innerHTML=`<div class="ob"><div class="ob-top"><button class="back" id="ob-back" aria-label="Retour" ${obI===0&&!PROF?"style=visibility:hidden":""}>‹</button><div class="ob-bar"><i style="width:${(obI+1)/FLOW.length*100}%"></i></div><span class="ob-step">${obI+1}/${FLOW.length}</span></div>
  <div class="ob-body"><h1>${S.t}</h1><p class="muted" style="margin:0">${typeof S.s==="function"?S.s():S.s}</p>${S.h()}</div>
- <div class="ob-foot"><button class="btn" id="ob-next" ${S.ok()?"":"disabled"}>${obI===STEPS.length-1?"Construire mon plan":"Continuer"}</button></div></div>`;
+ <div class="ob-foot"><button class="btn" id="ob-next" ${S.ok()?"":"disabled"}>${obI===FLOW.length-1?(FLOW===ADJ?"Valider mon programme":"Construire mon plan"):"Continuer"}</button></div></div>`;
  const n=$("#i-name");if(n&&!A.name)setTimeout(()=>n.focus(),50)}
-function obRefresh(){const b=$("#ob-next");if(b)b.disabled=!STEPS[obI].ok()}
-function buildScreen(){document.body.className="ob";const L=["Lecture de tes réponses","Choix des exercices selon ta salle","Séries, reps et repos selon ton objectif","Calcul de tes calories et macros","Choix des recettes à ton goût","Optimisation pour ton budget","Liste de courses de la semaine"];
+function obRefresh(){const b=$("#ob-next");if(b)b.disabled=!FLOW[obI].ok()}
+function buildScreen(){document.body.className="ob";const L=["Lecture de tes réponses","Analyse de ton objectif et de ton délai","Choix du nombre de séances et de leur durée","Choix des exercices selon ta salle","Séries, reps et repos selon ton objectif","Calcul de tes calories et macros","Choix des recettes à ton goût","Optimisation pour ton budget","Liste de courses de la semaine"];
  $("#app").innerHTML=`<div class="build"><svg viewBox="0 0 200 110" aria-hidden="true"><defs><linearGradient id="gd" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#FFD4D0"/><stop offset="1" stop-color="#FF2E3A"/></linearGradient></defs><rect x="62" y="46" width="76" height="18" rx="9" fill="url(#gd)"/><rect x="18" y="14" width="52" height="82" rx="22" fill="url(#gd)"/><rect x="130" y="14" width="52" height="82" rx="22" fill="url(#gd)"/></svg>
  <h1>${esc(A.name)}, ton coach<span>construit ton plan</span></h1><p class="muted small" style="margin:0;max-width:330px">Chaque exercice, chaque série et chaque repas sont choisis à partir de tes réponses.</p>
  <ul class="steps">${L.map(l=>`<li><i></i>${l}</li>`).join("")}</ul><div class="pbar"><i id="pb" style="width:0"></i><b id="pbt">0 %</b></div></div>`;
  const li=$$(".steps li"),t0=performance.now(),D=4200;
  (function step(){const now=performance.now(),k=Math.min(1,(now-t0)/D),n=Math.floor(k*li.length);li.forEach((x,i)=>{x.className=i<n?"ok":i===n?"now":"";x.firstChild.textContent=i<n?"✓":""});$("#pb").style.width=k*100+"%";$("#pbt").textContent=Math.round(k*100)+" %";
-  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);view="today";render();if(first)toast(`Bienvenue ${PROF.name} ! Ton plan est prêt.`)},350)})()}
+  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;coachDecide(A);A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
 
 /* ================= Écrans ================= */
 const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',train:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',food:'<path d="M7 3v8a3 3 0 0 0 3 3v7M10 3v6M4 3v6a3 3 0 0 0 3 3M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',prog:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
 const TABS=[["today","Aujourd'hui"],["train","Séances"],["food","Nutrition"],["prog","Progrès"],["me","Profil"]];
-function render(){if(!PROF&&view!=="ob")return startOnboarding();if(view==="ob")return renderOb();document.body.className=G?"g-on":"";
+function render(){if(!PROF&&view!=="ob")return startOnboarding();if(view==="ob")return renderOb();if(view==="plan")return showPlan();document.body.className=G?"g-on":"";
  TRAIN=TRAIN||buildTraining(PROF);const L=level(xpProf().xp);
  const titles={today:`Salut ${esc(PROF.name)}`,train:"Tes séances",food:"Nutrition",prog:"Progrès",me:"Profil"};
  $("#app").innerHTML=`<header class="top"><h1>${titles[view]}</h1><div class="lvl"><b>Niv. ${L.l}</b>${xpProf().xp} XP</div></header><main class="stack">${({today:vToday,train:vTrain,food:vFood,prog:vProg,me:vMe})[view]()}</main>
@@ -176,7 +228,7 @@ function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok
   ${groups.map(g=>`<div class="lab" style="margin-top:12px">${g}</div><div class="opts">${ok.filter(id=>EX[id][1]===g).map(id=>`<button class="opt" data-pick="${id}" style="min-height:48px;padding:10px 14px"><span><b>${esc(EX[id][0])}</b><small>${esc(EX[id][5])}</small></span></button>`).join("")}</div>`).join("")}</div>`;
  document.body.append(el)}
 function vTrain(){const S=TRAIN[selDay],td=new Date().getDay();
- return `<div class="small muted" style="margin-top:-8px">${splitName(PROF)} · ${GYMS.find(g=>g.v===PROF.gym).l} · ${GOALS.find(g=>g.v===PROF.goal).l.toLowerCase()}</div>
+ return `<div class="row" style="margin-top:-8px"><div class="small muted sp">${splitName(PROF)} · ${GYMS.find(g=>g.v===PROF.gym).l} · ${GOALS.find(g=>g.v===PROF.goal).l.toLowerCase()}</div><button class="chip" id="adj">Adapter</button></div>
  <div class="week">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${d===selDay}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
  ${S?`<div class="card hot stack"><h2>${S.t}</h2><div class="small muted">${S.f} · environ ${sessMin(S)} min${S.own?" · modifiée par toi":""}</div><button class="btn" data-play="${selDay}">${G?"Reprendre la partie":"▶ Jouer cette séance"}</button><button class="btn ghost" id="ed-tog">${edit?"✓ Terminer les modifications":"✏️ Modifier cette séance"}</button></div>
   ${S.x.map((e,i)=>{const l=lastLog(e.id);return `<article class="ex">${e.a?`<canvas class="anim" data-id="${e.a}" width="640" height="480" aria-label="Animation : ${esc(e.n)}"></canvas>`:""}<div class="hd"><b>${e.n}</b><span class="sc">${e.s}×${e.r[0]}–${e.r[1]}</span></div><div class="small">${e.c}</div><div class="small muted mono">Repos ${fmtT(e.rest)} · ${l?`dernière fois ${l.sets.map(s=>`${s.k}×${s.r}`).join(" · ")}`:"pas encore de données"}</div>${edit?`<div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="chip" data-mv="${i},-1" aria-label="Monter">↑</button><button class="chip" data-mv="${i},1" aria-label="Descendre">↓</button><button class="chip" data-sw="${i}" style="flex:1">🔄 Changer</button><button class="chip" data-rm="${i}">🗑️ Retirer</button></div>`:""}</article>`}).join("")}${edit?`<button class="btn ghost" data-sw="-1">+ Ajouter un exercice</button>${S.own?`<button class="btn ghost" id="ed-reset">Revenir à la séance du coach</button>`:""}`:""}`
@@ -204,8 +256,8 @@ function vProg(){const W=LS.get("coach-weights",[]),X=xpProf(),vol=X.games.reduc
  <div class="row"><input class="txt" id="w-in" inputmode="decimal" placeholder="Poids du jour" style="flex:1;font-size:17px;padding:12px"><button class="btn sm" id="w-save">Ajouter</button></div>${LS.get("coach-msg","")?`<div class="coachmsg">${esc(LS.get("coach-msg",""))}</div>`:""}</div>
  <div class="card stack"><div class="lab">Tes records</div>${recs.length?`<ul class="list">${recs.map(r=>`<li><span class="sp">${r.n}</span><b class="mono">${r.b.k} kg × ${r.b.r}</b></li>`).join("")}</ul>`:`<p class="small muted" style="margin:0">Joue ta première séance pour poser tes premières marques.</p>`}</div>`}
 function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b>${v}</b></li>`;
- return `<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l)}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Courses",`${STORES.find(s=>s.v===p.store).l} · ${p.budget} € / semaine`)}</ul></div>
- <button class="btn" id="redo">Modifier mes réponses</button>
+ return `<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Courses",`${STORES.find(s=>s.v===p.store).l} · ${p.budget} € / semaine`)}</ul></div>
+ <button class="btn" id="plan-see">Voir mon plan et pourquoi</button><button class="btn ghost" id="adj">Adapter à mon emploi du temps</button><button class="btn ghost" id="redo">Refaire le questionnaire</button>
  <details class="card"><summary class="lab" style="cursor:pointer">Sauvegarder ou transférer mes données</summary><p class="small muted">Tout reste sur ce téléphone. Copie ce code dans tes notes pour le garder, ou colle un code pour restaurer.</p><textarea id="bk-t" aria-label="Code de sauvegarde"></textarea><div class="row" style="margin-top:8px"><button class="btn ghost sm" id="bk-x" style="flex:1">Copier mes données</button><button class="btn ghost sm" id="bk-i" style="flex:1">Restaurer</button></div><p class="small" id="bk-m"></p></details>
  <button class="link" id="wipe">Tout effacer et recommencer</button>`}
 
@@ -283,12 +335,15 @@ function saveWeight(){const v=gNum($("#w-in").value);if(!(v>30&&v<250)){toast("I
  const m=coachAdjust();if(m)LS.set("coach-msg",m);toast(m?"Pesée enregistrée. Ton coach a analysé ta courbe.":"Pesée enregistrée.");render()}
 document.addEventListener("input",e=>{const t=e.target;
  if(view==="ob"){if(t.id==="i-name")A.name=t.value;else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
-   if(k==="budget"){$("#v-budget").textContent=v;const pm=v/(7*A.meals);$("#v-pm").textContent=eur(pm)+" / repas";$("#v-lvl").textContent=pm<1.6?"Serré":pm<3?"Confortable":"Large"}else $("#v-"+k).textContent=`${fr(v,k==="w"?1:0)} ${t.dataset.u}`}
+   if(k==="budget"){$("#v-budget").textContent=v;const pm=v/(7*A.meals);$("#v-pm").textContent=eur(pm)+" / repas";$("#v-lvl").textContent=pm<1.6?"Serré":pm<3?"Confortable":"Large"}else $("#v-"+k).textContent=`${fr(v,k==="w"||k==="tw"?1:0)} ${t.dataset.u}`;if(k==="tw"||k==="w"){const g=$("#gp");if(g)g.innerHTML=gpBox(A);obRefresh()}}
   obRefresh();return}
  if(G&&t.id==="g-k"){G.dk=t.value;gSave()}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&view==="ob"&&e.target.id==="i-name"&&STEPS[obI].ok())$("#ob-next").click()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&view==="ob"&&e.target.id==="i-name"&&FLOW[obI].ok())$("#ob-next").click()});
 document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove();return}const t=e.target.closest("button,[data-close]");if(!t)return;const D=t.dataset;
  if(t.id==="sheet"||D.close!==undefined){$("#sheet")?.remove();return}
+ if(t.id==="plan-go"){view="today";render();return}
+ if(t.id==="plan-adj"||t.id==="adj"){startAdjust();return}
+ if(t.id==="plan-see"){showPlan();return}
  if(D.gym){if(A.gym!==D.gym)A.equip=GYMS.find(g=>g.v===D.gym).eq;A.gym=D.gym;renderOb();return}
  if(D.eq){A.equip=A.equip.includes(D.eq)?A.equip.replace(D.eq,""):A.equip+D.eq;renderOb();return}
  if(D.wd!==undefined){const w=+D.wd;A.days=A.days.includes(w)?A.days.filter(x=>x!==w):[...A.days,w];renderOb();return}
@@ -303,8 +358,8 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   if(D.o){A[D.o]=isNaN(+D.v)?D.v:+D.v;if(D.o==="split")return renderOb();$$(`[data-o="${D.o}"]`).forEach(b=>b.setAttribute("aria-pressed",b===t));obRefresh();return}
   if(D.m){let a=A[D.m]||[];if(D.v==="none")a=[];else a=a.includes(D.v)?a.filter(x=>x!==D.v):[...a,D.v];A[D.m]=a;renderOb();return}
   if(D.c){A[D.c]=+D.v;renderOb();return}
-  if(t.id==="ob-back"){if(obI>0){obI--;renderOb()}else if(PROF){view="me";render()}return}
-  if(t.id==="ob-next"){if(!STEPS[obI].ok())return;if(obI<STEPS.length-1){obI++;renderOb();window.scrollTo(0,0)}else buildScreen();return}
+  if(t.id==="ob-back"){if(obI>0){obI--;renderOb()}else if(PROF){view=FLOW===ADJ?"train":"me";render()}return}
+  if(t.id==="ob-next"){if(!FLOW[obI].ok())return;if(obI<FLOW.length-1){obI++;renderOb();window.scrollTo(0,0)}else if(FLOW===ADJ)saveAdjust();else buildScreen();return}
   return}
  /* partie */
  if(G&&t.closest("#game")){auUnlock();
