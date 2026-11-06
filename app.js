@@ -170,7 +170,7 @@ function showPlan(){view="plan";document.body.className="ob";const p=PROF,g=goal
 function startAdjust(){A=JSON.parse(JSON.stringify(PROF));if(!A.rec){A.rec=A.days.length;A.recDur=A.dur}FLOW=ADJ;obI=0;view="ob";renderOb()}
 function saveAdjust(){A.freq=A.days.length;if(JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);FLOW=STEPS;showPlan();toast("Programme adapté")}
 
-function startOnboarding(edit){FLOW=STEPS;A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,store:"",budget:45,styles:[]};obI=0;view="ob";render()}
+function startOnboarding(edit){FLOW=STEPS;const dr=!edit&&!PROF&&LS.get("coach-draft",null);if(dr&&dr.A){A=dr.A;obI=dr.obI||0;view="ob";return render()}A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,store:"",budget:45,styles:[]};obI=0;view="ob";render()}
 const ADJ=[
  {t:"Quels jours tu t'entraînes ?",s:()=>`Ton coach recommande ${A.rec||4} séances de ${A.recDur||60} min. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`,h:()=>`<div class="week">${WEEK.map(d=>`<button data-wd="${d}" aria-pressed="${A.days.includes(d)}">${DN[d]}<small>${A.days.includes(d)?"Séance":"Repos"}</small></button>`).join("")}</div>
    <div class="hintbox"><span style="font-size:26px">🗓️</span><span><b>${A.days.length} séance${A.days.length>1?"s":""} par semaine</b><br><small class="muted">${A.days.length<2?"Choisis au moins 2 jours.":A.days.length>6?"Garde au moins un jour de repos complet.":A.days.length<(A.rec||0)?`En dessous de la recommandation : ta progression sera plus lente que prévu.`:A.days.length>(A.rec||9)?"Au-dessus de la recommandation : veille à bien dormir et à manger tout ton plan.":"C'est ce que ton coach recommande."}</small></span></div>
@@ -179,9 +179,13 @@ const ADJ=[
  {t:"Des muscles à mettre en avant ?",s:"Ils passent en début de séance, avec une série de plus.",h:()=>opts("prio",PRIOS,true),ok:()=>true},
 ];
 let FLOW=STEPS;
-function renderOb(){const S=FLOW[obI];document.body.className="ob";
+const INAPP=/Instagram|FBAN|FBAV|FB_IAB|Messenger|musical_ly|Bytedance|TikTok|Snapchat|Twitter|LinkedIn/i.test(navigator.userAgent),
+ STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+function obNotice(){return `${INAPP?`<div class="hintbox" style="border-color:var(--warn)"><span style="font-size:26px">⚠️</span><span><b>Ouvre ce lien dans Safari ou Chrome</b><br><small class="muted">Tu es dans le navigateur d'une appli (TikTok, Insta…) : il efface tout à la fermeture. Touche ⋯ puis « Ouvrir dans le navigateur ».</small></span></div>`:!STANDALONE?`<div class="hintbox"><span style="font-size:26px">📲</span><span><b>Astuce : installe l'appli</b><br><small class="muted">Partager ⬆️ puis « Sur l'écran d'accueil ». Ton profil reste enregistré sur ce téléphone.</small></span></div>`:""}
+ <details class="card"><summary class="small" style="cursor:pointer">J'ai déjà un profil : restaurer avec mon code</summary><textarea class="txt" id="bk-t" rows="3" placeholder="Colle ton code de sauvegarde ici" style="width:100%;margin-top:8px"></textarea><button class="btn sm" id="bk-i" style="margin-top:8px">Restaurer</button><p class="small" id="bk-m" style="margin:6px 0 0"></p></details>`}
+function renderOb(){const S=FLOW[obI];if(FLOW===STEPS&&!PROF)LS.set("coach-draft",{A,obI});document.body.className="ob";
  $("#app").innerHTML=`<div class="ob"><div class="ob-top"><button class="back" id="ob-back" aria-label="Retour" ${obI===0&&!PROF?"style=visibility:hidden":""}>‹</button><div class="ob-bar"><i style="width:${(obI+1)/FLOW.length*100}%"></i></div><span class="ob-step">${obI+1}/${FLOW.length}</span></div>
- <div class="ob-body"><h1>${S.t}</h1><p class="muted" style="margin:0">${typeof S.s==="function"?S.s():S.s}</p>${S.h()}</div>
+ <div class="ob-body"><h1>${S.t}</h1><p class="muted" style="margin:0">${typeof S.s==="function"?S.s():S.s}</p>${S.h()}${obI===0&&FLOW===STEPS&&!PROF?obNotice():""}</div>
  <div class="ob-foot"><button class="btn" id="ob-next" ${S.ok()?"":"disabled"}>${obI===FLOW.length-1?(FLOW===ADJ?"Valider mon programme":"Construire mon plan"):"Continuer"}</button></div></div>`;
  const n=$("#i-name");if(n&&!A.name)setTimeout(()=>n.focus(),50)}
 function obRefresh(){const b=$("#ob-next");if(b)b.disabled=!FLOW[obI].ok()}
@@ -191,7 +195,7 @@ function buildScreen(){document.body.className="ob";const L=["Lecture de tes ré
  <ul class="steps">${L.map(l=>`<li><i></i>${l}</li>`).join("")}</ul><div class="pbar"><i id="pb" style="width:0"></i><b id="pbt">0 %</b></div></div>`;
  const li=$$(".steps li"),t0=performance.now(),D=4200;
  (function step(){const now=performance.now(),k=Math.min(1,(now-t0)/D),n=Math.floor(k*li.length);li.forEach((x,i)=>{x.className=i<n?"ok":i===n?"now":"";x.firstChild.textContent=i<n?"✓":""});$("#pb").style.width=k*100+"%";$("#pbt").textContent=Math.round(k*100)+" %";
-  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;coachDecide(A);A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
+  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;LS.del("coach-draft");coachDecide(A);A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
 
 /* ================= Écrans ================= */
 const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',train:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',food:'<path d="M7 3v8a3 3 0 0 0 3 3v7M10 3v6M4 3v6a3 3 0 0 0 3 3M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',prog:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
@@ -334,7 +338,7 @@ function saveWeight(){const v=gNum($("#w-in").value);if(!(v>30&&v<250)){toast("I
  const W=LS.get("coach-weights",[]),now=Date.now();if(W.length&&now-W[W.length-1].t<DAY/2)W[W.length-1].kg=v;else W.push({t:now,kg:v});LS.set("coach-weights",W);
  const m=coachAdjust();if(m)LS.set("coach-msg",m);toast(m?"Pesée enregistrée. Ton coach a analysé ta courbe.":"Pesée enregistrée.");render()}
 document.addEventListener("input",e=>{const t=e.target;
- if(view==="ob"){if(t.id==="i-name")A.name=t.value;else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
+ if(view==="ob"){if(t.id==="i-name"){A.name=t.value;if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
    if(k==="budget"){$("#v-budget").textContent=v;const pm=v/(7*A.meals);$("#v-pm").textContent=eur(pm)+" / repas";$("#v-lvl").textContent=pm<1.6?"Serré":pm<3?"Confortable":"Large"}else $("#v-"+k).textContent=`${fr(v,k==="w"||k==="tw"?1:0)} ${t.dataset.u}`;if(k==="tw"||k==="w"){const g=$("#gp");if(g)g.innerHTML=gpBox(A);obRefresh()}}
   obRefresh();return}
  if(G&&t.id==="g-k"){G.dk=t.value;gSave()}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
@@ -354,7 +358,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.sw!==undefined){openPicker(+D.sw);return}
  if(D.pick){const ids=curIds();if(pickAt>=0)ids[pickAt]=D.pick;else ids.push(D.pick);$("#sheet")?.remove();setCustom(ids);toast(pickAt>=0?"Exercice remplacé":"Exercice ajouté");return}
  /* questionnaire */
- if(view==="ob"){
+ if(view==="ob"&&t.id!=="bk-i"){
   if(D.o){A[D.o]=isNaN(+D.v)?D.v:+D.v;if(D.o==="split")return renderOb();$$(`[data-o="${D.o}"]`).forEach(b=>b.setAttribute("aria-pressed",b===t));obRefresh();return}
   if(D.m){let a=A[D.m]||[];if(D.v==="none")a=[];else a=a.includes(D.v)?a.filter(x=>x!==D.v):[...a,D.v];A[D.m]=a;renderOb();return}
   if(D.c){A[D.c]=+D.v;renderOb();return}
@@ -388,8 +392,8 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   (navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).then(()=>$("#bk-m").textContent="Copié. Colle-le dans tes notes.",()=>$("#bk-m").textContent="Sélectionne et copie le texte ci-dessus.");return}
  if(t.id==="bk-i"){try{const o=JSON.parse($("#bk-t").value);if(!o||typeof o!=="object")throw 0;
    if(o["coach-profile"]||o.carnet){for(const k in o)if(o[k]!=null)LS.set(k,o[k])}else{const c=LS.get("carnet",{});for(const id in o){c[id]=[...(c[id]||[]),...o[id]]}LS.set("carnet",c)}
-   PROF=LS.get("coach-profile",PROF);store=LS.get("carnet",{});TRAIN=null;render();toast("Données restaurées.")}catch(err){$("#bk-m").textContent="Code illisible : rien n'a été modifié."}return}
- if(t.id==="wipe"){if(Date.now()-gArm>3000){gArm=Date.now();t.textContent="Appuie encore pour tout effacer";return}["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest",GK].forEach(LS.del);PROF=null;store={};TRAIN=null;startOnboarding(false)}
+   PROF=migrate(LS.get("coach-profile",PROF));store=LS.get("carnet",{});TRAIN=null;if(PROF&&view==="ob"){view="today";LS.del("coach-draft")}render();toast("Données restaurées.")}catch(err){$("#bk-m").textContent="Code illisible : rien n'a été modifié."}return}
+ if(t.id==="wipe"){if(Date.now()-gArm>3000){gArm=Date.now();t.textContent="Appuie encore pour tout effacer";return}["coach-draft","coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest",GK].forEach(LS.del);PROF=null;store={};TRAIN=null;startOnboarding(false)}
 });
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&G){lockOn();if(G.ph==="rest")gTick()}});
 
@@ -397,5 +401,6 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
 render();
 if(PROF&&G)gOpen();
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if("serviceWorker"in navigator)addEventListener("load",()=>{const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload()})});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
