@@ -1,13 +1,13 @@
 {
- "name": "Carnet Ektyron",
+ "name": "Ektyron Coach",
  "short_name": "Ektyron",
  "lang": "fr",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
  "orientation": "portrait",
- "background_color": "#10141B",
- "theme_color": "#10141B",
+ "background_color": "#140B18",
+ "theme_color": "#140B18",
  "icons": [
   {
    "src": "icons/icon-192.png",
