@@ -43,9 +43,9 @@ const EX = {
  extd:["Extension triceps haltère derrière la tête","Bras","d","I","","Assis, haltère à deux mains, coudes pointés vers le plafond.",""],
  dipsbanc:["Dips sur une chaise","Bras","0","I","","Mains sur le bord, coudes vers l'arrière, descends à 90°.","sw"],
  diam:["Pompes serrées","Bras","0","I","","Mains sous les épaules, coudes qui frôlent le corps.","w"],
- hack:["Hack squat","Jambes","m","H","hack","Pieds plus bas pour les quadriceps. Cherche la profondeur sans décoller le bassin.",""],
+ hack:["Hack squat","Jambes","h","H","hack","Pieds plus bas pour les quadriceps. Cherche la profondeur sans décoller le bassin.",""],
  smsq:["Squat à la Smith","Jambes","s","H","hack","Pieds légèrement devant, descends sous la parallèle, dos plaqué.","b"],
- press:["Presse à cuisses","Jambes","m","H","press","Descends le plus bas possible sans décoller le bassin du dossier.",""],
+ press:["Presse à cuisses","Jambes","l","H","press","Descends le plus bas possible sans décoller le bassin du dossier.",""],
  gobsq:["Goblet squat haltère","Jambes","d","M","","Haltère contre la poitrine, coudes entre les genoux en bas.",""],
  squatpdc:["Squat tempo lent","Jambes","0","M","","3 secondes pour descendre, 1 seconde en bas, remontée explosive.",""],
  bulg:["Fentes bulgares","Jambes","d","M","bulg","Pied arrière sur le banc, buste légèrement penché pour les fessiers.","k"],
@@ -101,7 +101,18 @@ const SPLIT = {
  5:[[1,"push"],[2,"pull"],[3,"legs"],[5,"upB"],[6,"lowB"]],
  6:[[1,"push"],[2,"pull"],[3,"legs"],[4,"push"],[5,"pull"],[6,"legs"]]
 };
-const GYM = {full:"mcsdbxp0",small:"dbxpc0",home:"db0",bw:"0"};
+/* Salles : équipement habituel de chaque enseigne (pré-rempli, l'utilisateur ajuste). h = hack squat, l = presse à cuisses. */
+const GYMS = [
+ {v:"basicfit",e:"🏢",l:"Basic-Fit",eq:"mcshldbxp"},{v:"fitnesspark",e:"🏢",l:"Fitness Park",eq:"mcshldbxp"},{v:"onair",e:"🏢",l:"On Air",eq:"mcshldbxp"},
+ {v:"keepcool",e:"🏢",l:"Keep Cool",eq:"mcsldbp"},{v:"orangebleue",e:"🏢",l:"L'Orange Bleue",eq:"mcsldbxp"},{v:"neoness",e:"🏢",l:"Neoness",eq:"mcshldbxp"},
+ {v:"autre",e:"🏋️",l:"Une autre salle",s:"Salle indépendante, club, salle d'entreprise : tu coches ce qu'elle a",eq:"mcdbxp"},
+ {v:"home",e:"🏠",l:"À la maison",s:"Avec ce que tu as : haltères, banc, barre…",eq:"db"},
+ {v:"bw",e:"🤸",l:"Sans matériel",s:"Programme au poids du corps",eq:""}];
+const EQUIP = [["m","Machines guidées","Pec fly, leg curl, leg extension, rowing…"],["c","Poulies","Vis-à-vis, tirage, poulie basse"],["s","Smith machine","Barre guidée"],["h","Hack squat",""],["l","Presse à cuisses",""],["d","Haltères",""],["b","Banc réglable",""],["x","Barres et disques","Barre libre"],["p","Barre de traction",""]];
+const SPLITS = [{v:"auto",e:"🤖",l:"Laisse le coach choisir",s:"Recommandé : adapté à ton nombre de jours"},{v:"full",e:"🔄",l:"Full body",s:"Tout le corps à chaque séance. Idéal sur 2 ou 3 jours"},{v:"ul",e:"↕️",l:"Haut / Bas du corps",s:"Idéal sur 4 jours"},{v:"ppl",e:"🔁",l:"Push / Pull / Jambes",s:"Idéal sur 3 ou 6 jours"},{v:"pplul",e:"🧩",l:"Push / Pull / Jambes + Haut / Bas",s:"Idéal sur 5 jours"}];
+const AUTO = {2:"full",3:"full",4:"ul",5:"pplul",6:"ppl"};
+const CYC = {full:["fullA","fullB","fullC"],ul:["upA","lowA","upB","lowB"],ppl:["push","pull","legs"],pplul:["push","pull","legs","upB","lowB"]};
+const PRIOS = [{v:"none",e:"⚖️",l:"Équilibré",s:"Tout le corps au même niveau"},{v:"pecs",e:"🛡️",l:"Pecs"},{v:"dos",e:"🦅",l:"Dos"},{v:"epaules",e:"🎯",l:"Épaules"},{v:"bras",e:"💪",l:"Bras"},{v:"jambes",e:"🦵",l:"Jambes"},{v:"fessiers",e:"🍑",l:"Fessiers"},{v:"abdos",e:"🧱",l:"Abdos"}];
 
 /* Aliments : kcal, protéines, glucides, lipides pour 100 g, prix moyen €/kg, rayon. */
 const ING = {
