@@ -44,28 +44,29 @@ function miniUpd(){miniDraw();miniMeta();const t=$("#g-t");if(t&&G&&G.pz)t.textC
 
 function miniBuild(){if(MINI.cv)return;const c=MINI.cv=document.createElement("canvas");c.width=480;c.height=270;
  const v=MINI.vid=document.createElement("video");v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");v.autoPictureInPicture=true;
- v.style.cssText="position:fixed;left:-2px;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
+ v.id="mini-vid";v.style.cssText="display:block;width:100%;max-width:260px;aspect-ratio:16/9;margin:0 auto 10px;border-radius:12px;border:1px solid var(--line);background:#120A0B";($("#game")||document.body).appendChild(v);
  miniDraw();try{v.srcObject=c.captureStream(4)}catch(e){}
  v.addEventListener("pause",()=>{if(miniInPip()&&G&&G.ph==="rest")miniAct("pause");setTimeout(()=>v.play().catch(()=>{}),50)});
- miniHandlers();MINI.int=setInterval(miniUpd,250)}
+ v.play().catch(()=>{});miniHandlers();MINI.int=setInterval(miniUpd,250)}
 
-async function miniPip(){miniBuild();const v=MINI.vid;
- try{await v.play();if(miniInPip()){document.exitPictureInPicture?await document.exitPictureInPicture():v.webkitSetPresentationMode("inline");return}
-  if(v.requestPictureInPicture)await v.requestPictureInPicture();else v.webkitSetPresentationMode("picture-in-picture");
-  toast("Mini-fenêtre ouverte : tu peux quitter l'appli.")}catch(e){toast("La mini-fenêtre n'est pas disponible sur ce téléphone.")}}
+function miniPip(){miniBuild();const v=MINI.vid,ok=()=>toast("Mini-fenêtre ouverte : tu peux quitter l'appli."),ko=e=>toast(`La mini-fenêtre ne s'ouvre pas sur ce téléphone (${e&&e.name||"?"}). Utilise 🔒 Écran verrouillé.`);
+ try{if(miniInPip()){document.pictureInPictureElement?document.exitPictureInPicture():v.webkitSetPresentationMode("inline");return}
+  if(typeof v.webkitSetPresentationMode==="function"&&v.webkitSupportsPresentationMode?.("picture-in-picture")){v.webkitSetPresentationMode("picture-in-picture");setTimeout(()=>miniInPip()?ok():ko({name:"refus iOS"}),700)}
+  else v.requestPictureInPicture().then(ok,ko);
+  v.play().catch(()=>{})}catch(e){ko(e)}}
 
 /* Son silencieux en boucle : indispensable pour que le téléphone affiche les contrôles sur l'écran verrouillé */
-function miniSilence(){const n=8000,b=new ArrayBuffer(44+n),d=new DataView(b),w=(o,s)=>[...s].forEach((ch,i)=>d.setUint8(o+i,ch.charCodeAt(0)));
+function miniSilence(){const n=8000*30,b=new ArrayBuffer(44+n),d=new DataView(b),w=(o,s)=>[...s].forEach((ch,i)=>d.setUint8(o+i,ch.charCodeAt(0)));
  w(0,"RIFF");d.setUint32(4,36+n,true);w(8,"WAVEfmt ");d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,8000,true);d.setUint32(28,8000,true);d.setUint16(32,1,true);d.setUint16(34,8,true);w(36,"data");d.setUint32(40,n,true);
  for(let i=0;i<n;i++)d.setUint8(44+i,128);return URL.createObjectURL(new Blob([b],{type:"audio/wav"}))}
 async function miniLock(){miniBuild();
  if(MINI.lock){MINI.au?.pause();MINI.lock=false;miniUpd();miniBtns();toast("Contrôles écran verrouillé coupés.");return}
- if(!MINI.au){MINI.au=new Audio(miniSilence());MINI.au.loop=true}
- try{await MINI.au.play();MINI.lock=true;miniHandlers();miniUpd();toast("Contrôles affichés sur l'écran verrouillé.")}catch(e){toast("Impossible d'afficher les contrôles ici.")}
+ if(!MINI.au){MINI.au=new Audio(miniSilence());MINI.au.loop=true;MINI.au.setAttribute("playsinline","");MINI.au.hidden=true;document.body.appendChild(MINI.au)}
+ try{await MINI.au.play();MINI.lock=true;miniHandlers();miniUpd();toast("Contrôles affichés sur l'écran verrouillé.")}catch(e){toast(`Impossible d'afficher les contrôles ici (${e.name}).`)}
  miniBtns()}
 
 function miniStop(){clearInterval(MINI.int);try{if(document.pictureInPictureElement)document.exitPictureInPicture();else MINI.vid?.webkitSetPresentationMode?.("inline")}catch(e){}
- MINI.au?.pause();MINI.vid?.remove();Object.assign(MINI,{cv:null,vid:null,au:null,int:null,lock:false});
+ MINI.au?.pause();MINI.au?.remove();MINI.vid?.remove();Object.assign(MINI,{cv:null,vid:null,au:null,int:null,lock:false});
  const ms=navigator.mediaSession;if(ms){try{ms.metadata=null;ms.playbackState="none"}catch(e){}for(const k of["play","pause","nexttrack","previoustrack","seekforward","seekbackward"])try{ms.setActionHandler(k,null)}catch(e){}}}
 
 function miniBtns(){const box=$("#g-in");if(!box||!G||G.ph==="done")return;let bar=$("#mini-bar");
@@ -74,7 +75,7 @@ function miniBtns(){const box=$("#g-in");if(!box||!G||G.ph==="done")return;let b
 
 /* Branchement sur la partie existante */
 {const show=gShow,close=gClose,tick=gTick;
- gShow=function(){if(G&&G.ph!=="rest"&&G.pz)delete G.pz;show();miniBtns();if(MINI.cv)miniUpd()};
+ gShow=function(){if(G&&G.ph!=="rest"&&G.pz)delete G.pz;show();if(G&&G.ph!=="done"&&miniPipOk())miniBuild();miniBtns();if(MINI.cv)miniUpd()};
  gClose=function(){miniStop();close()};
  gTick=function(){if(G&&G.pz)return;tick()}}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
