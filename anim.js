@@ -34,6 +34,70 @@ const AN={
  moll2:{v:"s",m:["calf"],l:"Soléaire",A:{hx:140,hy:150,th:90,sh:0,fo:0,ua:30,fa:80,anc:{j:"toe",x:200,y:198}},B:{fo:40},pr:["seat","kneepad"]}
 };
 AN.moll.A.hx=150;
+/* Exercices au poids du corps / haltères, échauffements (w_) et étirements (s_).
+   hkx/hky : mains posées sur un point fixe (cinématique inverse), hk2x/hk2y pour la 2e main seule ; fkx/fky : pied posé (fk2 : les deux pieds).
+   ph:"hold" = position tenue (étirement), ph:"flow" = va-et-vient régulier (échauffement). */
+Object.assign(AN,{
+ pompes:{v:"s",m:["pec","tri","deltA"],l:"Pectoraux",A:{t:75,th:-75,sh:-75,fo:90,anc:{j:"toe",x:70,y:212},hkx:209,hky:212,eb:-1},B:{t:87,th:-87,sh:-87}},
+ pompesd:{v:"s",m:["pecH","tri","deltA"],l:"Haut des pecs",A:{t:92,th:-92,sh:-92,fo:90,anc:{j:"toe",x:52,y:168},hkx:200,hky:212,eb:-1},B:{t:104,th:-104,sh:-104},pr:[{k:"rect",x:20,y:170,w:62,h:44}]},
+ diam:{v:"s",m:["tri","pec"],l:"Triceps",A:{t:75,th:-75,sh:-75,fo:90,anc:{j:"toe",x:70,y:212},hkx:205,hky:212,eb:-1},B:{t:87,th:-87,sh:-87}},
+ dbfly:{v:"s",m:["pec"],l:"Pectoraux",A:{hx:200,hy:160,t:-90,th:55,sh:-5,ua:62,fa:110},B:{ua:178,fa:182},pr:["back","db"]},
+ rowx:{v:"s",m:["lat","trap","deltP"],l:"Dos",A:{t:58,th:14,sh:-6,ua:0,fa:0,anc:{j:"ankle",x:150,y:200}},B:{ua:-62,fa:-4},pr:["bar"]},
+ rowinv:{v:"s",m:["lat","bic","deltP"],l:"Grand dorsal",A:{t:-70,th:70,sh:70,fo:-90,anc:{j:"ankle",x:250,y:204},hkx:112,hky:106,eb:1},B:{t:-54,th:54,sh:54},pr:[{k:"rect",x:60,y:98,w:110,h:7}]},
+ facep:{v:"b",m:["deltP","trap"],l:"Arrière d'épaule",A:{ab:82,fa:88,hf:80,fh:80},B:{ab:95,fa:168,hf:-12,fh:-12},pr:[{k:"cable",x:160,y:30}]},
+ oiseau:{v:"b",m:["deltP","trap"],l:"Arrière d'épaule",A:{ab:14,fa:16},B:{ab:86,fa:92},pr:["handles"]},
+ ytw:{v:"s",m:["deltP","trap"],l:"Bas des trapèzes",A:{t:90,th:-90,sh:-90,fo:90,anc:{j:"hip",x:120,y:198},ua:92,fa:92},B:{ua:110,fa:110}},
+ dmil:{v:"f",m:["deltA","deltM","tri"],l:"Épaules",A:{hy:150,ab:95,fa:172,ls:.35},B:{ab:162,fa:176},pr:["seatF","handles"]},
+ pike:{v:"s",m:["deltA","tri"],l:"Épaules",A:{t:132,th:-42,sh:-42,fo:90,anc:{j:"toe",x:96,y:212},hkx:200,hky:212,eb:-1},B:{t:152}},
+ curlh:{v:"s",m:["bic"],l:"Biceps · chef long",A:{hx:150,hy:160,t:-40,th:85,sh:0,ua:-14,fa:-14},B:{fa:125},pr:["back","seat","db"]},
+ marth:{v:"s",m:["fore","bic"],l:"Brachial + avant-bras",A:{ua:-3,fa:3},B:{fa:140},pr:["db"]},
+ curlpdc:{v:"s",m:["bic"],l:"Biceps",A:{ua:-4,fa:2},B:{fa:145},pr:["handle"]},
+ extd:{v:"s",m:["tri"],l:"Triceps · chef long",A:{t:4,ua:172,fa:-15},B:{fa:176},pr:["db"]},
+ dipsbanc:{v:"s",m:["tri","pecL"],l:"Triceps",A:{hx:118,hy:142,t:4,hkx:94,hky:150,eb:-1,fkx:212,fky:204,kb:-1,fk2:1,fo:-55},B:{hy:174,t:8},pr:[{k:"rect",x:46,y:152,w:56,h:8},{k:"rect",x:50,y:160,w:6,h:54}]},
+ gobsq:{v:"s",m:["quad","glu"],l:"Quadriceps + fessiers",A:{t:5,th:0,sh:0,ua:12,fa:168,anc:{j:"ankle",x:150,y:204}},B:{t:34,th:92,sh:-26,ua:30,fa:178},pr:["handle"]},
+ squatpdc:{v:"s",m:["quad","glu"],l:"Quadriceps + fessiers",A:{t:5,th:0,sh:0,ua:85,fa:88,anc:{j:"ankle",x:150,y:204}},B:{t:34,th:92,sh:-26,ua:80,fa:84}},
+ fentes:{v:"s",m:["quad","glu"],l:"Quadriceps + fessiers",A:{t:2,th:15,sh:0,th2:-20,sh2:-25,ua:-4,fa:2,anc:{j:"ankle",x:185,y:204}},B:{t:4,th:85,sh:-5,th2:-15,sh2:-88}},
+ nordic:{v:"s",m:["ham"],l:"Ischio-jambiers",A:{t:-90,anc:{j:"hip",x:118,y:196},th:93,sh:87,th2:93,sh2:87,fo:-90,ua:92,fa:92},B:{th:138,sh:42,th2:138,sh2:42}},
+ hipt:{v:"s",m:["glu","ham"],l:"Grand fessier",A:{t:-62,anc:{j:"sh",x:82,y:164},fkx:186,fky:204,kb:-1,fk2:1,fo:0,ua:150,fa:120},B:{t:-90},pr:[{k:"rect",x:22,y:170,w:60,h:44}]},
+ pont:{v:"s",m:["glu","ham"],l:"Grand fessier",A:{t:-94,anc:{j:"sh",x:62,y:198},fkx:150,fky:204,kb:-1,th2:94,sh2:94,fo:0,ua:90,fa:90},B:{t:-70,th2:70,sh2:70}},
+ releve:{v:"s",m:["abs"],l:"Bas des abdos",A:{t:-90,anc:{j:"hip",x:130,y:196},th:95,sh:95,th2:95,sh2:95,fo:-90,ua:92,fa:92},B:{th:176,sh:176,th2:176,sh2:176}},
+ superman:{v:"s",m:["lowb","glu"],l:"Lombaires",A:{t:90,th:-90,sh:-90,th2:-90,sh2:-90,fo:90,anc:{j:"hip",x:135,y:198},ua:92,fa:92},B:{t:78,th:-102,sh:-102,th2:-102,sh2:-102,ua:105,fa:105}},
+ /* Échauffements */
+ w_card:{v:"s",ph:"flow",m:["quad","calf"],l:"Cardio",A:{th:-15,sh:-30,th2:20,sh2:5,ua:30,fa:80,ua2:-30,fa2:20,anc:{j:"ankle2",x:150,y:204}},B:{th:55,sh:-5,th2:-15,sh2:-35,ua:-30,fa:20,ua2:30,fa2:80}},
+ w_cerc:{v:"f",ph:"flow",m:["deltM","deltA"],l:"Épaules",A:{ab:10,fa:10},B:{ab:172,fa:176}},
+ w_dislo:{v:"s",ph:"flow",m:["deltA","pec"],l:"Épaules",A:{ua:20,fa:20},B:{ua:205,fa:205},pr:["handle"]},
+ w_band:{v:"b",ph:"flow",m:["deltP","trap"],l:"Arrière d'épaule",A:{ab:88,fa:90,hf:85,fh:85},B:{hf:0,fh:0},pr:["handles"]},
+ w_thor:{v:"s",ph:"flow",m:["trap","lat"],l:"Haut du dos",A:{t:76,th:0,sh:-90,fo:0,anc:{j:"knee",x:120,y:204},hk2x:200,hk2y:212,eb:-1,ua:0,fa:0},B:{ua:178,fa:178}},
+ w_cat:{v:"s",ph:"flow",m:["lowb","abs"],l:"Colonne",A:{t:70,th:0,sh:-90,fo:0,anc:{j:"knee",x:120,y:204},hkx:200,hky:212,eb:-1},B:{t:86}},
+ w_wrist:{v:"s",ph:"flow",m:["fore"],l:"Avant-bras",A:{ua:-5,fa:80},B:{ua:5,fa:115}},
+ w_swing:{v:"s",ph:"flow",m:["ham","glu"],l:"Hanches",A:{th:-30,sh:-34,th2:0,sh2:0,ua:-4,fa:-4,anc:{j:"ankle2",x:150,y:204}},B:{th:62,sh:58}},
+ w_lat:{v:"f",ph:"flow",m:["add"],l:"Adducteurs",A:{la:4},B:{la:34}},
+ w_pont:{v:"s",ph:"flow",m:["glu","ham"],l:"Grand fessier",A:{t:-94,anc:{j:"sh",x:62,y:198},fkx:150,fky:204,kb:-1,fk2:1,fo:0,ua:90,fa:90},B:{t:-70}},
+ w_plank:{v:"s",ph:"hold",m:["abs","lowb"],l:"Gainage",A:{t:82,th:-82,sh:-82,fo:90,anc:{j:"toe",x:60,y:212},ua:0,fa:90},B:{t:84,th:-84,sh:-84}},
+ /* Étirements */
+ s_pec:{v:"f",ph:"hold",uni:1,m:["pec","deltA"],l:"Pectoraux",A:{ab:90,fa:178,hf:-10,fh:-10},B:{hf:-32,fh:-32}},
+ s_lat:{v:"s",ph:"hold",m:["lat"],l:"Grand dorsal",A:{t:76,th:12,sh:-4,ua:92,fa:92,anc:{j:"ankle",x:120,y:204}},B:{t:86,th:16,ua:96,fa:96},pr:[{k:"rect",x:228,y:92,w:8,h:122}]},
+ s_child:{v:"s",ph:"hold",m:["lat","lowb"],l:"Dos",A:{t:112,th:68,sh:-90,fo:0,anc:{j:"knee",x:146,y:204},ua:88,fa:90},B:{t:116,ua:92,fa:92}},
+ s_cross:{v:"f",ph:"hold",uni:1,m:["deltP","deltM"],l:"Épaule",A:{ab:85,fa:85,hf:118,fh:122},B:{hf:130,fh:135}},
+ s_hands:{v:"s",ph:"hold",m:["pec","deltA"],l:"Avant d'épaule",A:{t:-3,ua:-30,fa:-30},B:{t:-6,ua:-48,fa:-48}},
+ s_bic:{v:"s",ph:"hold",m:["bic"],l:"Biceps",A:{ua:-55,fa:-55,ua2:-3,fa2:-3},B:{ua:-68,fa:-68},pr:[{k:"rect",x:92,y:40,w:7,h:174}]},
+ s_tri:{v:"s",ph:"hold",m:["tri"],l:"Triceps",A:{ua:172,fa:-14},B:{ua:182,fa:-24}},
+ s_quad:{v:"s",ph:"hold",m:["quad"],l:"Quadriceps",A:{th2:-8,sh2:-168,hk2x:140,hk2y:134,eb:1,ua:85,fa:88},B:{th2:-14,sh2:-172,hk2x:136,hk2y:131}},
+ s_hip:{v:"s",ph:"hold",m:["quad"],l:"Avant de hanche",A:{t:-2,th:80,sh:0,th2:-35,sh2:-90,fo:0,ua:-6,fa:-4,anc:{j:"ankle",x:200,y:204}},B:{t:-6,th:86,sh:4,th2:-46}},
+ s_ham:{v:"s",ph:"hold",m:["ham"],l:"Ischio-jambiers",A:{t:30,th:90,sh:90,th2:0,sh2:0,fo:-60,ua:60,fa:60,anc:{j:"ankle2",x:120,y:204}},B:{t:44,ua:72,fa:72},pr:[{k:"rect",x:182,y:138,w:56,h:76}]},
+ s_pig:{v:"s",ph:"hold",m:["glu"],l:"Fessier",A:{t:58,th:82,sh:-80,th2:-88,sh2:-88,fo:0,anc:{j:"hip",x:120,y:190},hkx:196,hky:212,eb:-1},B:{t:70}},
+ s_but:{v:"f",ph:"hold",m:["add"],l:"Adducteurs",A:{hy:200,la:72,ls:.32,ab:28,fa:40},B:{la:80}},
+ s_calf:{v:"s",ph:"hold",m:["calf"],l:"Mollet",A:{t:28,th:22,sh:2,th2:-26,sh2:-26,ua:82,fa:82,anc:{j:"ankle2",x:110,y:204}},B:{t:34,th:28,sh:6}},
+ s_cobra:{v:"s",ph:"hold",m:["abs"],l:"Abdos",A:{t:88,th:-90,sh:-90,th2:-90,sh2:-90,fo:90,anc:{j:"hip",x:120,y:200},hkx:178,hky:212,eb:-1},B:{t:62}},
+ s_knee:{v:"s",ph:"hold",m:["lowb","glu"],l:"Bas du dos",A:{t:-90,anc:{j:"hip",x:140,y:196},th:-140,sh:135,th2:-140,sh2:135,fo:0,hkx:122,hky:150,eb:1},B:{th:-150,sh:128,th2:-150,sh2:128}}
+});
+function ik2(S,T,a,b,sg){const dx=T[0]-S[0],dy=T[1]-S[1],d=Math.hypot(dx,dy)||1,dd=Math.min(d,a+b-.5),ca=(a*a+dd*dd-b*b)/(2*a*dd),base=Math.atan2(dy,dx)+Math.acos(Math.max(-1,Math.min(1,ca)))*sg;
+ return[[S[0]+a*Math.cos(base),S[1]+a*Math.sin(base)],d>a+b-.5?[S[0]+dx/d*dd,S[1]+dy/d*dd]:[T[0],T[1]]]}
+function ikFix(J,p){if(p.hkx!=null){[J.el,J.hand]=ik2(J.sh,[p.hkx,p.hky],34,30,p.eb||1);if(p.hk2x==null)[J.el2,J.hand2]=ik2(J.sh,[p.hkx,p.hky],34,30,p.eb||1)}
+ if(p.hk2x!=null)[J.el2,J.hand2]=ik2(J.sh,[p.hk2x,p.hk2y],34,30,p.eb||1);
+ const toe=a=>ad(a,[14*Math.cos(p.fo*R),14*Math.sin(p.fo*R)]);
+ if(p.fkx!=null){[J.knee,J.ankle]=ik2(J.hip,[p.fkx,p.fky],44,40,p.kb||1);J.toe=toe(J.ankle);if(p.fk2){J.knee2=J.knee;J.ankle2=J.ankle;J.toe2=J.toe}}}
+function phz(e,now){if(e.ph=="hold")return[.5+.5*Math.sin(now/1400),"TIENS LA POSITION · RESPIRE"];if(e.ph=="flow")return[.5-.5*Math.cos(now/700),"EN RYTHME, SANS FORCER"];return phase((now/2600)%1)}
 const DEF={hx:150,hy:128,t:0,ua:5,fa:5,th:0,sh:0,fo:0,ab:8,hf:0,la:4,ls:1};
 const R=Math.PI/180, dA=a=>[Math.sin(a*R),Math.cos(a*R)], ad=(a,b)=>[a[0]+b[0],a[1]+b[1]], ml=(v,k)=>[v[0]*k,v[1]*k], mid=(a,b,k=.5)=>[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k], fn=a=>[Math.cos(a*R),-Math.sin(a*R)];
 const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
@@ -51,7 +115,7 @@ function joints(v,p,uni){let J;
    const ze=34*Math.sin(q.ab*R)*Math.sin(hf*R);J.arms.push({s,sh:shp,el,hand:hd,z:{el:ze,hand:ze+30*Math.sin(q.fa*R)*Math.sin(fh*R)}});const hj=[cx+s*11,p.hy+2],k=ad(hj,[s*46*p.ls*Math.sin(p.la*R),46*p.ls*Math.cos(p.la*R)]),an=ad(k,[s*4,40]);
    const kz=46*Math.sqrt(Math.max(0,1-p.ls*p.ls));J.legs.push({s,hip:hj,knee:k,ankle:an,toe:ad(an,[s*8,4]),z:{knee:kz,ankle:kz,toe:kz+8}})}
   J.handR=J.arms[0].hand;J.handL=J.arms[1].hand;J.hand=J.handR}
- if(p.anc){const o=[p.anc.x-J[p.anc.j][0],p.anc.y-J[p.anc.j][1]];shift(J,o)}return J}
+ if(p.anc){const o=[p.anc.x-J[p.anc.j][0],p.anc.y-J[p.anc.j][1]];shift(J,o)}if(v=="s")ikFix(J,p);return J}
 function shift(o,d){for(const k in o){const v=o[k];if(k=="up"||k=="n"||k=="a")continue;if(Array.isArray(v)&&typeof v[0]=="number")o[k]=ad(v,d);else if(Array.isArray(v))v.forEach(x=>shift(x,d));else if(k=="cx")o.cx+=d[0];else if(k=="sy")o.sy+=d[1]}}
 function limb(c,a,b,w1,w2,dk){const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L,g=c.createLinearGradient(a[0]+nx*w1,a[1]+ny*w1,a[0]-nx*w1,a[1]-ny*w1);
  g.addColorStop(0,dk?"#a3a8b0":"#eceef1");g.addColorStop(.5,dk?"#80858d":"#bfc4cb");g.addColorStop(1,dk?"#5a5f66":"#878d95");c.fillStyle=g;c.beginPath();
@@ -131,7 +195,7 @@ function figure(c,e,J,act){const v=e.v,on=k=>e.m.includes(k),M={},m=(k,ct,rx,ry,
  return M}
 function scene(c,e,p){const J=joints(e.v,pose(e,p),e.uni);props(c,e,J,e.v,0);const M=figure(c,e,J,p);props(c,e,J,e.v,1);return M}
 function drawEx(cv,now){const e=AN[cv.dataset.id];if(!e)return;const c=cv.getContext("2d");c.setTransform(2,0,0,2,0,0);
- const RM=matchMedia("(prefers-reduced-motion: reduce)").matches,[p,lab]=RM?[1,"CONTRACTION"]:phase((now/2600)%1);
+ const RM=matchMedia("(prefers-reduced-motion: reduce)").matches,[p,lab]=RM?[1,"CONTRACTION"]:phz(e,now);
  const bg=c.createRadialGradient(160,110,20,160,120,230);bg.addColorStop(0,"#3a414c");bg.addColorStop(1,"#171a20");c.fillStyle=bg;c.fillRect(0,0,320,240);
  c.fillStyle="rgba(255,255,255,.05)";c.fillRect(0,214,320,26);
  const M=scene(c,e,p),tgt=M[e.m[0]]||[160,120],cxo=tgt[0]>200?62:258,cyo=58,r=40;
@@ -235,7 +299,7 @@ function props3(e,J,X){const BT=X.BT,near=X.arms[0],Z=V(0,0,1);
    else if(k=="handles")for(const h of[hL,hR])cyl(h.clone().add(V(0,-6,0)),h.clone().add(V(0,6,0)),2.4)}}}
 const BASE={s:34,f:-24,b:204},LOOK=V(0,96,0);
 function drawEx3(cv,now){const e=AN[cv.dataset.id];if(!e)return;const c=cv.getContext("2d");c.setTransform(2,0,0,2,0,0);
- const RM=matchMedia("(prefers-reduced-motion: reduce)").matches,[p,lab]=RM?[1,"CONTRACTION"]:phase((now/2600)%1);
+ const RM=matchMedia("(prefers-reduced-motion: reduce)").matches,[p,lab]=RM?[1,"CONTRACTION"]:phz(e,now);
  const J=joints(e.v,pose(e,p),e.uni),Mk=build(e,J,p),a=(BASE[e.v]+(RM?0:7*Math.sin(now/3200)))*R,D=480;
  cam.position.set(LOOK.x+Math.sin(a)*D,LOOK.y+D*.2,LOOK.z+Math.cos(a)*D);cam.lookAt(LOOK);rd.render(sc,cam);
  const bg=c.createRadialGradient(160,100,20,160,120,240);bg.addColorStop(0,"#454c58");bg.addColorStop(1,"#14171c");c.fillStyle=bg;c.fillRect(0,0,320,240);

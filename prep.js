@@ -1,38 +1,38 @@
 /* Échauffement et étirements chronométrés, choisis selon les muscles de la séance.
    d = durée en secondes ; side = un côté puis l'autre (le chrono double, bip au changement). */
 const WARM=[
- {n:"Cardio léger",e:"🚲",d:300,c:"Vélo, rameur ou tapis. Tu dois pouvoir parler : tu chauffes, tu ne te fatigues pas.",m:[]},
- {n:"Cercles de bras",e:"🔄",d:30,c:"Bras tendus, petits cercles puis grands, vers l'avant puis vers l'arrière.",m:["ant","lat","arr","pecs"]},
- {n:"Passages d'épaules au bâton",e:"🥢",d:40,c:"Bâton ou élastique, prise large : passe-le de devant à derrière la tête, bras tendus, sans forcer.",m:["ant","lat","pecs","arr"]},
- {n:"Écartés à l'élastique",e:"🎗️",d:30,c:"Bras tendus devant toi, écarte l'élastique jusqu'à la poitrine en serrant les omoplates.",m:["arr","dos","lat"]},
- {n:"Pompes lentes",e:"🙌",d:30,c:"Contre un banc ou au sol, 3 secondes pour descendre. Juste pour réveiller pecs et triceps.",m:["pecs","tri","ant"]},
- {n:"Ouvertures thoraciques",e:"🌀",d:20,side:1,c:"À quatre pattes, main derrière la tête : ouvre le coude vers le plafond en suivant du regard.",m:["dos","lats","pecs"]},
- {n:"Chat-vache",e:"🐈",d:30,c:"À quatre pattes : creuse le dos en inspirant, arrondis-le en soufflant. Lentement.",m:["lomb","dos","abs","lats"]},
- {n:"Rotations poignets et coudes",e:"✋",d:20,c:"Fais tourner poignets et avant-bras dans les deux sens pour préparer les prises.",m:["bic","tri"]},
- {n:"Squats au poids du corps",e:"🏋️",d:40,c:"Descends le plus bas possible en gardant le dos droit et les talons au sol.",m:["quad","fess","add"]},
- {n:"Fentes avec rotation",e:"🚶",d:40,c:"Fente avant, puis tourne le buste vers la jambe de devant. Alterne les côtés.",m:["quad","fess","add","isch"]},
- {n:"Balancements de jambe avant-arrière",e:"🦵",d:20,side:1,c:"Tiens-toi à un support, balance la jambe tendue d'avant en arrière, de plus en plus haut.",m:["isch","fess","quad"]},
- {n:"Balancements de jambe latéraux",e:"↔️",d:20,side:1,c:"Face au support, balance la jambe de gauche à droite devant toi.",m:["add","fess"]},
- {n:"Pont fessier",e:"🌉",d:30,c:"Allongé, pieds au sol : monte le bassin en serrant les fesses, 1 seconde en haut.",m:["fess","isch","lomb"]},
- {n:"Montées sur pointes",e:"🦶",d:30,c:"Monte sur la pointe des pieds, redescends lentement. Sur une marche si possible.",m:["moll"]},
- {n:"Gainage planche",e:"🧱",d:30,c:"Sur les avant-bras, corps bien aligné, ventre et fesses serrés.",m:["abs","lomb"]}];
+ {a:"w_card",n:"Cardio léger",e:"🚲",d:300,c:"Vélo, rameur ou tapis. Tu dois pouvoir parler : tu chauffes, tu ne te fatigues pas.",m:[]},
+ {a:"w_cerc",n:"Cercles de bras",e:"🔄",d:30,c:"Bras tendus, petits cercles puis grands, vers l'avant puis vers l'arrière.",m:["ant","lat","arr","pecs"]},
+ {a:"w_dislo",n:"Passages d'épaules au bâton",e:"🥢",d:40,c:"Bâton ou élastique, prise large : passe-le de devant à derrière la tête, bras tendus, sans forcer.",m:["ant","lat","pecs","arr"]},
+ {a:"w_band",n:"Écartés à l'élastique",e:"🎗️",d:30,c:"Bras tendus devant toi, écarte l'élastique jusqu'à la poitrine en serrant les omoplates.",m:["arr","dos","lat"]},
+ {a:"pompes",n:"Pompes lentes",e:"🙌",d:30,c:"Contre un banc ou au sol, 3 secondes pour descendre. Juste pour réveiller pecs et triceps.",m:["pecs","tri","ant"]},
+ {a:"w_thor",n:"Ouvertures thoraciques",e:"🌀",d:20,side:1,c:"À quatre pattes, main derrière la tête : ouvre le coude vers le plafond en suivant du regard.",m:["dos","lats","pecs"]},
+ {a:"w_cat",n:"Chat-vache",e:"🐈",d:30,c:"À quatre pattes : creuse le dos en inspirant, arrondis-le en soufflant. Lentement.",m:["lomb","dos","abs","lats"]},
+ {a:"w_wrist",n:"Rotations poignets et coudes",e:"✋",d:20,c:"Fais tourner poignets et avant-bras dans les deux sens pour préparer les prises.",m:["bic","tri"]},
+ {a:"squatpdc",n:"Squats au poids du corps",e:"🏋️",d:40,c:"Descends le plus bas possible en gardant le dos droit et les talons au sol.",m:["quad","fess","add"]},
+ {a:"fentes",n:"Fentes avec rotation",e:"🚶",d:40,c:"Fente avant, puis tourne le buste vers la jambe de devant. Alterne les côtés.",m:["quad","fess","add","isch"]},
+ {a:"w_swing",n:"Balancements de jambe avant-arrière",e:"🦵",d:20,side:1,c:"Tiens-toi à un support, balance la jambe tendue d'avant en arrière, de plus en plus haut.",m:["isch","fess","quad"]},
+ {a:"w_lat",n:"Balancements de jambe latéraux",e:"↔️",d:20,side:1,c:"Face au support, balance la jambe de gauche à droite devant toi.",m:["add","fess"]},
+ {a:"w_pont",n:"Pont fessier",e:"🌉",d:30,c:"Allongé, pieds au sol : monte le bassin en serrant les fesses, 1 seconde en haut.",m:["fess","isch","lomb"]},
+ {a:"moll",n:"Montées sur pointes",e:"🦶",d:30,c:"Monte sur la pointe des pieds, redescends lentement. Sur une marche si possible.",m:["moll"]},
+ {a:"w_plank",n:"Gainage planche",e:"🧱",d:30,c:"Sur les avant-bras, corps bien aligné, ventre et fesses serrés.",m:["abs","lomb"]}];
 const STRETCH={
- pecs:{n:"Pecs contre un mur",e:"🧱",d:30,side:1,c:"Avant-bras contre un mur, coude à hauteur d'épaule, tourne doucement le buste à l'opposé."},
- lats:{n:"Dorsaux bras tendus",e:"🙇",d:30,side:1,c:"Attrape un support à hauteur de hanche, recule les fesses et laisse le flanc s'étirer."},
- dos:{n:"Posture de l'enfant",e:"🧎",d:40,c:"À genoux, fesses sur les talons, bras loin devant. Respire dans le dos."},
- arr:{n:"Bras croisé devant la poitrine",e:"🤗",d:30,side:1,c:"Ramène le bras tendu contre la poitrine avec l'autre main, épaule basse."},
- lat:{n:"Bras croisé devant la poitrine",e:"🤗",d:30,side:1,c:"Ramène le bras tendu contre la poitrine avec l'autre main, épaule basse."},
- ant:{n:"Mains jointes derrière le dos",e:"🙆",d:30,c:"Croise les doigts derrière toi, bras tendus, remonte doucement les mains en ouvrant la poitrine."},
- bic:{n:"Biceps contre un mur",e:"💪",d:30,side:1,c:"Paume à plat sur le mur derrière toi, bras tendu, tourne lentement le corps à l'opposé."},
- tri:{n:"Triceps derrière la tête",e:"🤚",d:30,side:1,c:"Main dans le dos par-dessus l'épaule, l'autre main pousse doucement le coude."},
- quad:{n:"Quadriceps debout",e:"🦩",d:30,side:1,c:"Attrape ton pied, talon vers la fesse, genoux serrés, bassin en avant."},
- quad2:{n:"Fente basse (avant de hanche)",e:"🧎‍♂️",d:30,side:1,c:"Un genou au sol, avance le bassin jusqu'à sentir l'avant de la hanche s'étirer."},
- isch:{n:"Ischios jambe tendue",e:"🦵",d:30,side:1,c:"Talon sur un banc, jambe tendue, penche-toi en avant dos droit."},
- fess:{n:"Pigeon",e:"🕊️",d:40,side:1,c:"Jambe avant pliée devant toi au sol, jambe arrière tendue, penche le buste en avant."},
- add:{n:"Papillon assis",e:"🦋",d:40,c:"Assis, plantes de pieds collées, pousse doucement les genoux vers le sol avec les coudes."},
- moll:{n:"Mollet contre un mur",e:"🦶",d:30,side:1,c:"Mains au mur, jambe arrière tendue, talon bien au sol."},
- abs:{n:"Cobra",e:"🐍",d:30,c:"Allongé sur le ventre, pousse sur les mains pour lever le buste, hanches au sol."},
- lomb:{n:"Genoux à la poitrine",e:"🫶",d:30,c:"Allongé sur le dos, serre les genoux contre la poitrine et respire."}};
+ pecs:{a:"s_pec",n:"Pecs contre un mur",e:"🧱",d:30,side:1,c:"Avant-bras contre un mur, coude à hauteur d'épaule, tourne doucement le buste à l'opposé."},
+ lats:{a:"s_lat",n:"Dorsaux bras tendus",e:"🙇",d:30,side:1,c:"Attrape un support à hauteur de hanche, recule les fesses et laisse le flanc s'étirer."},
+ dos:{a:"s_child",n:"Posture de l'enfant",e:"🧎",d:40,c:"À genoux, fesses sur les talons, bras loin devant. Respire dans le dos."},
+ arr:{a:"s_cross",n:"Bras croisé devant la poitrine",e:"🤗",d:30,side:1,c:"Ramène le bras tendu contre la poitrine avec l'autre main, épaule basse."},
+ lat:{a:"s_cross",n:"Bras croisé devant la poitrine",e:"🤗",d:30,side:1,c:"Ramène le bras tendu contre la poitrine avec l'autre main, épaule basse."},
+ ant:{a:"s_hands",n:"Mains jointes derrière le dos",e:"🙆",d:30,c:"Croise les doigts derrière toi, bras tendus, remonte doucement les mains en ouvrant la poitrine."},
+ bic:{a:"s_bic",n:"Biceps contre un mur",e:"💪",d:30,side:1,c:"Paume à plat sur le mur derrière toi, bras tendu, tourne lentement le corps à l'opposé."},
+ tri:{a:"s_tri",n:"Triceps derrière la tête",e:"🤚",d:30,side:1,c:"Main dans le dos par-dessus l'épaule, l'autre main pousse doucement le coude."},
+ quad:{a:"s_quad",n:"Quadriceps debout",e:"🦩",d:30,side:1,c:"Attrape ton pied, talon vers la fesse, genoux serrés, bassin en avant."},
+ quad2:{a:"s_hip",n:"Fente basse (avant de hanche)",e:"🧎‍♂️",d:30,side:1,c:"Un genou au sol, avance le bassin jusqu'à sentir l'avant de la hanche s'étirer."},
+ isch:{a:"s_ham",n:"Ischios jambe tendue",e:"🦵",d:30,side:1,c:"Talon sur un banc, jambe tendue, penche-toi en avant dos droit."},
+ fess:{a:"s_pig",n:"Pigeon",e:"🕊️",d:40,side:1,c:"Jambe avant pliée devant toi au sol, jambe arrière tendue, penche le buste en avant."},
+ add:{a:"s_but",n:"Papillon assis",e:"🦋",d:40,c:"Assis, plantes de pieds collées, pousse doucement les genoux vers le sol avec les coudes."},
+ moll:{a:"s_calf",n:"Mollet contre un mur",e:"🦶",d:30,side:1,c:"Mains au mur, jambe arrière tendue, talon bien au sol."},
+ abs:{a:"s_cobra",n:"Cobra",e:"🐍",d:30,c:"Allongé sur le ventre, pousse sur les mains pour lever le buste, hanches au sol."},
+ lomb:{a:"s_knee",n:"Genoux à la poitrine",e:"🫶",d:30,c:"Allongé sur le dos, serre les genoux contre la poitrine et respire."}};
 
 /* Muscles de la séance, du plus travaillé au moins travaillé */
 function prepMus(S){const c={};(S?.x||[]).forEach((e,i)=>{const m=MUSCOF[e.id];if(m)c[m]=(c[m]||0)+e.s+(i<2?1:0)});return Object.keys(c).sort((a,b)=>c[b]-c[a])}
@@ -50,7 +50,7 @@ function pStartItem(i){const L=pList();G.pi=i;G.pz=0;const it=L[i];G.pTot=it.d*(
 function pLeave(){clearInterval(pInt);if(G.ph==="warm"){G.ph="set";G.fb="";gSave();gShow()}else{G.ph="done";G.strDone=1;gSave();gShow()}$("#game").scrollTop=0}
 function pShow(){clearInterval(gInt);clearInterval(pInt);const L=pList(),i=G.pi||0,it=L[i],nx=L[i+1],warm=G.ph==="warm",run=!!G.pEnd;
  $("#g-in").innerHTML=gTop()+`<div class="lab" style="text-align:center">${warm?"🔥 Échauffement":"🧘 Étirements"} · ${i+1}/${L.length} · ~${prepMin(L)} min</div>
- <h2 class="g-name" style="text-align:center">${it.e} ${it.n}</h2><p class="small muted" style="text-align:center;margin:0 0 6px">${it.c}</p>
+ <h2 class="g-name" style="text-align:center">${it.e} ${it.n}</h2>${it.a?`<canvas class="anim g-anim" data-id="${it.a}" width="640" height="480" aria-label="Animation : ${esc(it.n)}"></canvas>`:""}<p class="small muted" style="text-align:center;margin:0 0 6px">${it.c}</p>
  <div class="g-ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="p-arc" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg><b id="p-t" role="timer">${fmtT(it.d*(it.side?2:1))}</b></div>
  <p class="small" id="p-side" style="text-align:center;min-height:1.4em;margin:0 0 8px;color:var(--warn)">${it.side?"Côté gauche puis côté droit":""}</p>
  <div class="g-adj"><button id="p-pz" aria-label="Pause">${run?(G.pz?"▶":"⏸"):"⏸"}</button><button id="p-go" style="font:800 20px var(--display);text-transform:uppercase;background:var(--grad);border:0;color:#fff">${run?"Suivant ⏭":"Démarrer"}</button><button id="p-skip" style="font:600 13px var(--mono)">Passer</button></div>

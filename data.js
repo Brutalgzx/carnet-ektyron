@@ -233,3 +233,6 @@ const TIPS = [
  "Garde ta technique propre même en fin de séance : amplitude complète, pas d'élan.",
  "Un peu de marche chaque jour aide la récupération et limite la prise de gras pendant la masse."
 ];
+
+/* Animations ajoutées : l'identifiant d'animation = identifiant de l'exercice */
+for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","ytw","dmil","pike","curlh","marth","curlpdc","extd","dipsbanc","diam","gobsq","squatpdc","fentes","nordic","hipt","pont","releve","superman"])if(EX[id]&&!EX[id][4])EX[id][4]=id;
