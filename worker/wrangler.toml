@@ -1,0 +1,11 @@
+# Pour un déploiement en ligne de commande (npx wrangler deploy). Sinon, suis le guide README.md (tableau de bord).
+name = "ektyron-coach"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+binding = "EK"
+id = "REMPLACE_PAR_L_ID_DE_TON_ESPACE_KV"
+
+[triggers]
+crons = ["*/15 * * * *"]
