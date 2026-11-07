@@ -201,6 +201,12 @@ const TASTE={
  L:[{v:"brocoli",e:"🥦",l:"Brocoli",i:["brocoli"]},{v:"courgette",e:"🥒",l:"Courgette",i:["courgette"]},{v:"poivron",e:"🫑",l:"Poivron",i:["poivron"]},{v:"epinard",e:"🍃",l:"Épinards",i:["epinard"]},{v:"hverts",e:"🫛",l:"Haricots verts",i:["hverts"]},{v:"carotte",e:"🥕",l:"Carotte",i:["carotte"]},{v:"champi",e:"🍄",l:"Champignons",i:["champi"]},{v:"oignon",e:"🧅",l:"Oignon",i:["oignon"]},{v:"tomate",e:"🍅",l:"Tomate",i:["tomate"]},{v:"avocat",e:"🥑",l:"Avocat",i:["avocat"]}]};
 const ALLERG=[{v:"none",e:"✅",l:"Aucune"},{v:"lactose",e:"🥛",l:"Lactose",s:"Lait, fromage blanc, skyr, fromage, whey",i:["lait","fblanc","skyr","fromr","mozza","whey"]},{v:"gluten",e:"🌾",l:"Gluten",s:"Pâtes, pain, semoule, avoine, sauce soja",i:["pates","semoule","avoine","painc","wrap","painb","soja"]},
  {v:"coque",e:"🥜",l:"Fruits à coque et arachide",s:"Amandes, cacahuète",i:["amandes","cacah"]},{v:"oeufs",e:"🥚",l:"Œufs",i:["oeuf"]},{v:"poisson",e:"🐟",l:"Poisson",i:["saumon","thon","cabil"]},{v:"soja",e:"🫘",l:"Soja",s:"Tofu, sauce soja",i:["tofu","soja"]}];
+/* Muscle ciblé précis : « Changer » remplace un exercice par un autre du même muscle. */
+const MUSC={pecs:["pectoraux",["incl","dbinc","benchx","dch","pompes","pompesd","pfly","ecbh","dbfly","dips","dipsb"]],lats:["grand dorsal",["tvert","tract"]],dos:["milieu du dos",["rowm","rowu","rowx","rowinv","tlarg"]],
+ arr:["arrière d'épaule",["rfly","facep","oiseau","ytw"]],ant:["avant d'épaule",["dmil","pike"]],lat:["épaule latérale",["elat","elmac","elath"]],bic:["biceps",["pupi","cpou","curlh","mart","marth","curlpdc"]],
+ tri:["triceps",["tri1","triv","ovh","extd","dipsbanc","diam"]],quad:["quadriceps",["hack","smsq","press","gobsq","squatpdc","bulg","fentes","lext"]],isch:["ischios",["lcurl1","lcurl2","nordic","rdl","rdlx"]],
+ fess:["fessiers",["hipt","pont"]],add:["adducteurs et abducteurs",["addab"]],moll:["mollets",["moll","moll2","mollh","mollpdc"]],abs:["abdos",["crun","releve"]],lomb:["lombaires",["bext","superman"]]};
+const MUSCOF=Object.fromEntries(Object.entries(MUSC).flatMap(([k,[,ids]])=>ids.map(i=>[i,k])));
 const CUIS=[{v:"fr",e:"🥖",l:"Française"},{v:"it",e:"🍝",l:"Italienne"},{v:"asie",e:"🥢",l:"Asiatique"},{v:"mex",e:"🌮",l:"Mexicaine"},{v:"orient",e:"🫕",l:"Orientale"},{v:"inde",e:"🍛",l:"Indienne"},{v:"us",e:"🍔",l:"Américaine"}];
 
 const STYLES = [

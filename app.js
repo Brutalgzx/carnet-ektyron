@@ -71,7 +71,13 @@ function portion(rid,slot){const T=targets(),sl=mealSlots().find(s=>s[0]===slot)
 /* Goûts : allergies exclues d'office, aliments refusés et recettes « je n'aime pas » écartés tant qu'il reste du choix, aliments aimés favorisés. */
 const TF=Object.fromEntries([...TASTE.P,...TASTE.C,...TASTE.L].map(o=>[o.v,o.i])),AF=Object.fromEntries(ALLERG.map(o=>[o.v,o.i||[]]));
 const has=(r,ids)=>r.i.some(([i])=>ids.includes(i));
-function pool(m){const p=PROF,t=p.taste||{},al=(p.allerg||[]).flatMap(a=>AF[a]||[]),hate=Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[]),no=p.nope||[];
+/* Allergies écrites à la main : mots reconnus dans les noms d'ingrédients, plus quelques synonymes. */
+const nrm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+function allergIng(txt){const out=new Set(),syn={arachide:["cacah"],cacahuete:["cacah"],noix:["amandes","cacah"],coque:["amandes","cacah"],amande:["amandes"],ble:AF.gluten,gluten:AF.gluten,lactose:AF.lactose,lait:AF.lactose,laitier:AF.lactose,oeuf:["oeuf"],poisson:AF.poisson,soja:AF.soja,pomme:["pomme"]};
+ for(const w of nrm(txt).split(/[^a-z]+/).filter(w=>w.length>=3).map(w=>w.replace(/s$/,""))){if(syn[w]){syn[w].forEach(i=>out.add(i));continue}
+  for(const [id,d] of Object.entries(ING))if(nrm(d[0]).split(/[^a-z]+/).some(x=>x.length>=4&&(x.replace(/s$/,"")===w||(w.length>=5&&x.startsWith(w)))))out.add(id)}return [...out]}
+const allergHint=t=>{const ids=allergIng(t);return !nrm(t).trim()?"Écris tout aliment précis à éviter : ton coach l'exclut de toutes tes recettes.":ids.length?`Exclus de tes recettes : <b>${ids.map(i=>esc(ING[i][0])).join(", ")}</b>.`:"Aucune de nos recettes n'en contient. Vérifie quand même toujours les étiquettes."};
+function pool(m){const p=PROF,t=p.taste||{},al=[...(p.allerg||[]).flatMap(a=>AF[a]||[]),...allergIng(p.allergTxt)],hate=Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[]),no=p.nope||[];
  const base=REC.filter(r=>r.m===m&&dietOk(r)),safe=base.filter(r=>!has(r,al));
  let c=safe.filter(r=>!no.includes(r.id)&&!has(r,hate)&&!(p.spice===0&&r.hot>1));
  if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;return c.length?c:base}
@@ -124,7 +130,7 @@ const GOUTS=[
  {t:"Les protéines",s:"Touche une fois : tu adores ❤️. Deux fois : jamais 🚫. Ton coach compose tes repas avec ce que tu aimes.",h:()=>tri(TASTE.P),ok:()=>true},
  {t:"Les féculents",s:"Même principe : ❤️ tu adores, 🚫 jamais.",h:()=>tri(TASTE.C),ok:()=>true},
  {t:"Les légumes",s:"Un 🚫 sur ceux que tu ne supportes pas, un ❤️ sur ceux que tu adores.",h:()=>tri(TASTE.L),ok:()=>true},
- {t:"Allergies ou intolérances ?",s:"Les recettes qui en contiennent sont exclues, sans exception.",h:()=>opts("allerg",ALLERG,true),ok:()=>true},
+ {t:"Allergies ou intolérances ?",s:"Les recettes qui en contiennent sont exclues, sans exception.",h:()=>opts("allerg",ALLERG,true)+`<div class="lab" style="margin-top:12px">Préciser ton allergie</div><input class="txt" id="i-allerg" maxlength="120" placeholder="Ex. : kiwi, amandes, saumon" value="${esc(A.allergTxt||"")}" style="font-size:17px;padding:12px"><div id="allerg-hit" class="small muted" style="margin-top:6px">${allergHint(A.allergTxt)}</div>`,ok:()=>true},
  {t:"Tes cuisines préférées",s:"Elles reviendront plus souvent. Rien de coché : un peu de tout.",h:()=>`<div class="grid2">${CUIS.map(c=>`<button class="tile" data-m="cuis" data-v="${c.v}" aria-pressed="${(A.cuis||[]).includes(c.v)}"><span class="e">${c.e}</span><b>${c.l}</b></button>`).join("")}</div>`,ok:()=>true},
  {t:"Le matin, plutôt…",s:"Pour un petit-déjeuner qui donne envie de se lever.",h:()=>opts("pdjT",[{v:"sucre",e:"🥞",l:"Sucré",s:"Porridge, pancakes, tartines"},{v:"sale",e:"🍳",l:"Salé",s:"Œufs, avocat, jambon"},{v:"both",e:"🔀",l:"Les deux me vont"}]),ok:()=>!!A.pdjT},
  {t:"Combien de temps pour cuisiner par jour ?",s:"Ton coach choisit des recettes qui tiennent dans ce temps.",h:()=>opts("ckt",[{v:15,e:"⚡",l:"15 min maximum",s:"Rapide, peu de vaisselle"},{v:30,e:"🍳",l:"Environ 30 min"},{v:45,e:"👨‍🍳",l:"45 min"},{v:60,e:"🧑‍🍳",l:"1 h ou plus",s:"J'aime cuisiner"}]),ok:()=>!!A.ckt},
@@ -258,6 +264,7 @@ function vToday(){const d=new Date().getDay(),S=TRAIN[d],T=targets(),M=dayMeals(
  const got=M.filter(m=>ek[m.slot]).reduce((a,m)=>({k:a.k+m.k,P:a.P+m.P,C:a.C+m.C,F:a.F+m.F}),{k:0,P:0,C:0,F:0});
  const W=LS.get("coach-weights",[]),needW=!W.length||Date.now()-W[W.length-1].t>6*DAY,tip=TIPS[Math.floor(Date.now()/DAY)%TIPS.length];
  return `<div class="small muted" style="margin-top:-8px">${DLONG[d]} ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long"})} · ${weekGames()}/${PROF.freq} séances cette semaine</div>
+ ${dueBanner()}
  ${S?`<div class="card hot stack"><div class="lab">Séance du jour</div><h2>${S.t}</h2><div class="small muted">${S.f} · ${S.x.length} exercices · environ ${sessMin(S)} min</div><button class="btn" data-play="${d}">${G?"Reprendre la partie":"▶ Lancer la séance"}</button></div>`
    :`<div class="card stack"><div class="lab">Jour de repos</div><h2>Récupération</h2><p class="small muted" style="margin:0">Le muscle se construit pendant le repos. Marche, étire-toi, mange tes repas et dors bien.${(()=>{const n=WEEK.slice(WEEK.indexOf(d)+1).concat(WEEK).find(x=>TRAIN[x]);return n!=null?` Prochaine séance : <b>${TRAIN[n].t}</b> ${DLONG[n].toLowerCase()}.`:""})()}</p></div>`}
  <div class="card stack"><div class="row"><div class="lab sp">Nutrition du jour</div><span class="small muted">Coche ce que tu as mangé</span></div>${macroBlock(T,got)}${M.map(m=>mealRow(m,d,true)).join("")}</div>
@@ -268,6 +275,14 @@ let edit=false,pickAt=-1;
 const curIds=()=>TRAIN[selDay].x.map(e=>e.id);
 function saveProg(){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);render()}
 function setCustom(ids){PROF.custom=PROF.custom||{};PROF.custom[selDay]={k:TRAIN[selDay].k,ids};saveProg()}
+/* « Changer » : le coach choisit lui-même un autre exercice du même muscle, de même type d'effort si possible. Chaque appui propose l'option suivante. */
+const swapSeen={};
+function autoSwap(i){const cur=curIds(),id=cur[i],mk=MUSCOF[id],key=selDay+":"+i,seen=swapSeen[key]=swapSeen[key]||new Set([id]),mn=mk?MUSC[mk][0]:EX[id][1].toLowerCase();
+ const pool=Object.keys(EX).filter(x=>x!==id&&!cur.includes(x)&&exOk(x,PROF)&&(mk?MUSCOF[x]===mk:EX[x][1]===EX[id][1]));
+ if(!pool.length)return toast(`Aucun autre exercice pour les ${mn} avec ton matériel.`);
+ const sc=x=>(EX[x][3]===EX[id][3]?4:0)+(EX[x][4]&&EX[x][4]===EX[id][4]?2:0)+(EX[x][2]!=="0"?1:0)-(seen.has(x)?20:0);
+ pool.sort((a,b)=>sc(b)-sc(a));if(seen.has(pool[0])){seen.clear();seen.add(id);pool.sort((a,b)=>sc(b)-sc(a))}
+ const nx=pool[0];seen.add(nx);cur[i]=nx;setCustom(cur);toast(`${EX[nx][0]} : toujours les ${mn}. Touche encore pour une autre option.`)}
 function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok=Object.keys(EX).filter(id=>!cur.includes(id)&&exOk(id,PROF)),
   groups=[...new Set(ok.map(id=>EX[id][1]))].sort((a,b)=>(b===g0)-(a===g0));
  const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="Choisir un exercice"><div class="row" style="padding-top:18px;position:sticky;top:0;background:var(--bg2)"><h2 class="sp" style="margin:0">${i>=0?"Remplacer "+esc(EX[cur[i]][0]):"Ajouter un exercice"}</h2><button class="chip" data-close aria-label="Fermer">✕</button></div>
@@ -294,14 +309,6 @@ function vFood(){const T=targets(),d=nutDay??new Date().getDay(),wc=weekCost(),o
  return head+`<div class="week">${WEEK.map(x=>`<button data-nday="${x}" aria-pressed="${x===d}">${DN[x]}<small>${fr(dayMeals(x).reduce((a,m)=>a+m.k,0))}</small></button>`).join("")}</div>
  <div class="card stack"><div class="lab">${DLONG[d]}</div>${macroBlock(T,tot)}${M.map(m=>mealRow(m,d,false)).join("")}</div>
  <button class="btn ghost" id="regen">↻ Nouvelle semaine de repas</button>`}
-function vProg(){const W=LS.get("coach-weights",[]),X=xpProf(),vol=X.games.reduce((a,g)=>a+(g.vol||0),0);
- const recs=Object.keys(store).filter(id=>EX[id]&&store[id].length).map(id=>{let b=null;for(const h of store[id])for(const s of h.sets)if(!b||s.k>b.k||(s.k===b.k&&s.r>b.r))b=s;return{n:EX[id][0],b}}).sort((a,b)=>b.b.k-a.b.k);
- let chart="";if(W.length>=2){const ks=W.map(w=>w.kg),mn=Math.min(...ks)-1,mx=Math.max(...ks)+1,t0=W[0].t,t1=W[W.length-1].t||t0+1,X_=t=>8+(t-t0)/(t1-t0||1)*284,Y_=k=>150-(k-mn)/(mx-mn)*130;
-  const pts=W.map(w=>`${X_(w.t).toFixed(1)},${Y_(w.kg).toFixed(1)}`);chart=`<svg class="chart" viewBox="0 0 300 170"><defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#FF2E3A" stop-opacity=".35"/><stop offset="1" stop-color="#FF2E3A" stop-opacity="0"/></linearGradient></defs><path class="a" d="M${pts[0]} L${pts.join(" L")} L${X_(t1)},160 L8,160Z"/><path class="l" d="M${pts.join(" L")}"/><text x="4" y="14">${fr(mx,1)} kg</text><text x="4" y="166">${fr(mn,1)} kg</text></svg>`}
- return `<div class="kpis"><div><strong>${X.games.length}</strong><small>séances jouées</small></div><div><strong>${weekGames()}/${PROF.freq}</strong><small>cette semaine</small></div><div><strong>${fr(vol/1000,1)} t</strong><small>soulevées</small></div></div>
- <div class="card stack"><div class="row"><div class="lab sp">Poids</div><b>${fr(curWeight(),1)} kg</b></div>${chart||`<p class="small muted" style="margin:0">Ta courbe apparaît après deux pesées.</p>`}
- <div class="row"><input class="txt" id="w-in" inputmode="decimal" placeholder="Poids du jour" style="flex:1;font-size:17px;padding:12px"><button class="btn sm" id="w-save">Ajouter</button></div>${LS.get("coach-msg","")?`<div class="coachmsg">${esc(LS.get("coach-msg",""))}</div>`:""}</div>
- <div class="card stack"><div class="lab">Tes records</div>${recs.length?`<ul class="list">${recs.map(r=>`<li><span class="sp">${r.n}</span><b class="mono">${r.b.k} kg × ${r.b.r}</b></li>`).join("")}</ul>`:`<p class="small muted" style="margin:0">Joue ta première séance pour poser tes premières marques.</p>`}</div>`}
 function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b>${v}</b></li>`;
  return `<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Goûts",(t=>`${t.filter(v=>v>0).length} ❤️ · ${t.filter(v=>v<0).length} 🚫${(p.allerg||[]).length?" · sans "+p.allerg.map(a=>ALLERG.find(x=>x.v===a).l.toLowerCase()).join(", "):""}`)(Object.values(p.taste||{})))}${row("Courses",`${STORES.find(s=>s.v===p.store).l} · ${p.budget} € / semaine`)}</ul></div>
  <button class="btn" id="plan-see">Voir mon plan et pourquoi</button><button class="btn ghost" id="tastes">Mes goûts</button><button class="btn ghost" id="adj">Adapter à mon emploi du temps</button><button class="btn ghost" id="redo">Refaire le questionnaire</button>
@@ -381,7 +388,7 @@ function saveWeight(){const v=gNum($("#w-in").value);if(!(v>30&&v<250)){toast("I
  const W=LS.get("coach-weights",[]),now=Date.now();if(W.length&&now-W[W.length-1].t<DAY/2)W[W.length-1].kg=v;else W.push({t:now,kg:v});LS.set("coach-weights",W);
  const m=coachAdjust();if(m)LS.set("coach-msg",m);toast(m?"Pesée enregistrée. Ton coach a analysé ta courbe.":"Pesée enregistrée.");render()}
 document.addEventListener("input",e=>{const t=e.target;
- if(view==="ob"){if(t.id==="i-name"){A.name=t.value;if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
+ if(view==="ob"){if(t.id==="i-name"){A.name=t.value;if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.id==="i-allerg"){A.allergTxt=t.value;$("#allerg-hit").innerHTML=allergHint(t.value);if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
    if(k==="budget"){$("#v-budget").textContent=v;const pm=v/(7*A.meals);$("#v-pm").textContent=eur(pm)+" / repas";$("#v-lvl").textContent=pm<1.6?"Serré":pm<3?"Confortable":"Large"}else $("#v-"+k).textContent=`${fr(v,k==="w"||k==="tw"?1:0)} ${t.dataset.u}`;if(k==="tw"||k==="w"){const g=$("#gp");if(g)g.innerHTML=gpBox(A);obRefresh()}}
   obRefresh();return}
  if(G&&t.id==="g-k"){G.dk=t.value;gSave()}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
@@ -398,7 +405,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(t.id==="ed-reset"){delete PROF.custom[selDay];saveProg();toast("Séance du coach remise");return}
  if(D.mv){const [i,dir]=D.mv.split(",").map(Number),ids=curIds(),j=i+dir;if(j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];setCustom(ids);return}
  if(D.rm){const ids=curIds();if(ids.length<=1)return toast("Garde au moins un exercice");ids.splice(+D.rm,1);setCustom(ids);return}
- if(D.sw!==undefined){openPicker(+D.sw);return}
+ if(D.sw!==undefined){+D.sw>=0?autoSwap(+D.sw):openPicker(-1);return}
  if(D.pick){const ids=curIds();if(pickAt>=0)ids[pickAt]=D.pick;else ids.push(D.pick);$("#sheet")?.remove();setCustom(ids);toast(pickAt>=0?"Exercice remplacé":"Exercice ajouté");return}
  /* questionnaire */
  if(view==="ob"&&t.id!=="bk-i"){
@@ -436,18 +443,18 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(t.id==="regen"){LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{});render();toast("Nouvelle semaine de repas générée.");return}
  if(t.id==="w-save"){saveWeight();return}
  if(t.id==="redo"){startOnboarding(true);return}
- if(t.id==="bk-x"){const keys=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-week","carnet-rest"],o={};for(const k of keys)o[k]=LS.get(k,null);const s=JSON.stringify(o);$("#bk-t").value=s;
+ if(t.id==="bk-x"){const keys=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-week","carnet-rest","coach-meas","coach-check","coach-notif"],o={};for(const k of keys)o[k]=LS.get(k,null);const s=JSON.stringify(o);$("#bk-t").value=s;
   (navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).then(()=>$("#bk-m").textContent="Copié. Colle-le dans tes notes.",()=>$("#bk-m").textContent="Sélectionne et copie le texte ci-dessus.");return}
  if(t.id==="bk-i"){try{const o=JSON.parse($("#bk-t").value);if(!o||typeof o!=="object")throw 0;
    if(o["coach-profile"]||o.carnet){for(const k in o)if(o[k]!=null)LS.set(k,o[k])}else{const c=LS.get("carnet",{});for(const id in o){c[id]=[...(c[id]||[]),...o[id]]}LS.set("carnet",c)}
    PROF=migrate(LS.get("coach-profile",PROF));store=LS.get("carnet",{});TRAIN=null;if(PROF&&view==="ob"){view="today";LS.del("coach-draft")}render();toast("Données restaurées.")}catch(err){$("#bk-m").textContent="Code illisible : rien n'a été modifié."}return}
- if(t.id==="wipe"){if(Date.now()-gArm>3000){gArm=Date.now();t.textContent="Appuie encore pour tout effacer";return}["coach-draft","coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest",GK].forEach(LS.del);PROF=null;store={};TRAIN=null;startOnboarding(false)}
+ if(t.id==="wipe"){if(Date.now()-gArm>3000){gArm=Date.now();t.textContent="Appuie encore pour tout effacer";return}["coach-draft","coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest","coach-meas","coach-check","coach-notif",GK].forEach(LS.del);PROF=null;store={};TRAIN=null;startOnboarding(false)}
 });
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&G){lockOn();if(G.ph==="rest")gTick()}});
 
 /* ================= Démarrage ================= */
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
-render();
+render();suiviInit();
 if(PROF&&G)gOpen();
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if("serviceWorker"in navigator)addEventListener("load",()=>{const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload()})});
