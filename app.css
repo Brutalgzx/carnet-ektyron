@@ -171,3 +171,9 @@ body.g-on{overflow:hidden}
 .g-pr{font-size:14px;font-weight:600;color:var(--warn);text-align:center}
 @keyframes gpop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* Fiches nutrition (v19) */
+.lnk{background:none;border:0;padding:0;margin:0;color:inherit;font:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.ntags{display:flex;flex-wrap:wrap;gap:6px}.ntags span{font-size:13px;padding:5px 10px;border-radius:999px;background:var(--card2);border:1px solid var(--line)}
+.ntab{width:100%;border-collapse:collapse;font-size:14px}.ntab th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.7;text-align:right;font-weight:600;padding:4px 0 6px 8px}.ntab th:first-child{text-align:left}
+.ntab td{padding:6px 0 6px 8px;border-top:1px solid var(--line);text-align:right}.ntab td:first-child{text-align:left;padding-left:0}.ntab tr.sub td:first-child{padding-left:14px;opacity:.75}.ntab tr.tot td{font-weight:700}.ning td:first-child{max-width:48%}
+.ngoal{display:grid;gap:7px}.ngoal div{display:grid;grid-template-columns:80px 1fr 48px;gap:8px;align-items:center;font-size:13px}.ngoal i{height:8px;border-radius:4px;background:var(--line);overflow:hidden}.ngoal i b{display:block;height:100%;background:var(--pink)}.ngoal em{font-style:normal;text-align:right}

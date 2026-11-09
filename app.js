@@ -306,7 +306,7 @@ function vFood(){const T=targets(),d=nutDay??new Date().getDay(),wc=weekCost(),o
  const head=`<div class="kpis"><div><strong>${fr(T.kcal)}</strong><small>kcal / jour</small></div><div><strong>${T.p} g</strong><small>protéines</small></div><div><strong>${eur(wc).replace(",00","")}</strong><small>par semaine</small></div></div>
  <div class="seg"><button data-nt="week" aria-pressed="${nutTab==="week"}">Repas de la semaine</button><button data-nt="shop" aria-pressed="${nutTab==="shop"}">Liste de courses</button><button data-nt="why" aria-pressed="${nutTab==="why"}">Mes besoins</button></div>`;
  if(nutTab==="shop"){const by=shopping(),ck=LS.get("coach-shop",{});return head+`<div class="card stack"><div class="row"><div class="lab sp">Chez ${STORES.find(s=>s.v===PROF.store).l}</div><b>${eur(wc)}</b></div>${over?`<div class="small" style="color:var(--warn)">Ton budget de ${PROF.budget} € est serré pour ${fr(T.kcal)} kcal par jour : le coach a déjà privilégié les recettes les moins chères. Compte plutôt ${eur(Math.ceil(wc))}.</div>`:`<div class="small muted">Dans ton budget de ${PROF.budget} € par semaine. Prix estimés, ils varient selon les magasins.</div>`}
-  ${Object.keys(by).sort().map(r=>`<div><div class="lab" style="margin-top:6px">${r}</div><ul class="list">${by[r].sort((a,b)=>a.n.localeCompare(b.n)).map(x=>`<li class="${ck[x.i]?"done":""}"><button class="chk ${ck[x.i]?"on":""}" data-shop="${x.i}" aria-label="${esc(x.n)}">${ck[x.i]?"✓":""}</button><span class="sp">${x.n}</span><b class="mono small">${x.q}</b></li>`).join("")}</ul></div>`).join("")}
+  ${Object.keys(by).sort().map(r=>`<div><div class="lab" style="margin-top:6px">${r}</div><ul class="list">${by[r].sort((a,b)=>a.n.localeCompare(b.n)).map(x=>`<li class="${ck[x.i]?"done":""}"><button class="chk ${ck[x.i]?"on":""}" data-shop="${x.i}" aria-label="${esc(x.n)}">${ck[x.i]?"✓":""}</button><button class="lnk sp" data-food="${x.i}">${x.n}</button><b class="mono small">${x.q}</b></li>`).join("")}</ul></div>`).join("")}
   <button class="btn ghost" id="shop-reset">Tout décocher</button></div>`}
  if(nutTab==="why")return head+`<div class="card stack"><div class="lab">Comment ton coach calcule</div>
   <div class="list"><li><span class="sp">Métabolisme de base</span><b class="mono">${fr(T.bmr)} kcal</b></li><li><span class="sp">Avec ton activité et ${PROF.freq} séances</span><b class="mono">${fr(T.tdee)} kcal</b></li><li><span class="sp">Objectif : ${GOALS.find(g=>g.v===PROF.goal).l.toLowerCase()}</span><b class="mono">${fr(T.kcal)} kcal</b></li>
@@ -323,11 +323,13 @@ function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b
  ${refineCard(0)}`}
 
 /* ================= Fiche recette ================= */
-function openRecipe(rid,slot,day){const m=dayMeals(+day).find(x=>x.slot===slot&&x.r.id===rid)||{...portion(rid,slot),l:""},r=m.r;
+let recBack=null;
+function openRecipe(rid,slot,day){const m=dayMeals(+day).find(x=>x.slot===slot&&x.r.id===rid)||{...portion(rid,slot),l:""},r=m.r;$("#sheet")?.remove();recBack=[rid,slot,day];
  const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="${esc(r.n)}"><div class="hero">${r.e}<button class="x" data-close aria-label="Fermer">✕</button></div>
  <div class="stack"><div class="lab">${m.l||""} · ${r.min} min · ${eur(m.e)}</div><h2 style="text-transform:none;font-family:var(--body);font-weight:600;font-size:24px">${esc(r.n)}</h2>
  <div class="kpis"><div><strong>${fr(m.k)}</strong><small>kcal</small></div><div><strong>${fr(m.P)} g</strong><small>protéines</small></div><div><strong>${fr(m.C)} / ${fr(m.F)}</strong><small>glucides / lipides</small></div></div>
- <div class="lab">Ce qu'il te faut · portion calculée pour toi</div><ul class="list">${r.i.map(([i,g])=>`<li><span class="sp">${ING[i][0]}</span><b class="mono">${i==="oeuf"?`${Math.max(1,Math.round(g*m.fi(i)/60))} œuf(s)`:`${Math.round(g*m.fi(i)/5)*5} g`}</b></li>`).join("")}</ul>
+ ${recipeNutri(m)}
+ <div class="lab">Ce qu'il te faut · portion calculée pour toi</div><ul class="list">${r.i.map(([i,g])=>`<li><button class="lnk sp" data-food="${i}" data-g="${Math.round(g*m.fi(i))}" data-back="1">${ING[i][0]}</button><b class="mono">${i==="oeuf"?`${Math.max(1,Math.round(g*m.fi(i)/60))} œuf(s)`:`${Math.round(g*m.fi(i)/5)*5} g`}</b></li>`).join("")}</ul>
  <div class="lab">Préparation</div><p style="margin:0">${r.p}</p>${m.bt?`<p class="small muted">Batch cooking : cuisine 3 à 4 portions d'un coup (dimanche, puis mercredi soir). Elles se gardent 3 jours au frigo.</p>`:m.left?`<p class="small muted">Prépare une double portion la veille au dîner : c'est ton déjeuner du lendemain.</p>`:""}<button class="btn ghost" data-nope="${r.id}">👎 Je n'aime pas, remplace-la</button></div></div>`;
  document.body.appendChild(el)}
 
@@ -443,6 +445,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.sday!==undefined){selDay=+D.sday;render();return}
  if(D.nday!==undefined){nutDay=+D.nday;render();return}
  if(D.nt){nutTab=D.nt;render();return}
+ if(D.food){openFood(D.food,+D.g||0,D.back?recBack:null);return}
  if(D.rec){openRecipe(D.rec,D.slot,D.day);return}
  if(D.nope){const old=RECI[D.nope],nw=dislike(D.nope);$("#sheet")?.remove();render();toast(nw?`${old.n} : remplacé par ${nw.n}. Il ne reviendra plus.`:"Recette écartée.");return}
  if(t.id==="tastes"){startTastes();return}

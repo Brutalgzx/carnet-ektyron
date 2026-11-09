@@ -1,5 +1,5 @@
-const CACHE="ektyron-v18";
-const ASSETS=["./", "index.html", "fonts.css","app.css","data.js","app.js","suivi.js","coach.js","reglages.js","prep.js","anim.js", "manifest.webmanifest", "vendor/three.min.js", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "fonts/BarlowCondensed-600.woff2", "fonts/BarlowCondensed-800.woff2", "fonts/IBMPlexMono-500.woff2", "fonts/IBMPlexSans-400.woff2", "fonts/IBMPlexSans-600.woff2"];
+const CACHE="ektyron-v19";
+const ASSETS=["./", "index.html", "fonts.css","app.css","data.js","app.js","nutri.js","suivi.js","coach.js","reglages.js","prep.js","anim.js", "manifest.webmanifest", "vendor/three.min.js", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "fonts/BarlowCondensed-600.woff2", "fonts/BarlowCondensed-800.woff2", "fonts/IBMPlexMono-500.woff2", "fonts/IBMPlexSans-400.woff2", "fonts/IBMPlexSans-600.woff2"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(u=>new Request(u,{cache:"reload"})))).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!=="ektyron-data").map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 /* Réseau d'abord (toujours la dernière version), cache seulement hors ligne. */
