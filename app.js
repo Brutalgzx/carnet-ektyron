@@ -257,9 +257,9 @@ const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-
 const TABS=[["today","Aujourd'hui"],["train","Séances"],["food","Nutrition"],["prog","Progrès"],["me","Profil"]];
 function render(){if(!PROF&&view!=="ob")return startOnboarding();if(view==="ob")return renderOb();if(view==="plan")return showPlan();document.body.className=G?"g-on":"";
  TRAIN=TRAIN||buildTraining(PROF);const L=level(xpProf().xp);
- const titles={today:`Salut ${esc(PROF.name)}`,train:"Tes séances",food:"Nutrition",prog:"Progrès",me:"Profil",set:"Paramètres"};
- $("#app").innerHTML=`<header class="top"><h1>${titles[view]}</h1><div class="lvl"><b>Niv. ${L.l}</b>${xpProf().xp} XP</div></header><main class="stack">${({today:vToday,train:vTrain,food:vFood,prog:vProg,me:vMe,set:vSet})[view]()}</main>
- <nav class="tabs">${TABS.map(([k,l])=>`<button data-tab="${k}" ${view===k||(k==="me"&&view==="set")?'aria-current="page"':""}><svg viewBox="0 0 24 24">${ICON[k]}</svg>${l}</button>`).join("")}</nav>`}
+ const titles={today:`Salut ${esc(PROF.name)}`,train:"Tes séances",food:"Nutrition",prog:"Progrès",me:"Profil",set:"Paramètres",jeu:"Entre potes"};
+ $("#app").innerHTML=`<header class="top"><h1>${titles[view]}</h1><div class="lvl"><b>Niv. ${L.l}</b>${xpProf().xp} XP</div></header><main class="stack">${({today:vToday,train:vTrain,food:vFood,prog:vProg,me:vMe,set:vSet,jeu:vJeu})[view]()}</main>
+ <nav class="tabs">${TABS.map(([k,l])=>`<button data-tab="${k}" ${view===k||(k==="me"&&(view==="set"||view==="jeu"))?'aria-current="page"':""}><svg viewBox="0 0 24 24">${ICON[k]}</svg>${l}</button>`).join("")}</nav>`}
 const lastLog=id=>{const h=(store[id]||[]).filter(x=>!x.dl);return h[h.length-1]};
 function macroBlock(T,got){const r=52,C=2*Math.PI*r,k=Math.min(1,got.k/T.kcal);const b=(l,v,t,c)=>`<div>${l}<span>${Math.round(v)} / ${t} g</span><div class="bar"><i style="width:${Math.min(100,v/t*100)}%;background:${c}"></i></div></div>`;
  return `<div class="row" style="gap:16px"><div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="gp"><stop offset="0" stop-color="#FF7A6E"/><stop offset="1" stop-color="#E0242F"/></linearGradient></defs><circle class="b" cx="60" cy="60" r="${r}"/><circle class="f" cx="60" cy="60" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-k)}"/></svg><div><b>${fr(got.k)}</b><small>/ ${fr(T.kcal)} kcal</small></div></div>
@@ -319,6 +319,7 @@ function vFood(){const T=targets(),d=nutDay??new Date().getDay(),wc=weekCost(),o
 function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b>${v}</b></li>`;
  return `<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Goûts",(t=>`${t.filter(v=>v>0).length} ❤️ · ${t.filter(v=>v<0).length} 🚫${(p.allerg||[]).length?" · sans "+p.allerg.map(a=>ALLERG.find(x=>x.v===a).l.toLowerCase()).join(", "):""}`)(Object.values(p.taste||{})))}${row("Courses",`${STORES.find(s=>s.v===p.store).l} · ${p.budget} € / semaine`)}</ul></div>
  <button class="btn" id="plan-see">Voir mon plan et pourquoi</button><button class="btn ghost" id="tastes">Mes goûts</button><button class="btn ghost" id="adj">Adapter à mon emploi du temps</button><button class="btn ghost" id="redo">Refaire le questionnaire</button>
+ <button class="btn" data-tab="jeu">🎮 Mon personnage et mes potes</button>
  <button class="btn ghost" data-tab="set">⚙️ Paramètres : notifications, sauvegarde, unités</button>
  ${refineCard(0)}`}
 
@@ -464,7 +465,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 
 /* ================= Démarrage ================= */
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
-render();suiviInit();reglagesInit();
+render();suiviInit();reglagesInit();jeuInit();
 if(PROF&&G)gOpen();
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if("serviceWorker"in navigator)addEventListener("load",()=>{const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload()})});

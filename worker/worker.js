@@ -27,9 +27,35 @@ export default{
    if(p==="/push/test"&&req.method==="POST"){const cur=JSON.parse(await env.EK.get("s:"+id)||"null");if(!cur||!cur.sub)return json({error:"aucun abonnement push"},404);
     const r=await sendPush(env,cur.sub,{t:"Test réussi ✅",b:"Les notifications push d'Ektyron Coach fonctionnent.",go:"today",tag:"test"});
     return json({ok:r.ok,status:r.status,detail:r.ok?"":await r.text()},r.ok?200:502)}
+   if(p==="/group"&&req.method==="POST"){let code,n=0;do{code=gCode();n++}while(n<5&&await env.EK.get("g:"+code));
+    await env.EK.put("g:"+code,JSON.stringify({t:Date.now(),m:{}}));return json({code})}
+   const gm=p.match(/^\/group\/([A-Z0-9]{6})$/);if(gm)return group(req,env,id,gm[1]);
    return json({error:"introuvable"},404)}catch(e){return json({error:String(e&&e.message||e)},500)}},
  async scheduled(ev,env,ctx){ctx.waitUntil(tick(env))}
 };
+
+/* ---------- Groupes entre potes : uniquement des scores (pseudo, %, séries, stats, records rapportés au poids), jamais les données brutes. ---------- */
+const gCode=()=>{const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",b=crypto.getRandomValues(new Uint8Array(6));return [...b].map(x=>a[x%a.length]).join("")};
+const num=(v,max)=>typeof v==="number"&&isFinite(v)?Math.max(0,Math.min(max,Math.round(v*100)/100)):undefined;
+function clean(s){const o={nick:String(s.nick||"?").slice(0,24),t:Date.now()};
+ for(const k of ["goal","streak","wDone","wPlan","lvl","kg"]){const v=num(s[k],1000);if(v!==undefined)o[k]=v}
+ if(s.stats&&typeof s.stats==="object"){o.stats={};for(const k of ["pecs","dos","jambes","bras","reg","nut"]){const v=num(s.stats[k],1e7);if(v!==undefined)o.stats[k]=v}}
+ if(s.rec&&typeof s.rec==="object"){o.rec={};for(const [k,v] of Object.entries(s.rec).slice(0,150))if(/^\w{1,20}$/.test(k)&&Array.isArray(v)){const r=num(v[0],10);if(r)o.rec[k]=[r,String(v[1]||k).slice(0,60)]}}
+ return o}
+const kings=m=>{const K={};for(const [mid,x] of Object.entries(m))for(const [e,[r]] of Object.entries(x.s.rec||{}))if(!K[e]||r>K[e][1])K[e]=[mid,r];return K};
+async function group(req,env,id,code){const key="g:"+code,G=JSON.parse(await env.EK.get(key)||"null");if(!G)return json({error:"groupe introuvable"},404);
+ const mid=(await idOf("m:"+id)).slice(0,12),out=()=>json({code,me:mid,members:Object.entries(G.m).map(([k,x])=>({id:k,...x.s}))});
+ if(req.method==="GET"){if(!G.m[mid])return json({error:"tu n'es pas dans ce groupe"},403);return out()}
+ if(req.method==="DELETE"){delete G.m[mid];await env.EK.put(key,JSON.stringify(G));return json({ok:true})}
+ if(req.method==="PUT"){const t=await req.text();if(t.length>30000)return json({error:"trop gros"},413);
+  if(!G.m[mid]&&Object.keys(G.m).length>=30)return json({error:"groupe complet (30)"},409);
+  const before=kings(G.m);G.m[mid]={id,s:clean(JSON.parse(t))};const after=kings(G.m),lost={};
+  for(const [e,[k]] of Object.entries(after))if(k===mid&&before[e]&&before[e][0]!==mid)(lost[before[e][0]]=lost[before[e][0]]||[]).push(G.m[mid].s.rec[e][1]);
+  await env.EK.put(key,JSON.stringify(G));
+  for(const [o,L] of Object.entries(lost)){const S=JSON.parse(await env.EK.get("s:"+G.m[o].id)||"null");if(!S||!S.sub)continue;
+   try{await sendPush(env,S.sub,{t:`👑 ${G.m[mid].s.nick} t'a pris ${L.length>1?L.length+" machines":"une machine"}`,b:L.slice(0,4).join(", ")+" : à toi de la reprendre !",go:"jeu",tag:"roi"})}catch(e){}}
+  return out()}
+ return json({error:"méthode non gérée"},405)}
 
 /* Heure locale de l'utilisateur (fuseau envoyé par l'appli). */
 function local(tz){let f;try{f=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",weekday:"short",hourCycle:"h23"}).formatToParts(new Date())}

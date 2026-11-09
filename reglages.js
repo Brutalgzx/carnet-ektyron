@@ -1,7 +1,7 @@
 /* ================= Paramètres : sauvegarde (fichiers, synchro en ligne), notifications push, affinage du profil =================
    Chargé avant app.js : uniquement des fonctions et des écouteurs. */
 /* Toutes les clés à sauvegarder : une seule liste pour l'export, l'import, la synchro et l'effacement. */
-const BK_KEYS=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest","coach-meas","coach-check","coach-notif","coach-set","coach-deload"];
+const BK_KEYS=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest","coach-meas","coach-check","coach-notif","coach-set","coach-deload","coach-jeu"];
 const GUIDE="https://github.com/brutalgzx/carnet-ektyron/blob/main/worker/README.md";
 const lk=(t=Date.now())=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
 const dfr=t=>new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});

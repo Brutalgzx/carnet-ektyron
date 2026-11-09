@@ -124,7 +124,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
  if(D.go==="save"){view="set";render();const el=document.getElementById("sec-save");if(el)el.scrollIntoView();return}
  if(D.go){const sec={pesee:"sec-pesee",mesures:"sec-mesures",bilan:"sec-bilan"}[D.go];if(view!=="prog"){view="prog";render()}const el=sec&&document.getElementById(sec);if(el){el.scrollIntoView({behavior:"smooth"});const d=el.querySelector("details");if(d)d.open=true}}});
 /* Lancé à la fin d'app.js. */
-function suiviInit(){const h=location.hash.slice(1);if(PROF&&(h==="prog"||h==="today")){view=h;render();history.replaceState(null,"",location.pathname+location.search)}
+function suiviInit(){const h=location.hash.slice(1);if(PROF&&(h==="prog"||h==="today"||h==="jeu")){view=h;render();history.replaceState(null,"",location.pathname+location.search)}
  if("serviceWorker"in navigator)navigator.serviceWorker.addEventListener("message",e=>{if(e.data&&e.data.go&&PROF&&view!=="ob"){view=e.data.go;render()}});
  document.addEventListener("visibilitychange",()=>{if(document.hidden)notifPublish();else notifCheck()});
  notifCheck();notifPublish()}
