@@ -58,9 +58,11 @@ async function jeuSync(){const c=jeuCfg();if(!c.code||!PROF||jeuBusy)return;jeuB
  try{jeuGot(await api("/group/"+c.code,{method:"PUT",body:JSON.stringify(jeuSnap())}))}finally{jeuBusy=false}}
 function jeuSoon(){if(!jeuCfg().code)return;clearTimeout(jeuT);jeuT=setTimeout(()=>jeuSync().catch(()=>{}),5000)}
 async function jeuJoin(code,nick){jeuEnsureCode();const c=jeuCfg();c.code=code;c.nick=nick;c.held=[];LS.set("coach-jeu",c);
- try{await jeuSync();toast("Bienvenue dans le groupe "+code+" !")}catch(e){const C=jeuCfg();C.code="";LS.set("coach-jeu",C);toast("Impossible de rejoindre : "+e.message);render()}}
-async function jeuCreate(nick){jeuEnsureCode();try{const {code}=await api("/group",{method:"POST"});await jeuJoin(code,nick)}catch(e){toast("Création impossible : "+e.message)}}
+ try{await jeuSync();toast("Bienvenue dans le groupe "+code+" !")}catch(e){const C=jeuCfg();C.code="";LS.set("coach-jeu",C);toast("Impossible de rejoindre : "+jeuErr(e));render()}}
+async function jeuCreate(nick){jeuEnsureCode();try{const {code}=await api("/group",{method:"POST"});await jeuJoin(code,nick)}catch(e){toast("Création impossible : "+jeuErr(e))}}
 async function jeuLeave(){const c=jeuCfg();try{await api("/group/"+c.code,{method:"DELETE"})}catch(e){}c.code="";c.last=null;c.held=[];LS.set("coach-jeu",c);jeuSel=null;render()}
+
+const jeuErr=e=>/404/.test(e.message)?"le serveur n'a pas encore la fonction groupes (mise à jour du serveur à faire), ou ce code n'existe pas.":/Failed to fetch|NetworkError|Load failed/i.test(e.message)?"pas de connexion au serveur.":e.message;
 
 /* ---------- Affichage ---------- */
 const jeuBar=(p,c="var(--pink)")=>`<div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%;background:${c}"></i></div>`;
@@ -100,3 +102,11 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
 /* Lancé à la fin d'app.js : séance, pesée ou repas coché → instantané envoyé au groupe (regroupé). */
 function jeuInit(){const set=LS.set;LS.set=(k,v)=>{set(k,v);if(["carnet","carnet-xp","coach-weights","coach-eaten"].includes(k))jeuSoon()};
  if(jeuCfg().code)setTimeout(()=>jeuSync().catch(()=>{}),2000)}
+
+/* Carte d'accueil : le personnage et le groupe en premier plan. */
+function jeuHome(){if(!PROF)return"";const c=jeuCfg(),X=jeuXP(),L=c.last,K=jeuKings(L),mine=L?Object.values(K).filter(k=>k.id===L.me).length:0;
+ const st=JEU_STATS.map(([k,l,i])=>`<span class="small" style="white-space:nowrap">${i} <b>${statLv(X[k])}</b></span>`).join("");
+ const grp=c.code&&L?[...L.members].sort((a,b)=>(b.goal||0)-(a.goal||0)).slice(0,3).map(m=>`<div><div class="row small"><span class="sp">${esc(m.nick)}${m.id===L.me?" (toi)":""}${m.streak?` · 🔥 ${m.streak}`:""}</span><b>${m.goal!=null?m.goal+" %":""}</b></div>${m.goal!=null?jeuBar(m.goal,"var(--good)"):""}</div>`).join(""):"";
+ return `<button class="card stack" data-tab="jeu" id="jeu-home" style="text-align:left;width:100%;cursor:pointer"><div class="row"><span style="font-size:30px">🧙</span><span class="sp"><div class="lab">Mon personnage et mes potes</div><b>${esc(c.nick||PROF.name)} · Niv. ${level(jeuTotal(X)).l}</b></span><span style="font-size:22px">›</span></div>
+ <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px">${st}</div>
+ ${c.code?`<div class="small"><b>Groupe ${esc(c.code)}</b> · 👑 ${mine} machine${mine>1?"s":""}</div>${grp}`:`<div class="small muted">🎮 Crée ton groupe ou rejoins celui de tes potes : qui tient sa série, qui est le Roi de chaque machine.</div>`}</button>`}
