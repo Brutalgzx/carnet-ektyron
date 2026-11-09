@@ -34,7 +34,8 @@ function bkApply(o){if(o&&o.app==="ektyron-coach"&&o.data)o=o.data;if(!o||typeof
 function bkFile(f){const r=new FileReader();r.onload=()=>{try{bkApply(JSON.parse(r.result))}catch(e){toast("Fichier illisible : rien n'a été modifié.")}};r.readAsText(f)}
 
 /* ---------- Synchro en ligne (Cloudflare Worker + KV, code personnel) ---------- */
-const syncCfg=()=>({url:"",code:"",auto:true,last:0,h:0,push:false,ps:"",...LS.get("coach-sync",{})});
+const SYNC_URL="https://ektyron-coach.ektyron.workers.dev";
+const syncCfg=()=>{const c={url:"",code:"",auto:true,last:0,h:0,push:false,ps:"",...LS.get("coach-sync",{})};if(!c.url)c.url=SYNC_URL;return c};
 const syncOk=()=>{const S=syncCfg();return !!(S.url&&S.code)};
 async function api(path,opt={}){const S=syncCfg();if(!S.url||!S.code)throw new Error("serveur non configuré");
  const r=await fetch(S.url.replace(/\/+$/,"")+path,{...opt,headers:{"Content-Type":"application/json","X-Code":S.code}});

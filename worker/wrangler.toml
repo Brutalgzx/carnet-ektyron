@@ -5,7 +5,11 @@ compatibility_date = "2025-01-01"
 
 [[kv_namespaces]]
 binding = "EK"
-id = "REMPLACE_PAR_L_ID_DE_TON_ESPACE_KV"
+id = "53710c5a32ab4c2f8389f73caba7a2fe"
 
 [triggers]
 crons = ["*/15 * * * *"]
+
+[vars]
+VAPID_PUBLIC = "BDrX-g9ibka3agIBtCyCH1H9AGse42LqyvIDVwVSmHB6gbpNYz-DilyW8C81V7KyOERA59Rw3IXPTYf-RIsTVOw"
+VAPID_SUBJECT = "https://brutalgzx.github.io/carnet-ektyron/"
