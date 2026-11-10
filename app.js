@@ -347,11 +347,14 @@ function gStart(day){auUnlock();G={day,ei:0,si:0,ph:"set",sets:{},start:Date.now
 function gOpen(){delete G.away;gSave();document.body.classList.add("g-on");$("#game").hidden=false;$("#game").scrollTop=0;lockOn();gShow()}
 /* Séance en cours reprenable : même jour de programme, lancée aujourd'hui. */
 const gToday=t=>new Date(t).toDateString()===new Date().toDateString(), gResumable=day=>!!G&&G.day===day&&G.ph!=="done"&&gToday(G.start);
-function gBtns(d,lbl){return gResumable(d)?`<button class="btn" data-play="${d}">▶ Reprendre ma séance (${Math.min(G.ei+1,gList().length)}/${gList().length})</button><button class="btn ghost" data-gnew="${d}">Démarrer une nouvelle séance</button>`:`<button class="btn" data-play="${d}">${lbl}</button>`}
+function gBtns(d,lbl){return gResumable(d)?`<button class="btn" data-play="${d}">▶ Reprendre ma séance (${Math.min(G.ei+1,gList().length)}/${gList().length})</button><button class="btn ghost" data-gnew="${d}">Démarrer une nouvelle séance</button><button class="link" data-gcancel style="color:var(--bad)">Annuler la séance</button>`:`<button class="btn" data-play="${d}">${lbl}</button>`}
 /* Quitter : on garde tout pour reprendre plus tard. */
 function gHide(){clearInterval(gInt);G.away=1;gSave();$("#game").hidden=true;document.body.classList.remove("g-on");lockOff();render()}
 /* Abandon d'une séance en cours : les séries déjà faites sont enregistrées dans le carnet. */
 function gDrop(){if(!G)return;const L=gList();for(let i=G.ei;i<L.length;i++){const ex=L[G.ord?G.ord[i]:i];if(ex&&(G.sets[ex.id]||[]).some(Boolean))gFinishEx(ex)}clearInterval(gInt);G=null;LS.del(GK)}
+/* Annuler : rien n'est gardé, y compris les exercices déjà notés pendant cette séance. */
+function gCancel(){if(!G)return;const ids=new Set(gList().map(x=>x.id));let ch=false;for(const id of ids)if(store[id]){const n=store[id].length;store[id]=store[id].filter(h=>h.t<G.start);if(store[id].length!==n)ch=true;if(!store[id].length)delete store[id]}
+ if(ch)persist();gClose();toast("Séance annulée : rien n'a été enregistré.")}
 function gClose(){clearInterval(gInt);G=null;LS.del(GK);$("#game").hidden=true;document.body.classList.remove("g-on");lockOff();render()}
 function gTop(){const n=gList().length;return `<div class="g-top"><button id="g-quit" aria-label="Quitter la partie">✕</button><div class="g-segs">${gList().map((x,i)=>`<i class="${i<G.ei?"ok":i===G.ei&&G.ph!=="done"?"now":""}"></i>`).join("")}</div><span>${Math.min(G.ei+1,n)}/${n}</span></div>`}
 function gSuggest(ex){const last=lastLog(ex.id),ls=last?.sets||[],prev=ls[G.si]||ls[ls.length-1],before=(G.sets[ex.id]||[])[G.si-1];
@@ -367,7 +370,7 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
   ${s.up&&G.si===0?`<div class="g-up">Tu as tout validé la dernière fois : on monte d'un cran.</div>`:""}${deloadOn()&&G.si===0?`<div class="g-up">Semaine de décharge : charges −15 %, garde 2-3 reps en réserve.</div>`:""}
   <div class="g-step"><label for="g-k">${wU()==="lb"?"Livres":"Kilos"}</label><button data-gs="k" data-v="-${wU()==="lb"?5:2.5}" aria-label="Moins ${wU()==="lb"?"5 lb":"2,5 kg"}">−</button><input id="g-k" inputmode="decimal" value="${s.k}" placeholder="0"><button data-gs="k" data-v="${wU()==="lb"?5:2.5}" aria-label="Plus ${wU()==="lb"?"5 lb":"2,5 kg"}">+</button></div>
   <div class="g-step"><label for="g-r">Reps</label><button data-gs="r" data-v="-1" aria-label="Moins une rep">−</button><input id="g-r" inputmode="numeric" value="${s.r}"><button data-gs="r" data-v="1" aria-label="Plus une rep">+</button></div>
-  <div class="g-msg" id="g-msg"></div><button class="btn" id="g-done">Série terminée</button><button class="link" id="g-skip">${G.ei<gList().length-1?"↪ Revenir dessus à la fin":"Terminer sans cet exercice"}</button>`;return}
+  <div class="g-msg" id="g-msg"></div><button class="btn" id="g-done">Série terminée</button><button class="link" id="g-skip">${G.ei<gList().length-1?"↪ Revenir dessus à la fin":"Terminer sans cet exercice"}</button><button class="link" id="g-cancel" style="color:var(--bad)">Annuler la séance</button>`;return}
  if(G.ph==="rest"){const nx=gEx();
   box.innerHTML=gTop()+`<div class="g-fb">${G.fb}</div><div class="lab" style="text-align:center">Repos</div>
   <div class="g-ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="g-arc" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg><b id="g-t" role="timer"></b></div>
@@ -447,6 +450,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   if(t.id==="g-done"){const ex=gEx(),k=+fromU(gNum($("#g-k").value)).toFixed(2),r=parseInt($("#g-r").value);if(isNaN(k)||isNaN(r)||r<1){$("#g-msg").textContent="Indique les kilos et les reps de ta série (0 kg pour le poids du corps).";return}
    (G.sets[ex.id]=G.sets[ex.id]||[])[G.si]={k,r};G.fb=gFeedback(ex,k,r);G.si++;if(G.si>=ex.s)G.fb=`Exercice terminé !<small>${G.fb.split("<small>")[1].replace("</small>","")}</small>`;gNext(true);return}
   if(t.id==="g-skip"){gSkip();return}
+  if(t.id==="g-cancel"){if(confirm("Annuler cette séance ? Rien ne sera enregistré."))gCancel();return}
   if(t.id==="g-m"||t.id==="g-p"){G.restEnd=Math.max(Date.now()+1000,G.restEnd+(t.id==="g-p"?15000:-15000));G.restTotal=Math.max(G.restTotal,Math.ceil((G.restEnd-Date.now())/1000));gSave();gTick();return}
   if(t.id==="g-go"){G.ph="set";G.fb="";gSave();gShow();$("#game").scrollTop=0;return}
   if(t.id==="g-end"){gClose();return}
@@ -454,6 +458,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   return}
  if(D.tab){view=D.tab;$("#sheet")?.remove();render();window.scrollTo(0,0);return}
  if(D.play!==undefined){if(gResumable(+D.play))gOpen();else{gDrop();gStart(+D.play)}return}
+ if(D.gcancel!==undefined){if(confirm("Annuler cette séance ? Rien ne sera enregistré."))gCancel();return}
  if(D.gnew!==undefined){if(!confirm("Démarrer une nouvelle séance ? Les séries déjà faites restent dans ton carnet."))return;gDrop();gStart(+D.gnew);return}
  if(D.sday!==undefined){selDay=+D.sday;render();return}
  if(D.nday!==undefined){nutDay=+D.nday;render();return}
