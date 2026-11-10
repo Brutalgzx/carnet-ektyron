@@ -5,7 +5,8 @@ const JEU_GRP={pecs:"pecs",lats:"dos",dos:"dos",lomb:"dos",arr:"bras",ant:"bras"
 const JEU_SHARE=[["goal","Objectif en %"],["streak","Série de semaines"],["week","Séances de la semaine"],["stats","Personnage"],["rec","Records (Roi de la machine)"],["kg","Mon poids"]];
 const JEU_TIP={pecs:"ajoute une série de développé ou d'écarté sur tes séances haut du corps",dos:"ajoute une série de tirage ou de rowing",jambes:"ne zappe pas la séance jambes, ajoute une série de squat ou de presse",bras:"ajoute une série de curl et d'extension triceps en fin de séance",reg:"fais toutes tes séances prévues cette semaine",nut:"coche tes repas et vise ta cible de protéines"};
 const jeuCfg=()=>{const c={code:"",nick:"",nd:{},last:null,held:[],...LS.get("coach-jeu",{})};c.share={goal:1,streak:1,week:1,stats:1,rec:1,kg:0,...c.share};return c};
-const statLv=xp=>Math.floor(Math.sqrt(xp/80))+1;
+/* Niveau d'une stat : niv. 2 à 400 XP (≈ 40 séries du muscle, ou 10 séances pour la Régularité), niv. 3 à 1 600, niv. 4 à 3 600. */
+const statLv=xp=>Math.floor(Math.sqrt(xp/400))+1;
 const jeuPlan=()=>Math.max(1,(PROF.days||[]).length||PROF.freq||3);
 let jeuSel=null,jeuT=null,jeuBusy=false;
 
@@ -43,7 +44,7 @@ function jeuRec(){const w=curWeight(),R={};
  for(const id in store){if(!EX[id])continue;const S=store[id].filter(h=>!h.dl).flatMap(h=>(h.sets||[]).filter(s=>s&&s.r>0&&s.k>0));if(!S.length)continue;
   R[id]=[Math.round(Math.max(...S.map(e1rm))/w*100)/100,EX[id][0]]}return R}
 
-function jeuSnap(){const c=jeuCfg(),s=c.share,X=jeuXP(),W=jeuWeeks(),o={nick:c.nick||PROF.name,lvl:level(jeuTotal(X)).l};
+function jeuSnap(){const c=jeuCfg(),s=c.share,X=jeuXP(),W=jeuWeeks(),o={nick:c.nick||PROF.name,lvl:level(xpProf().xp).l};
  if(s.goal)o.goal=jeuGoal();if(s.streak)o.streak=W.streak;if(s.week){o.wDone=W.done;o.wPlan=jeuPlan()}if(s.stats)o.stats=X;if(s.rec)o.rec=jeuRec();if(s.kg)o.kg=Math.round(curWeight()*10)/10;return o}
 
 /* Meilleur du groupe sur chaque machine. */
@@ -66,10 +67,10 @@ const jeuErr=e=>/404/.test(e.message)?"le serveur n'a pas encore la fonction gro
 
 /* ---------- Affichage ---------- */
 const jeuBar=(p,c="var(--pink)")=>`<div class="bar"><i style="width:${Math.max(0,Math.min(100,p))}%;background:${c}"></i></div>`;
-function jeuSheet(name,X,lvl,me){const L=JEU_STATS.map(([k,l,i])=>{const xp=X[k]||0,v=statLv(xp),a=(v-1)**2*80,b=v*v*80;
+function jeuSheet(name,X,lvl,me){const L=JEU_STATS.map(([k,l,i])=>{const xp=X[k]||0,v=statLv(xp),a=(v-1)**2*400,b=v*v*400;
   return `<div><div class="row small"><span class="sp">${i} ${l}</span><b>Niv. ${v}</b></div>${jeuBar((xp-a)/(b-a)*100)}</div>`}).join("");
- return `<div class="card stack"><div class="row"><span style="font-size:34px">${me?"🧙":"🥷"}</span><span class="sp"><div class="lab">Personnage</div><b style="font-size:20px">${esc(name)}</b></span><div class="lvl"><b>Niv. ${lvl}</b>${me?fr(jeuTotal(X))+" XP":""}</div></div>${L}</div>`}
-function vJeu(){const c=jeuCfg(),X=jeuXP(),me=jeuSheet(c.nick||PROF.name,X,level(jeuTotal(X)).l,1),back=`<div class="row" style="margin-top:-8px"><button class="chip" data-tab="me">‹ Profil</button></div>`;
+ return `<div class="card stack"><div class="row"><span style="font-size:34px">${me?"🧙":"🥷"}</span><span class="sp"><div class="lab">Personnage</div><b style="font-size:20px">${esc(name)}</b></span><div class="lvl"><b>Niv. ${lvl}</b>${me?fr(xpProf().xp)+" XP":""}</div></div>${L}</div>`}
+function vJeu(){const c=jeuCfg(),X=jeuXP(),me=jeuSheet(c.nick||PROF.name,X,level(xpProf().xp).l,1),back=`<div class="row" style="margin-top:-8px"><button class="chip" data-tab="me">‹ Profil</button></div>`;
  if(!c.code)return `${back}${me}<div class="card stack"><div class="lab">Jouer entre potes</div><p class="small muted" style="margin:0">Crée un groupe et envoie le code à tes potes, ou rejoins le leur. Chacun voit où en sont les autres et qui est le Roi de chaque machine. Seuls des scores sont partagés, ton poids reste privé.</p>
   <label class="stack" style="gap:4px"><b class="small">Ton pseudo</b><input class="txt" id="jeu-nick" maxlength="24" value="${esc(c.nick||PROF.name)}" style="font-size:15px;padding:10px"></label>
   <button class="btn" id="jeu-new">Créer un groupe</button><div class="row"><input class="txt" id="jeu-code" maxlength="6" placeholder="CODE" autocapitalize="characters" style="flex:1;font-size:15px;padding:10px;text-transform:uppercase"><button class="btn ghost sm" id="jeu-join">Rejoindre</button></div></div>`;
@@ -105,8 +106,8 @@ function jeuInit(){const set=LS.set;LS.set=(k,v)=>{set(k,v);if(["carnet","carnet
 
 /* Carte d'accueil : le personnage et le groupe en premier plan. */
 function jeuHome(){if(!PROF)return"";const acc=acUser()?"":`<button class="hintbox" data-tab="me" id="ac-nudge" style="width:100%;text-align:left;cursor:pointer;border-color:var(--warn)"><span style="font-size:24px">🔐</span><span class="small"><b>Crée ton identifiant</b><br><span class="muted">Tes données seront sauvegardées et restaurées toutes seules.</span></span></button>`;const c=jeuCfg(),X=jeuXP(),L=c.last,K=jeuKings(L),mine=L?Object.values(K).filter(k=>k.id===L.me).length:0;
- const st=JEU_STATS.map(([k,l,i])=>`<span class="small" style="white-space:nowrap">${i} <b>${statLv(X[k])}</b></span>`).join("");
+ const st=JEU_STATS.map(([k,l,i])=>`<span class="small" style="white-space:nowrap;flex:1 0 30%">${i} ${l} <b>niv. ${statLv(X[k])}</b></span>`).join("");
  const grp=c.code&&L?[...L.members].sort((a,b)=>(b.goal||0)-(a.goal||0)).slice(0,3).map(m=>`<div><div class="row small"><span class="sp">${esc(m.nick)}${m.id===L.me?" (toi)":""}${m.streak?` · 🔥 ${m.streak}`:""}</span><b>${m.goal!=null?m.goal+" %":""}</b></div>${m.goal!=null?jeuBar(m.goal,"var(--good)"):""}</div>`).join(""):"";
- return `${acc}<button class="card stack" data-tab="jeu" id="jeu-home" style="text-align:left;width:100%;cursor:pointer"><div class="row"><span style="font-size:30px">🧙</span><span class="sp"><div class="lab">Mon personnage et mes potes</div><b>${esc(c.nick||PROF.name)} · Niv. ${level(jeuTotal(X)).l}</b></span><span style="font-size:22px">›</span></div>
- <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px">${st}</div>
+ return `${acc}<button class="card stack" data-tab="jeu" id="jeu-home" style="text-align:left;width:100%;cursor:pointer"><div class="row"><span style="font-size:30px">🧙</span><span class="sp"><div class="lab">Mon personnage et mes potes</div><b>${esc(c.nick||PROF.name)} · Niv. ${level(xpProf().xp).l}</b></span><span style="font-size:22px">›</span></div>
+ <div class="row" style="flex-wrap:wrap;gap:6px 10px">${st}</div>
  ${c.code?`<div class="small"><b>Groupe ${esc(c.code)}</b> · 👑 ${mine} machine${mine>1?"s":""}</div>${grp}`:`<div class="small muted">🎮 Crée ton groupe ou rejoins celui de tes potes : qui tient sa série, qui est le Roi de chaque machine.</div>`}</button>`}
