@@ -255,7 +255,7 @@ function buildScreen(){document.body.className="ob";const L=["Lecture de tes ré
 /* ================= Écrans ================= */
 const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',train:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',food:'<path d="M7 3v8a3 3 0 0 0 3 3v7M10 3v6M4 3v6a3 3 0 0 0 3 3M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',prog:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
 const TABS=[["today","Aujourd'hui"],["train","Séances"],["food","Nutrition"],["prog","Progrès"],["me","Profil"]];
-function render(){if(!PROF&&view!=="ob")return LS.get("coach-draft",null)?startOnboarding():vPortal();if(view==="ob")return renderOb();if(view==="plan")return showPlan();document.body.className=G?"g-on":"";
+function render(){if(!PROF&&view!=="ob")return LS.get("coach-draft",null)?startOnboarding():vPortal();if(view==="ob")return renderOb();if(view==="plan")return showPlan();document.body.className=G&&!G.away?"g-on":"";
  TRAIN=TRAIN||buildTraining(PROF);const L=level(xpProf().xp);
  const titles={today:`Salut ${esc(PROF.name)}`,train:"Tes séances",food:"Nutrition",prog:"Progrès",me:"Profil",set:"Paramètres",jeu:"Entre potes",hist:"Historique"};
  $("#app").innerHTML=`<header class="top"><h1>${titles[view]}</h1><div class="lvl"><b>Niv. ${L.l}</b>${xpProf().xp} XP</div></header><main class="stack">${({today:vToday,train:vTrain,food:vFood,prog:vProg,me:vMe,set:vSet,jeu:vJeu,hist:vHist})[view]()}</main>
@@ -272,7 +272,7 @@ function vToday(){const d=new Date().getDay(),S=TRAIN[d],T=targets(),M=dayMeals(
  return `<div class="small muted" style="margin-top:-8px">${DLONG[d]} ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long"})} · ${weekGames()}/${PROF.freq} séances cette semaine</div>
  ${jeuHome()}
  ${dueBanner()}${coachToday()}
- ${S?`<div class="card hot stack"><div class="lab">Séance du jour</div><h2>${S.t}</h2><div class="small muted">${S.f} · ${S.x.length} exercices · environ ${sessMin(S)} min</div><button class="btn" data-play="${d}">${G?"Reprendre la partie":"▶ Lancer la séance"}</button></div>`
+ ${S?`<div class="card hot stack"><div class="lab">Séance du jour</div><h2>${S.t}</h2><div class="small muted">${S.f} · ${S.x.length} exercices · environ ${sessMin(S)} min</div>${gBtns(d,"▶ Lancer la séance")}</div>`
    :`<div class="card stack"><div class="lab">Jour de repos</div><h2>Récupération</h2><p class="small muted" style="margin:0">Le muscle se construit pendant le repos. Marche, étire-toi, mange tes repas et dors bien.${(()=>{const n=WEEK.slice(WEEK.indexOf(d)+1).concat(WEEK).find(x=>TRAIN[x]);return n!=null?` Prochaine séance : <b>${TRAIN[n].t}</b> ${DLONG[n].toLowerCase()}.`:""})()}</p></div>`}
  <div class="card stack"><div class="row"><div class="lab sp">Nutrition du jour</div><span class="small muted">Coche ce que tu as mangé</span></div>${macroBlock(T,got)}${M.map(m=>mealRow(m,d,true)).join("")}</div>
  ${needW?`<div class="card stack"><div class="lab">Pesée de la semaine</div><p class="small muted" style="margin:0">Le matin à jeun. Ton coach ajuste tes calories selon ta courbe.</p><div class="row"><input class="txt" id="w-in" inputmode="decimal" placeholder="${fr(toU(curWeight()),1)} ${wU()}" style="flex:1;font-size:18px;padding:12px"><button class="btn sm" id="w-save">Enregistrer</button></div></div>`:""}
@@ -300,7 +300,7 @@ function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok
 function vTrain(){const S=TRAIN[selDay],td=new Date().getDay();
  return `<div class="row" style="margin-top:-8px"><div class="small muted sp">${splitName(PROF)} · ${GYMS.find(g=>g.v===PROF.gym).l} · ${GOALS.find(g=>g.v===PROF.goal).l.toLowerCase()}</div><button class="chip" id="adj">Adapter</button></div>
  <div class="week">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${d===selDay}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
- ${S?`<div class="card hot stack"><h2>${S.t}</h2><div class="small muted">${S.f} · environ ${sessMin(S)} min${S.own?" · modifiée par toi":""}</div><button class="btn" data-play="${selDay}">${G?"Reprendre la partie":"▶ Jouer cette séance"}</button><button class="btn ghost" id="ed-tog">${edit?"✓ Terminer les modifications":"✏️ Modifier cette séance"}</button></div>
+ ${S?`<div class="card hot stack"><h2>${S.t}</h2><div class="small muted">${S.f} · environ ${sessMin(S)} min${S.own?" · modifiée par toi":""}</div>${gBtns(selDay,"▶ Jouer cette séance")}<button class="btn ghost" id="ed-tog">${edit?"✓ Terminer les modifications":"✏️ Modifier cette séance"}</button></div>
   ${S.x.map((e,i)=>{const l=lastLog(e.id);return `<article class="ex">${e.a?`<canvas class="anim" data-id="${e.a}" width="640" height="480" aria-label="Animation : ${esc(e.n)}"></canvas>`:""}<div class="hd"><b>${e.n}</b><span class="sc">${e.s}×${e.r[0]}–${e.r[1]}</span></div><div class="small">${e.c}</div><div class="small muted mono">Repos ${fmtT(e.rest)} · ${l?`dernière fois ${l.sets.map(s=>`${s.k}×${s.r}`).join(" · ")}`:"pas encore de données"}</div>${edit?`<div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="chip" data-mv="${i},-1" aria-label="Monter">↑</button><button class="chip" data-mv="${i},1" aria-label="Descendre">↓</button><button class="chip" data-sw="${i}" style="flex:1">🔄 Changer</button><button class="chip" data-rm="${i}">🗑️ Retirer</button></div>`:""}</article>`}).join("")}${edit?`<button class="btn ghost" data-sw="-1">+ Ajouter un exercice</button>${S.own?`<button class="btn ghost" id="ed-reset">Revenir à la séance du coach</button>`:""}`:""}`
   :`<div class="card stack"><h2>Repos</h2><p class="small muted" style="margin:0">Pas de muscu aujourd'hui : de la marche ou 20 minutes de cardio léger si tu veux bouger.</p></div>`}`}
 function vFood(){const T=targets(),d=nutDay??new Date().getDay(),wc=weekCost(),over=wc>PROF.budget*1.05;
@@ -344,7 +344,14 @@ function lockOff(){try{wake&&wake.release()}catch(e){}wake=null}
 const gSave=()=>LS.set(GK,G), gList=()=>TRAIN[G.day].x, gEx=()=>gList()[G.ord?G.ord[G.ei]:G.ei], gNum=v=>parseFloat(String(v).replace(",","."));
 const restOf=e=>(LS.get("carnet-rest",{})[e.id])||e.rest;
 function gStart(day){auUnlock();G={day,ei:0,si:0,ph:"set",sets:{},start:Date.now(),fb:"",prs:[]};gSave();gOpen()}
-function gOpen(){document.body.classList.add("g-on");$("#game").hidden=false;$("#game").scrollTop=0;lockOn();gShow()}
+function gOpen(){delete G.away;gSave();document.body.classList.add("g-on");$("#game").hidden=false;$("#game").scrollTop=0;lockOn();gShow()}
+/* Séance en cours reprenable : même jour de programme, lancée aujourd'hui. */
+const gToday=t=>new Date(t).toDateString()===new Date().toDateString(), gResumable=day=>!!G&&G.day===day&&G.ph!=="done"&&gToday(G.start);
+function gBtns(d,lbl){return gResumable(d)?`<button class="btn" data-play="${d}">▶ Reprendre ma séance (${Math.min(G.ei+1,gList().length)}/${gList().length})</button><button class="btn ghost" data-gnew="${d}">Démarrer une nouvelle séance</button>`:`<button class="btn" data-play="${d}">${lbl}</button>`}
+/* Quitter : on garde tout pour reprendre plus tard. */
+function gHide(){clearInterval(gInt);G.away=1;gSave();$("#game").hidden=true;document.body.classList.remove("g-on");lockOff();render()}
+/* Abandon d'une séance en cours : les séries déjà faites sont enregistrées dans le carnet. */
+function gDrop(){if(!G)return;const L=gList();for(let i=G.ei;i<L.length;i++){const ex=L[G.ord?G.ord[i]:i];if(ex&&(G.sets[ex.id]||[]).some(Boolean))gFinishEx(ex)}clearInterval(gInt);G=null;LS.del(GK)}
 function gClose(){clearInterval(gInt);G=null;LS.del(GK);$("#game").hidden=true;document.body.classList.remove("g-on");lockOff();render()}
 function gTop(){const n=gList().length;return `<div class="g-top"><button id="g-quit" aria-label="Quitter la partie">✕</button><div class="g-segs">${gList().map((x,i)=>`<i class="${i<G.ei?"ok":i===G.ei&&G.ph!=="done"?"now":""}"></i>`).join("")}</div><span>${Math.min(G.ei+1,n)}/${n}</span></div>`}
 function gSuggest(ex){const last=lastLog(ex.id),ls=last?.sets||[],prev=ls[G.si]||ls[ls.length-1],before=(G.sets[ex.id]||[])[G.si-1];
@@ -360,7 +367,7 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
   ${s.up&&G.si===0?`<div class="g-up">Tu as tout validé la dernière fois : on monte d'un cran.</div>`:""}${deloadOn()&&G.si===0?`<div class="g-up">Semaine de décharge : charges −15 %, garde 2-3 reps en réserve.</div>`:""}
   <div class="g-step"><label for="g-k">${wU()==="lb"?"Livres":"Kilos"}</label><button data-gs="k" data-v="-${wU()==="lb"?5:2.5}" aria-label="Moins ${wU()==="lb"?"5 lb":"2,5 kg"}">−</button><input id="g-k" inputmode="decimal" value="${s.k}" placeholder="0"><button data-gs="k" data-v="${wU()==="lb"?5:2.5}" aria-label="Plus ${wU()==="lb"?"5 lb":"2,5 kg"}">+</button></div>
   <div class="g-step"><label for="g-r">Reps</label><button data-gs="r" data-v="-1" aria-label="Moins une rep">−</button><input id="g-r" inputmode="numeric" value="${s.r}"><button data-gs="r" data-v="1" aria-label="Plus une rep">+</button></div>
-  <div class="g-msg" id="g-msg"></div><button class="btn" id="g-done">Série terminée</button><button class="link" id="g-skip">${G.ei<gList().length-1?"Machine prise ? Le faire plus tard":"Terminer sans cet exercice"}</button>`;return}
+  <div class="g-msg" id="g-msg"></div><button class="btn" id="g-done">Série terminée</button><button class="link" id="g-skip">${G.ei<gList().length-1?"↪ Revenir dessus à la fin":"Terminer sans cet exercice"}</button>`;return}
  if(G.ph==="rest"){const nx=gEx();
   box.innerHTML=gTop()+`<div class="g-fb">${G.fb}</div><div class="lab" style="text-align:center">Repos</div>
   <div class="g-ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="g-arc" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg><b id="g-t" role="timer"></b></div>
@@ -387,7 +394,7 @@ function gFinishEx(ex){const sets=(G.sets[ex.id]||[]).filter(Boolean);if(!sets.l
  (store[ex.id]=h).push({d:new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}),t:Date.now(),sets,...(deloadOn()?{dl:1}:{})});persist()}
 /* Machine prise : l'exercice repart en fin de séance (séries déjà faites gardées) ; le dernier restant se termine tel quel. */
 function gSkip(){const n=gList().length;if(G.ei>=n-1){gNext(false);return}const ex=gEx();G.ord=G.ord||[...Array(n).keys()];
- G.ord.push(G.ord.splice(G.ei,1)[0]);const nx=gEx();G.dk=G.dr=undefined;G.si=Math.min((G.sets[nx.id]||[]).length,nx.s-1);G.ph="set";gSave();gShow();$("#game").scrollTop=0;toast(`${ex.n} : on y revient en fin de séance.`)}
+ G.ord.push(G.ord.splice(G.ei,1)[0]);const nx=gEx();G.dk=G.dr=undefined;G.si=Math.min((G.sets[nx.id]||[]).length,nx.s-1);G.ph="set";gSave();gShow();$("#game").scrollTop=0;toast(`${ex.n} : remis à la fin de ta séance.`)}
 function gNext(rest){const ex=gEx();G.dk=G.dr=undefined;
  if(G.si>=ex.s||!rest){gFinishEx(ex);G.ei++;G.si=0}
  if(G.ei>=gList().length){G.ph="done";gSave();gShow();return}
@@ -443,10 +450,11 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   if(t.id==="g-m"||t.id==="g-p"){G.restEnd=Math.max(Date.now()+1000,G.restEnd+(t.id==="g-p"?15000:-15000));G.restTotal=Math.max(G.restTotal,Math.ceil((G.restEnd-Date.now())/1000));gSave();gTick();return}
   if(t.id==="g-go"){G.ph="set";G.fb="";gSave();gShow();$("#game").scrollTop=0;return}
   if(t.id==="g-end"){gClose();return}
-  if(t.id==="g-quit"){if(Date.now()-gArm>3000){gArm=Date.now();t.textContent="Quitter ?";setTimeout(()=>{t.textContent="✕"},3000);return}if(G.ph!=="done"&&gEx())gFinishEx(gEx());gClose()}
+  if(t.id==="g-quit"){if(G.ph==="done"){gClose();return}gHide();toast("Séance mise en pause : reprends-la depuis l'accueil.");return}
   return}
  if(D.tab){view=D.tab;$("#sheet")?.remove();render();window.scrollTo(0,0);return}
- if(D.play!==undefined){if(G)gOpen();else gStart(+D.play);return}
+ if(D.play!==undefined){if(gResumable(+D.play))gOpen();else{gDrop();gStart(+D.play)}return}
+ if(D.gnew!==undefined){if(!confirm("Démarrer une nouvelle séance ? Les séries déjà faites restent dans ton carnet."))return;gDrop();gStart(+D.gnew);return}
  if(D.sday!==undefined){selDay=+D.sday;render();return}
  if(D.nday!==undefined){nutDay=+D.nday;render();return}
  if(D.nt){nutTab=D.nt;render();return}
@@ -470,7 +478,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 /* ================= Démarrage ================= */
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
 render();suiviInit();reglagesInit();jeuInit();
-if(PROF&&G)gOpen();
+if(PROF&&G){if(G.ph!=="done"&&!gToday(G.start))gDrop();else if(!G.away)gOpen()}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 if("serviceWorker"in navigator)addEventListener("load",()=>{const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload()})});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
