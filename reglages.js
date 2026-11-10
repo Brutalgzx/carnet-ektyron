@@ -28,9 +28,18 @@ async function bkExport(){const d=lk(),files=[new File([bkJSON()],`ektyron-${d}.
  for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
  bkMark("file");render();toast("Fichiers téléchargés.")}
 /* Accepte le fichier .json exporté, l'ancien code de sauvegarde et le tout premier format (historique seul). */
-function bkApply(o){if(o&&o.app==="ektyron-coach"&&o.data)o=o.data;if(!o||typeof o!=="object"||Array.isArray(o))throw new Error("format");
- if(o["coach-profile"]||o.carnet){for(const k in o)if(o[k]!=null&&BK_KEYS.includes(k))LS.set(k,o[k])}else{const c=LS.get("carnet",{});for(const id in o)if(Array.isArray(o[id]))c[id]=[...(c[id]||[]),...o[id]];LS.set("carnet",c)}
- PROF=migrate(LS.get("coach-profile",PROF));if(PROF)LS.set("coach-profile",PROF);store=LS.get("carnet",{});TRAIN=null;if(PROF&&view==="ob"){view="today";LS.del("coach-draft");FLOW=STEPS}render();toast("Données restaurées.")}
+/* Fusion : ce qui est déjà sur le téléphone est gardé, la sauvegarde ajoute seulement ce qui manque (séances, pesées, mesures, bilans, repas cochés). */
+function bkMerge(k,a,b){if(a==null)return b;if(b==null)return a;
+ const byT=(x,y)=>{const m=new Map();for(const e of [...(y||[]),...(x||[])])if(e&&e.t!=null)m.set(e.t,e);return [...m.values()].sort((p,q)=>p.t-q.t)};
+ if(k==="carnet"){const o={...b};for(const id in a)o[id]=Array.isArray(a[id])&&Array.isArray(b[id])?byT(a[id],b[id]):a[id];return o}
+ if(k==="carnet-xp")return{...b,...a,xp:Math.max(a.xp||0,b.xp||0),games:byT(a.games,b.games).slice(-300)};
+ if(Array.isArray(a)&&Array.isArray(b)&&["coach-weights","coach-meas","coach-check"].includes(k))return byT(a,b);
+ if(k==="coach-eaten"){const o={...b};for(const d in a)o[d]={...b[d],...a[d]};return o}
+ if(k==="coach-jeu")return{...b,...a,nd:{...b.nd,...a.nd},code:a.code||b.code||""};
+ return a}
+function bkApply(o,quiet){if(o&&o.app==="ektyron-coach"&&o.data)o=o.data;if(!o||typeof o!=="object"||Array.isArray(o))throw new Error("format");const h0=hsh(JSON.stringify(bkData()));
+ if(o["coach-profile"]||o.carnet){for(const k in o)if(o[k]!=null&&BK_KEYS.includes(k))LS.set(k,bkMerge(k,LS.get(k,null),o[k]))}else{const c=LS.get("carnet",{});for(const id in o)if(Array.isArray(o[id]))c[id]=[...(c[id]||[]),...o[id]];LS.set("carnet",c)}
+ PROF=migrate(LS.get("coach-profile",PROF));if(PROF)LS.set("coach-profile",PROF);store=LS.get("carnet",{});TRAIN=null;if(PROF&&view==="ob"){view="today";LS.del("coach-draft");FLOW=STEPS}if(!quiet||hsh(JSON.stringify(bkData()))!==h0)render();if(!quiet)toast("Données restaurées.")}
 function bkFile(f){const r=new FileReader();r.onload=()=>{try{bkApply(JSON.parse(r.result))}catch(e){toast("Fichier illisible : rien n'a été modifié.")}};r.readAsText(f)}
 
 /* ---------- Synchro en ligne (Cloudflare Worker + KV, code personnel) ---------- */
@@ -45,6 +54,24 @@ async function syncUp(force){const S=syncCfg();if(!S.url||!S.code||syncBusy)retu
  try{await api("/backup",{method:"PUT",body:bkJSON()});const N=syncCfg();N.last=Date.now();N.h=h;LS.set("coach-sync",N)}finally{syncBusy=false}}
 async function syncDown(){const o=await api("/backup");if(!o)throw new Error("aucune sauvegarde en ligne pour ce code");bkApply(o)}
 function syncSoon(){const S=syncCfg();if(!S.url||!S.code||!S.auto)return;clearTimeout(syncT);syncT=setTimeout(()=>syncUp().catch(()=>{}),4000)}
+/* ---------- Compte : identifiant + mot de passe = code de synchro. Se connecter fusionne tout, sur n'importe quel téléphone. ---------- */
+const acUser=()=>syncCfg().user||"";
+const acForm=create=>`<input class="txt" id="ac-u" autocomplete="username" autocapitalize="none" placeholder="Identifiant (ex. raph)" style="font-size:15px;padding:10px"><input class="txt" id="ac-p" type="password" autocomplete="${create?"new":"current"}-password" placeholder="Mot de passe (6 caractères min.)" style="font-size:15px;padding:10px">
+ <div class="row"><button class="btn sm" id="ac-in" style="flex:1">Se connecter</button>${create?'<button class="btn ghost sm" id="ac-new" style="flex:1">Créer mon compte</button>':""}</div><p class="small" id="ac-m" style="margin:0"></p>`;
+function acCard(){const u=acUser(),S=syncCfg();return u?`<div class="card row" id="sec-compte"><span style="font-size:24px">🔐</span><span class="sp small">Connecté : <b>${esc(u)}</b><br><span class="muted">Tout est sauvegardé automatiquement${S.last?`, dernière fois ${new Date(S.last).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}`:""}.</span></span><button class="chip" id="ac-out">Déconnexion</button></div>`
+ :`<div class="card stack" id="sec-compte"><div class="lab">🔐 Mon compte</div><p class="small muted" style="margin:0">Crée ton identifiant une fois : tes données sont sauvegardées toutes seules. Sur un autre téléphone ou après une mise à jour, connecte-toi et tout revient.</p>${acForm(1)}</div>`}
+async function acGo(create){const u=$("#ac-u").value.trim().toLowerCase(),p=$("#ac-p").value,m=$("#ac-m");
+ if(!/^[a-z0-9._-]{3,24}$/.test(u)){m.textContent="Identifiant : 3 à 24 lettres ou chiffres, sans espace.";return}if(p.length<6){m.textContent="Mot de passe : au moins 6 caractères.";return}
+ const old=syncCfg(),jc=typeof jeuCfg==="function"?jeuCfg().code:"";m.textContent=create?"Création…":"Connexion…";
+ const S={...old,url:old.url||SYNC_URL,code:"compte:"+u+":"+p,user:u,auto:true,h:0,push:false,ps:""};
+ try{const o=await fetch(S.url.replace(/\/+$/,"")+"/backup",{headers:{"X-Code":S.code}}).then(r=>r.status===404?null:r.ok?r.json():Promise.reject(new Error("le serveur répond "+r.status)));
+  if(!o&&!(create&&PROF))throw new Error(create?"remplis d'abord ton profil.":"identifiant ou mot de passe inconnu.");
+  if(jc&&old.code&&old.code!==S.code)try{await api("/group/"+jc,{method:"DELETE"})}catch(e){}
+  LS.set("coach-sync",S);if(o)bkApply(o,1);if(PROF)await syncUp(true);if(jc)jeuSync().catch(()=>{});
+  toast(o?"Connecté : tes données sont là.":"Compte créé : tout est sauvegardé automatiquement.");render()}
+ catch(e){LS.set("coach-sync",old);m.textContent="Échec : "+e.message}}
+/* Au lancement, connecté : récupère ce qui a été fait ailleurs, puis renvoie le tout. */
+async function acPull(){if(!acUser()||(typeof G!=="undefined"&&G))return;const o=await api("/backup");if(o)bkApply(o,1)}
 function newCode(){const a="abcdefghjkmnpqrstuvwxyz23456789",b=crypto.getRandomValues(new Uint8Array(16));return [...b].map(x=>a[x%a.length]).join("").match(/.{4}/g).join("-")}
 
 /* ---------- Notifications push ---------- */
@@ -113,7 +140,9 @@ document.addEventListener("change",e=>{if(e.target.id==="bk-file"&&e.target.file
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;const D=t.dataset;
  if(t.id==="bk-imp"){$("#bk-file").click();return}
  if(t.id==="ob-file"){$("#ob-f").click();return}
+ if(t.id==="ac-in"||t.id==="ac-new"){acGo(t.id==="ac-new");return}
  if(!PROF)return;
+ if(t.id==="ac-out"){if(confirm("Te déconnecter ? Tes données restent sur ce téléphone.")){const S=syncCfg();S.user="";S.code="";S.auto=false;S.push=false;LS.set("coach-sync",S);render()}return}
  if(t.id==="bk-exp"){bkExport();return}
  if(D.ref){startRefine(D.ref);return}
  const setN=f=>{const N=notifCfg();f(N);LS.set("coach-notif",N);notifPublish();notifCheck();render()},setC=f=>{const C=SET();f(C);LS.set("coach-set",C);notifPublish();render()};
@@ -140,4 +169,4 @@ document.addEventListener("change",e=>{if(e.target.id==="ob-f"&&e.target.files[0
 /* Lancé à la fin d'app.js : chaque donnée sauvegardée déclenche une synchro (regroupée), et la sortie de l'appli aussi. */
 function reglagesInit(){const set=LS.set;LS.set=(k,v)=>{set(k,v);if(BK_KEYS.includes(k))syncSoon()};
  document.addEventListener("visibilitychange",()=>{if(document.hidden&&syncCfg().auto)syncUp().catch(()=>{})});
- if(syncCfg().auto)syncUp().catch(()=>{})}
+ if(acUser())acPull().catch(()=>{}).finally(()=>syncUp().catch(()=>{}));else if(syncCfg().auto)syncUp().catch(()=>{})}
