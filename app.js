@@ -14,7 +14,8 @@ function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(see
 /* ================= État ================= */
 let PROF=LS.get("coach-profile",null), store=LS.get("carnet",{}), TRAIN=null, view="today", selDay=new Date().getDay(), nutDay=null, nutTab="week";
 const persist=()=>LS.set("carnet",store);
-const xpProf=()=>LS.get("carnet-xp",{xp:0,games:[]});
+/* XP toujours recalculée depuis les séances présentes (même formule que gStats) : une séance supprimée retire son XP. */
+const xpProf=()=>{const X=LS.get("carnet-xp",{xp:0,games:[]});X.games=X.games||[];X.xp=X.games.reduce((a,g)=>a+Math.round((g.vol||0)/10)+50,0);return X};
 function level(xp){const l=Math.floor(Math.sqrt(xp/100))+1,a=(l-1)*(l-1)*100,b=l*l*100;return{l,pct:Math.round((xp-a)/(b-a)*100),left:b-xp}}
 function weekGames(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()-((n.getDay()+6)%7)).getTime();return xpProf().games.filter(g=>g.t>=m).length}
 
