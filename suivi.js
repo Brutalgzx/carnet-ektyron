@@ -26,9 +26,9 @@ const notifCfg=()=>{const N={on:false,wday:1,hour:8,shour:18,mf:14,cf:7,last:{},
 const canNotif=()=>"Notification"in window&&"serviceWorker"in navigator;
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
 function dueList(){const N=notifCfg(),T=N.types,d=new Date(),wd=d.getDay(),now=Date.now(),out=[],lw=lastT("coach-weights"),lm=lastT("coach-meas"),lc=lastT("coach-check");
- if(T.pesee&&!sameDay(lw)&&(wd===N.wday||now-lw>8*DAY))out.push({k:"pesee",e:"⚖️",t:"C'est le jour de ta pesée",b:"Le matin à jeun, après être passé aux toilettes, toujours sur la même balance."});
- if(T.mesures&&!sameDay(lm)&&now-lm>=(N.mf-1)*DAY&&(wd===N.wday||now-lm>(N.mf+2)*DAY))out.push({k:"mesures",e:"📏",t:"Jour de mensurations",b:"Taille, bras, cuisse… 2 minutes avec un mètre ruban. Et la balance à impédance de ta salle si elle en a une."});
- if(T.bilan&&!sameDay(lc)&&now-lc>=(N.cf-1)*DAY&&(wd===N.wday||now-lc>(N.cf+2)*DAY))out.push({k:"bilan",e:"📝",t:"Ton bilan de la semaine",b:"Sommeil, énergie, faim : 20 secondes pour que ton coach t'ajuste."});
+ if(T.pesee&&!sameDay(lw)&&(wd===N.wday||lw&&now-lw>8*DAY))out.push({k:"pesee",e:"⚖️",t:"C'est le jour de ta pesée",b:"Le matin à jeun, après être passé aux toilettes, toujours sur la même balance."});
+ if(T.mesures&&!sameDay(lm)&&now-lm>=(N.mf-1)*DAY&&(wd===N.wday||lm&&now-lm>(N.mf+2)*DAY))out.push({k:"mesures",e:"📏",t:"Jour de mensurations",b:"Taille, bras, cuisse… 2 minutes avec un mètre ruban. Et la balance à impédance de ta salle si elle en a une."});
+ if(T.bilan&&!sameDay(lc)&&now-lc>=(N.cf-1)*DAY&&(wd===N.wday||lc&&now-lc>(N.cf+2)*DAY))out.push({k:"bilan",e:"📝",t:"Ton bilan de la semaine",b:"Sommeil, énergie, faim : 20 secondes pour que ton coach t'ajuste."});
  if(T.save&&bkDue())out.push({k:"save",e:"💾",t:"Sauvegarde tes données",b:"Exporte-les vers Fichiers ou Obsidian (ou active la synchro en ligne) : rien n'est perdu si tu changes de téléphone."});
  const S=TRAIN&&TRAIN[wd];if(T.seance&&S&&!xpProf().games.some(g=>sameDay(g.t)))out.push({k:"seance",e:"🏋️",t:`Séance du jour : ${S.t}`,b:`${S.x.length} exercices, environ ${sessMin(S)} min.`});
  return out}
