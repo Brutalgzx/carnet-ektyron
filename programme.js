@@ -64,7 +64,7 @@ const ALIAS=[
  [/oiseau|reverse fly|rear delt|arriere d.?epaule|reverse pec/,["rfly","oiseau","facep"]],[/face ?pull/,["facep","rfly"]],
  [/incline/,["incl","dbinc","pompesd"]],[/developpe couche|bench|couche/,["benchx","dch","pompes"]],
  [/pec ?deck|butterfly|pec fly|ecarte|\bfly\b|vis.?a.?vis|crossover|cable cross/,["pfly","ecbh","dbfly"]],[/dips/,["dips","dipsb"]],[/pompe|push.?up/,["pompes"]],
- [/traction|pull.?up|chin/,["tract","tvert"]],[/tirage vertical|lat ?pull|tirage (poitrine|nuque|haut|dos)|pulldown|pull down/,["tvert","tract"]],
+ [/traction|pull.?up|\bchin/,["tract","tvert"]],[/tirage vertical|lat ?pull|tirage (poitrine|nuque|haut|dos)|pulldown|pull down/,["tvert","tract"]],
  [/rowing|\brow\b|tirage horizontal|tirage (assis|poulie basse|buste)/,["rowm","rowu","rowx","rowinv"]],
  [/developpe (militaire|epaule|nuque|assis)|militaire|overhead press|shoulder press|\bohp\b|arnold|elevations? frontales?|front raise/,["dmil","pike"]],
  [/elevations? lat|lateral|elevations? (sur les )?cotes/,["elat","elmac","elath"]],[/marteau|hammer/,["mart","marth"]],[/curl/,["cpou","pupi","curlh","curlpdc"]],
@@ -118,16 +118,45 @@ function progAnalyze(p){const D=progParse(p.progTxt,p);if(!D.length)return null;
  const t=norm(p.progTxt);if(!/echauff|mobilit|etire|stretch/.test(t))bad.push(["Ni échauffement ni étirements","Ton coach ajoute un échauffement ciblé avant chaque séance et des étirements après."]);
  if(!/repos|rest|recup|\d\s*(s|sec|min|')\b/.test(t))bad.push(["Temps de repos non précisés","Chaque exercice a maintenant son repos, selon qu'il est lourd ou d'isolation."]);
  return{D,X,W,lowPct,good,bad}}
-function progCard(p){if(p.hasProg!=="oui"||!p.progTxt||!TRAIN)return "";const R=progAnalyze(p);if(!R)return "";
- const kept=[...new Set(Object.values(TRAIN).flatMap(s=>s.x.map(e=>e.id)))].filter(id=>(p.likes||[]).includes(id)),pn=Object.values(TRAIN),W2=weekSets(pn.map(s=>({x:s.x.map(e=>({id:e.id,s:e.s}))}))),t2=W2.up+W2.low+W2.core||1;
- const li=(e,h,s)=>`<li style="display:flex;gap:10px;align-items:flex-start;margin:8px 0"><span>${e}</span><span>${h?`<b>${h}</b><br>`:""}<small class="muted">${s}</small></span></li>`;
- const ul=a=>`<ul style="list-style:none;padding:0;margin:0">${a}</ul>`;
- const day=d=>{const S=TRAIN[d],w=warmList(S),st=stretchList(S);return `<div class="card stack"><div class="lab">${DLONG[d]} · ${S.t}</div>
+
+/* ================= Garder son propre programme ================= */
+const WDRX=/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|jour\s*\d+|j\s*\d+|s[ée]ance\s*\d+|day\s*\d+)\s*[:\-–·]?\s*/i;
+/* Programme collé → séances gardées telles quelles. Les exercices non reconnus deviennent des exercices perso suivis comme les autres. */
+function ownSetup(p){const D=progParse(p.progTxt,p).slice(0,6),ex={};
+ p.ownDays=D.map((d,i)=>{let t=d.t.replace(WDRX,"").trim();t=t?t[0].toUpperCase()+t.slice(1):`Séance ${i+1}`;
+  return{t,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}return{id,s:x.s,r:x.r}})}});
+ p.ownEx=ex;regOwn(p);return p}
+const regOwn=p=>{if(p&&p.ownEx)Object.assign(EX,p.ownEx)};
+const ownDaysFor=p=>spreadDays(Math.min(6,Math.max(1,(p.ownDays||[]).length)),p.avail&&p.avail.length>=2?p.avail:WEEK);
+/* Fourchette pour la double progression : un nombre fixe de reps devient « reps → reps + 2 ». */
+function mkOwn(o,p){const [n,g,,kind,a,c]=EX[o.id],S=SCHEME[p.goal][kind],r=o.r[0]===o.r[1]?[o.r[0],o.r[0]+2]:[o.r[0],o.r[1]];return{id:o.id,n,g,a,c,s:o.s,r,rest:S[3],kind}}
+function buildOwn(p){regOwn(p);const days={},L=p.ownDays,ds=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7);
+ ds.forEach((d,i)=>{const k="own"+(i%L.length),O=L[i%L.length],cu=(p.custom||{})[d],own=!!(cu&&cu.k===k);
+  const x=own?cu.ids.filter(id=>EX[id]).map(id=>{const o=O.x.find(y=>y.id===id);return o?mkOwn(o,p):mkEx(id,p)}):O.x.map(o=>mkOwn(o,p));
+  days[d]={k,t:O.t,f:"Ton programme",x,own}});return days}
+const ownTip=e=>{const inc=e.kind==="I"?"1 kg":"2,5 kg",out=[`Teste ta charge à ${e.r[0]} reps avec 2 reps en réserve, monte jusqu'à ${e.r[1]} sur toutes les séries, puis +${inc} et retour à ${e.r[0]}.`];
+ if(e.r[1]>20)out.push("Beaucoup de reps : quand ça devient facile, ajoute du poids plutôt que des reps.");if(e.r[0]<4)out.push("Très lourd : garde 1 à 2 reps en réserve, la technique avant la charge.");if(e.s>5)out.push("Beaucoup de séries : si tu stagnes 2 semaines, enlèves-en une.");return out.join(" ")};
+function trainList(T,p,tips){return p_days(T).map(d=>{const S=T[d],w=warmList(S),st=stretchList(S);return `<div class="card stack"><div class="lab">${DLONG[d]} · ${esc(S.t)}</div>
   <small class="muted">🔥 Échauffement ${prepMin(w)} min : ${w.map(x=>x.n).join(", ")}</small>
-  <ul class="list">${S.x.map(e=>`<li><span class="sp">${e.n}${(p.likes||[]).includes(e.id)?" ✓":""}</span><b>${e.s} × ${e.r[0]}–${e.r[1]}</b><small class="muted" style="margin-left:8px">${fmtT(e.rest)}</small></li>`).join("")}</ul>
-  <small class="muted">🧘 Étirements ${prepMin(st)} min : ${st.map(x=>x.n).join(", ")}</small></div>`};
- return `<div class="lab" style="margin-top:18px">Ton programme analysé</div>
- <div class="card"><b>✅ Ce qui est bien</b>${ul(R.good.map(g=>li("👍","",g)).join(""))}</div>
- ${R.bad.length?`<div class="card"><b>✂️ Ce qui n'est pas gardé, et pourquoi</b>${ul(R.bad.map(([h,s])=>li("⚠️",h,s)).join(""))}</div>`:""}
- <div class="card"><b>🔁 Ton nouveau programme</b><br><small class="muted">${R.D.length!==p.days.length?`Tu faisais ${R.D.length} séance${R.D.length>1?"s":""}, ton coach en prévoit ${p.days.length}. `:""}Bas du corps : ${R.lowPct} % → ${Math.round(W2.low/t2*100)} % des séries.${kept.length?` Gardés de ton programme (✓) : ${kept.map(id=>EX[id][0]).join(", ")}.`:""} Repos indiqué à droite de chaque exercice.</small></div>
- <div class="stack">${p.days.slice().sort((a,b)=>(a+6)%7-(b+6)%7).filter(d=>TRAIN[d]).map(day).join("")}</div>`}
+  <ul class="list">${S.x.map(e=>`<li style="flex-wrap:wrap"><span class="sp">${esc(e.n)}${!tips&&(p.likes||[]).includes(e.id)?" ✓":""}</span><b>${e.s} × ${e.r[0]}–${e.r[1]}</b><small class="muted" style="margin-left:8px">${fmtT(e.rest)}</small>${tips?`<small class="muted" style="flex-basis:100%;margin-top:2px">📈 ${ownTip(e)}${e.c?` 🎯 ${esc(e.c)}`:""}</small>`:""}</li>`).join("")}</ul>
+  <small class="muted">🧘 Étirements ${prepMin(st)} min : ${st.map(x=>x.n).join(", ")}</small></div>`}).join("")}
+const p_days=T=>Object.keys(T).map(Number).sort((a,b)=>(a+6)%7-(b+6)%7);
+/* Les deux versions côte à côte : celle du coach et la sienne avec les progressions. */
+function coachPreview(p){const c=JSON.parse(JSON.stringify(p));coachDecide(c);c.mode="coach";c.likes=p.likes;return{c,T:buildTraining(c)}}
+function ownPreview(p){const c=JSON.parse(JSON.stringify(p));c.mode="own";if(p.mode!=="own"){c.days=ownDaysFor(p);c.custom={}}return{c,T:buildTraining(c)}}
+function progCard(p){if(p.hasProg!=="oui"||!p.progTxt||!TRAIN)return "";const R=progAnalyze(p);if(!R)return "";
+ const CP=p.mode==="coach"?{c:p,T:TRAIN}:coachPreview(p),OP=p.mode==="own"?{c:p,T:TRAIN}:ownPreview(p);
+ const pn=Object.values(CP.T),W2=weekSets(pn.map(s=>({x:s.x.map(e=>({id:e.id,s:e.s}))}))),t2=W2.up+W2.low+W2.core||1,kept=[...new Set(pn.flatMap(s=>s.x.map(e=>e.id)))].filter(id=>(p.likes||[]).includes(id));
+ const li=(e,h,s)=>`<li style="display:flex;gap:10px;align-items:flex-start;margin:8px 0"><span>${e}</span><span>${h?`<b>${h}</b><br>`:""}<small class="muted">${s}</small></span></li>`,ul=a=>`<ul style="list-style:none;padding:0;margin:0">${a}</ul>`;
+ const analysis=`<div class="card"><b>✅ Ce qui est bien dans ton programme</b>${ul(R.good.map(g=>li("👍","",g)).join(""))}</div>
+ ${R.bad.length?`<div class="card"><b>✂️ Ce que le coach changerait, et pourquoi</b>${ul(R.bad.map(([h,s])=>li("⚠️",h,s)).join(""))}</div>`:""}`;
+ const coachB=`<div class="card"><b>🔁 La version du coach</b><br><small class="muted">${CP.c.days.length} séances. Bas du corps : ${R.lowPct} % → ${Math.round(W2.low/t2*100)} % des séries.${kept.length?` Gardés de ton programme (✓) : ${kept.map(id=>EX[id][0]).join(", ")}.`:""}</small></div><div class="stack">${trainList(CP.T,p,false)}</div>`;
+ const ownB=`<div class="card"><b>📋 Ton programme, avec les progressions</b><br><small class="muted">Tes exercices, tes séries et tes jours restent les mêmes. Ton coach ajoute l'échauffement, les étirements, le repos et la progression : à chaque séance il propose ta charge, et chaque semaine il fait le bilan pour savoir quand augmenter.</small></div><div class="stack">${trainList(OP.T,p,true)}</div>`;
+ const det=(s,b)=>`<details class="card" style="margin-top:10px"><summary><b>${s}</b></summary><div class="stack" style="margin-top:10px">${b}</div></details>`;
+ if(p.mode==="choose")return `<div class="lab" style="margin-top:18px">Ton programme analysé</div>${analysis}
+  <div class="lab" style="margin-top:18px">Compare les deux avant de choisir</div>${det("🔁 Aperçu : la version du coach",coachB)}${det("📋 Aperçu : ton programme avec les progressions",ownB)}`;
+ if(p.mode==="own")return `<div class="lab" style="margin-top:18px">Ton programme</div>${ownB}${det("Voir la version proposée par le coach",analysis+coachB+`<button class="btn ghost" id="pick-coach">Passer au programme du coach</button>`)}`;
+ return `<div class="lab" style="margin-top:18px">Ton programme analysé</div>${analysis}${coachB}${det("Voir ton programme d'origine avec les progressions",ownB+`<button class="btn ghost" id="pick-own">Revenir à mon programme</button>`)}`}
+function pickProg(m){const p=PROF;p.custom={};if(m==="own"){p.mode="own";p.days=ownDaysFor(p)}else{coachDecide(p);p.mode="coach"}p.freq=p.days.length;
+ LS.set("coach-profile",p);TRAIN=buildTraining(p);showPlan();toast(m==="own"?"Ton programme est gardé, avec les progressions du coach":"Programme du coach activé")}
+document.addEventListener("click",e=>{const t=e.target.closest("#pick-own,#pick-coach");if(t&&PROF)pickProg(t.id==="pick-own"?"own":"coach")});

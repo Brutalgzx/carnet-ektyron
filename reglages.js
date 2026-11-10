@@ -1,7 +1,7 @@
 /* ================= Paramètres : sauvegarde (fichiers, synchro en ligne), notifications push, affinage du profil =================
    Chargé avant app.js : uniquement des fonctions et des écouteurs. */
 /* Toutes les clés à sauvegarder : une seule liste pour l'export, l'import, la synchro et l'effacement. */
-const BK_KEYS=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest","coach-meas","coach-check","coach-notif","coach-set","coach-deload","coach-jeu","coach-del"];
+const BK_KEYS=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest","coach-meas","coach-check","coach-notif","coach-set","coach-deload","coach-jeu","coach-del","coach-water"];
 const GUIDE="https://github.com/brutalgzx/carnet-ektyron/blob/main/worker/README.md";
 const lk=(t=Date.now())=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
 const dfr=t=>new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
@@ -34,6 +34,7 @@ function bkMerge(k,a,b){if(a==null)return b;if(b==null)return a;
  if(k==="carnet"){const o={...b};for(const id in a)o[id]=Array.isArray(a[id])&&Array.isArray(b[id])?byT(a[id],b[id]):a[id];return o}
  if(k==="carnet-xp")return{...b,...a,xp:Math.max(a.xp||0,b.xp||0),games:byT(a.games,b.games).slice(-300)};
  if(Array.isArray(a)&&Array.isArray(b)&&["coach-weights","coach-meas","coach-check"].includes(k))return byT(a,b);
+ if(k==="coach-water")return{...b,...a};
  if(k==="coach-eaten"){const o={...b};for(const d in a)o[d]={...b[d],...a[d]};return o}
  if(k==="coach-del")return{g:[...new Set([...(a.g||[]),...(b.g||[])])],e:[...new Set([...(a.e||[]),...(b.e||[])])]};
  if(k==="coach-jeu")return{...b,...a,nd:{...b.nd,...a.nd},code:a.code||b.code||""};
