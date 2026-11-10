@@ -341,7 +341,7 @@ function auUnlock(){try{auCtx=auCtx||new (window.AudioContext||window.webkitAudi
 function beep(f,d,w=0){if(!auCtx)return;try{const o=auCtx.createOscillator(),g=auCtx.createGain(),t=auCtx.currentTime+w;o.type="square";o.frequency.value=f;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.5,t+.01);g.gain.setValueAtTime(.5,t+d-.03);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(auCtx.destination);o.start(t);o.stop(t+d)}catch(e){}}
 async function lockOn(){try{if(navigator.wakeLock&&!wake&&document.visibilityState==="visible"){wake=await navigator.wakeLock.request("screen");wake.addEventListener("release",()=>{wake=null})}}catch(e){}}
 function lockOff(){try{wake&&wake.release()}catch(e){}wake=null}
-const gSave=()=>LS.set(GK,G), gList=()=>TRAIN[G.day].x, gEx=()=>gList()[G.ei], gNum=v=>parseFloat(String(v).replace(",","."));
+const gSave=()=>LS.set(GK,G), gList=()=>TRAIN[G.day].x, gEx=()=>gList()[G.ord?G.ord[G.ei]:G.ei], gNum=v=>parseFloat(String(v).replace(",","."));
 const restOf=e=>(LS.get("carnet-rest",{})[e.id])||e.rest;
 function gStart(day){auUnlock();G={day,ei:0,si:0,ph:"set",sets:{},start:Date.now(),fb:"",prs:[]};gSave();gOpen()}
 function gOpen(){document.body.classList.add("g-on");$("#game").hidden=false;$("#game").scrollTop=0;lockOn();gShow()}
@@ -360,7 +360,7 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
   ${s.up&&G.si===0?`<div class="g-up">Tu as tout validé la dernière fois : on monte d'un cran.</div>`:""}${deloadOn()&&G.si===0?`<div class="g-up">Semaine de décharge : charges −15 %, garde 2-3 reps en réserve.</div>`:""}
   <div class="g-step"><label for="g-k">${wU()==="lb"?"Livres":"Kilos"}</label><button data-gs="k" data-v="-${wU()==="lb"?5:2.5}" aria-label="Moins ${wU()==="lb"?"5 lb":"2,5 kg"}">−</button><input id="g-k" inputmode="decimal" value="${s.k}" placeholder="0"><button data-gs="k" data-v="${wU()==="lb"?5:2.5}" aria-label="Plus ${wU()==="lb"?"5 lb":"2,5 kg"}">+</button></div>
   <div class="g-step"><label for="g-r">Reps</label><button data-gs="r" data-v="-1" aria-label="Moins une rep">−</button><input id="g-r" inputmode="numeric" value="${s.r}"><button data-gs="r" data-v="1" aria-label="Plus une rep">+</button></div>
-  <div class="g-msg" id="g-msg"></div><button class="btn" id="g-done">Série terminée</button><button class="link" id="g-skip">Machine prise ? Passer cet exercice</button>`;return}
+  <div class="g-msg" id="g-msg"></div><button class="btn" id="g-done">Série terminée</button><button class="link" id="g-skip">${G.ei<gList().length-1?"Machine prise ? Le faire plus tard":"Terminer sans cet exercice"}</button>`;return}
  if(G.ph==="rest"){const nx=gEx();
   box.innerHTML=gTop()+`<div class="g-fb">${G.fb}</div><div class="lab" style="text-align:center">Repos</div>
   <div class="g-ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="g-arc" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg><b id="g-t" role="timer"></b></div>
@@ -385,6 +385,9 @@ function gTick(){if(!G||G.ph!=="rest")return;const ms=G.restEnd-Date.now(),left=
 function gFinishEx(ex){const sets=(G.sets[ex.id]||[]).filter(Boolean);if(!sets.length)return;const h=store[ex.id]||[];
  const pk=h.length?Math.max(...h.flatMap(x=>x.sets.map(s=>s.k))):null,mk=Math.max(...sets.map(s=>s.k));if(pk!==null&&mk>pk)G.prs.push(ex.n);
  (store[ex.id]=h).push({d:new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}),t:Date.now(),sets,...(deloadOn()?{dl:1}:{})});persist()}
+/* Machine prise : l'exercice repart en fin de séance (séries déjà faites gardées) ; le dernier restant se termine tel quel. */
+function gSkip(){const n=gList().length;if(G.ei>=n-1){gNext(false);return}const ex=gEx();G.ord=G.ord||[...Array(n).keys()];
+ G.ord.push(G.ord.splice(G.ei,1)[0]);const nx=gEx();G.dk=G.dr=undefined;G.si=Math.min((G.sets[nx.id]||[]).length,nx.s-1);G.ph="set";gSave();gShow();$("#game").scrollTop=0;toast(`${ex.n} : on y revient en fin de séance.`)}
 function gNext(rest){const ex=gEx();G.dk=G.dr=undefined;
  if(G.si>=ex.s||!rest){gFinishEx(ex);G.ei++;G.si=0}
  if(G.ei>=gList().length){G.ph="done";gSave();gShow();return}
@@ -436,7 +439,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   if(D.gs){const inp=$("#g-"+D.gs),v=Math.max(0,(gNum(inp.value)||0)+ +D.v);inp.value=D.gs==="k"?+v.toFixed(2):Math.round(v);inp.dispatchEvent(new Event("input",{bubbles:true}));return}
   if(t.id==="g-done"){const ex=gEx(),k=+fromU(gNum($("#g-k").value)).toFixed(2),r=parseInt($("#g-r").value);if(isNaN(k)||isNaN(r)||r<1){$("#g-msg").textContent="Indique les kilos et les reps de ta série (0 kg pour le poids du corps).";return}
    (G.sets[ex.id]=G.sets[ex.id]||[])[G.si]={k,r};G.fb=gFeedback(ex,k,r);G.si++;if(G.si>=ex.s)G.fb=`Exercice terminé !<small>${G.fb.split("<small>")[1].replace("</small>","")}</small>`;gNext(true);return}
-  if(t.id==="g-skip"){gNext(false);return}
+  if(t.id==="g-skip"){gSkip();return}
   if(t.id==="g-m"||t.id==="g-p"){G.restEnd=Math.max(Date.now()+1000,G.restEnd+(t.id==="g-p"?15000:-15000));G.restTotal=Math.max(G.restTotal,Math.ceil((G.restEnd-Date.now())/1000));gSave();gTick();return}
   if(t.id==="g-go"){G.ph="set";G.fb="";gSave();gShow();$("#game").scrollTop=0;return}
   if(t.id==="g-end"){gClose();return}
