@@ -66,7 +66,8 @@ const EX = {
  crun:["Crunch poulie","Abdos","c","I","crun","Bassin immobile, enroule la poitrine vers les genoux.",""],
  releve:["Relevés de jambes allongé","Abdos","0","I","","Bas du dos plaqué au sol, monte les jambes sans élan.",""],
  bext:["Back extensions","Dos","m","I","bext","Pour les lombaires. Remonte jusqu'à l'alignement, pas au-delà.",""],
- superman:["Superman au sol","Dos","0","I","","À plat ventre, décolle bras et jambes 2 secondes.",""]
+ superman:["Superman au sol","Dos","0","I","","À plat ventre, décolle bras et jambes 2 secondes.",""],
+ kick:["Kickback fessier à la poulie","Jambes","c","I","","Cheville attachée à la poulie basse, buste penché, pousse la jambe en arrière en serrant le fessier.",""]
 };
 
 /* Emplacements : pour chaque rôle, les exercices par ordre de préférence. */
@@ -77,7 +78,7 @@ const SLOT = {
  side:["elat","elmac","elath","ytw"], bic:["pupi","cpou","curlh","curlpdc"], bic2:["mart","marth","curlpdc"],
  tri:["tri1","triv","extd","dipsbanc","diam"], triOvh:["ovh","extd","diam"],
  quad:["hack","smsq","press","gobsq","squatpdc"], quad2:["press","bulg","gobsq","fentes"], quadIso:["lext","fentes","squatpdc"],
- hinge:["rdl","rdlx","hipt","pont"], curl:["lcurl1","lcurl2","nordic"], glute:["hipt","pont"],
+ hinge:["rdl","rdlx","hipt","pont"], curl:["lcurl1","lcurl2","nordic"], glute:["hipt","pont"], glute2:["bulg","fentes","hipt","pont"], glute3:["kick","addab","pont"],
  calf:["moll","moll2","mollh","mollpdc"], abs:["crun","releve"], lowb:["bext","superman"], add:["addab"]
 };
 
@@ -91,7 +92,9 @@ const TPL = {
  lowB:{t:"Bas du corps B",f:"Ischios et fessiers en priorité",s:["hinge","quad2","curl","glute","lowb","calf","abs"]},
  push:{t:"Push",f:"Pecs · épaules · triceps",s:["chestInc","chestIso","dips","side","tri","triOvh","shPress"]},
  pull:{t:"Pull",f:"Dos · arrière d'épaule · biceps",s:["backVert","backRow","backUp","rear","bic","bic2","lowb"]},
- legs:{t:"Jambes",f:"Quadriceps · ischios · mollets",s:["curl","quad","hinge","quadIso","add","calf","abs"]}
+ legs:{t:"Jambes",f:"Quadriceps · ischios · mollets",s:["curl","quad","hinge","quadIso","add","calf","abs"]},
+ gluteA:{t:"Bas du corps · fessiers",f:"Fessiers et ischios en priorité",s:["hinge","glute","glute2","curl","glute3","calf","abs"]},
+ fullG:{t:"Full body · bas en avant",f:"Jambes et fessiers d'abord, puis le haut",s:["quad","glute","backVert","chestInc","hinge","side","abs"]}
 };
 /* Jours (0 = dimanche) et séances selon la fréquence. Chaque muscle travaille au moins 2 fois par semaine dès 3 séances. */
 const SPLIT = {
@@ -109,9 +112,9 @@ const GYMS = [
  {v:"home",e:"🏠",l:"À la maison",s:"Avec ce que tu as : haltères, banc, barre…",eq:"db"},
  {v:"bw",e:"🤸",l:"Sans matériel",s:"Programme au poids du corps",eq:""}];
 const EQUIP = [["m","Machines guidées","Pec fly, leg curl, leg extension, rowing…"],["c","Poulies","Vis-à-vis, tirage, poulie basse"],["s","Smith machine","Barre guidée"],["h","Hack squat",""],["l","Presse à cuisses",""],["d","Haltères",""],["b","Banc réglable",""],["x","Barres et disques","Barre libre"],["p","Barre de traction",""]];
-const SPLITS = [{v:"auto",e:"🤖",l:"Laisse le coach choisir",s:"Recommandé : adapté à ton nombre de jours"},{v:"full",e:"🔄",l:"Full body",s:"Tout le corps à chaque séance. Idéal sur 2 ou 3 jours"},{v:"ul",e:"↕️",l:"Haut / Bas du corps",s:"Idéal sur 4 jours"},{v:"ppl",e:"🔁",l:"Push / Pull / Jambes",s:"Idéal sur 3 ou 6 jours"},{v:"pplul",e:"🧩",l:"Push / Pull / Jambes + Haut / Bas",s:"Idéal sur 5 jours"}];
+const SPLITS = [{v:"auto",e:"🤖",l:"Laisse le coach choisir",s:"Recommandé : adapté à ton nombre de jours"},{v:"full",e:"🔄",l:"Full body",s:"Tout le corps à chaque séance. Idéal sur 2 ou 3 jours"},{v:"ul",e:"↕️",l:"Haut / Bas du corps",s:"Idéal sur 4 jours"},{v:"ppl",e:"🔁",l:"Push / Pull / Jambes",s:"Idéal sur 3 ou 6 jours"},{v:"pplul",e:"🧩",l:"Push / Pull / Jambes + Haut / Bas",s:"Idéal sur 5 jours"},{v:"bas",e:"🍑",l:"Bas du corps en priorité",s:"2 séances jambes et fessiers pour 1 de haut du corps, de 3 à 6 jours"}];
 const AUTO = {2:"full",3:"full",4:"ul",5:"pplul",6:"ppl"};
-const CYC = {full:["fullA","fullB","fullC"],ul:["upA","lowA","upB","lowB"],ppl:["push","pull","legs"],pplul:["push","pull","legs","upB","lowB"]};
+const CYC = {full:["fullA","fullB","fullC"],ul:["upA","lowA","upB","lowB"],ppl:["push","pull","legs"],pplul:["push","pull","legs","upB","lowB"],bas:["gluteA","upA","lowA","fullG","upB","lowB"]};
 const PRIOS = [{v:"none",e:"⚖️",l:"Équilibré",s:"Tout le corps au même niveau"},{v:"pecs",e:"🛡️",l:"Pecs"},{v:"dos",e:"🦅",l:"Dos"},{v:"epaules",e:"🎯",l:"Épaules"},{v:"bras",e:"💪",l:"Bras"},{v:"jambes",e:"🦵",l:"Jambes"},{v:"fessiers",e:"🍑",l:"Fessiers"},{v:"abdos",e:"🧱",l:"Abdos"}];
 
 /* Aliments : kcal, protéines, glucides, lipides pour 100 g, prix moyen €/kg, rayon. */
@@ -205,7 +208,7 @@ const ALLERG=[{v:"none",e:"✅",l:"Aucune"},{v:"lactose",e:"🥛",l:"Lactose",s:
 const MUSC={pecs:["pectoraux",["incl","dbinc","benchx","dch","pompes","pompesd","pfly","ecbh","dbfly","dips","dipsb"]],lats:["grand dorsal",["tvert","tract"]],dos:["milieu du dos",["rowm","rowu","rowx","rowinv","tlarg"]],
  arr:["arrière d'épaule",["rfly","facep","oiseau","ytw"]],ant:["avant d'épaule",["dmil","pike"]],lat:["épaule latérale",["elat","elmac","elath"]],bic:["biceps",["pupi","cpou","curlh","mart","marth","curlpdc"]],
  tri:["triceps",["tri1","triv","ovh","extd","dipsbanc","diam"]],quad:["quadriceps",["hack","smsq","press","gobsq","squatpdc","bulg","fentes","lext"]],isch:["ischios",["lcurl1","lcurl2","nordic","rdl","rdlx"]],
- fess:["fessiers",["hipt","pont"]],add:["adducteurs et abducteurs",["addab"]],moll:["mollets",["moll","moll2","mollh","mollpdc"]],abs:["abdos",["crun","releve"]],lomb:["lombaires",["bext","superman"]]};
+ fess:["fessiers",["hipt","pont","kick"]],add:["adducteurs et abducteurs",["addab"]],moll:["mollets",["moll","moll2","mollh","mollpdc"]],abs:["abdos",["crun","releve"]],lomb:["lombaires",["bext","superman"]]};
 const MUSCOF=Object.fromEntries(Object.entries(MUSC).flatMap(([k,[,ids]])=>ids.map(i=>[i,k])));
 const CUIS=[{v:"fr",e:"🥖",l:"Française"},{v:"it",e:"🍝",l:"Italienne"},{v:"asie",e:"🥢",l:"Asiatique"},{v:"mex",e:"🌮",l:"Mexicaine"},{v:"orient",e:"🫕",l:"Orientale"},{v:"inde",e:"🍛",l:"Indienne"},{v:"us",e:"🍔",l:"Américaine"}];
 

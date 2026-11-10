@@ -23,23 +23,24 @@ function weekGames(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),
 const SCHEME={masse:{H:[3,6,10,180],M:[3,8,12,150],I:[3,10,15,90]},force:{H:[4,4,6,210],M:[3,6,8,180],I:[3,8,12,90]},
  seche:{H:[3,8,12,150],M:[3,8,12,120],I:[3,12,15,60]},recompo:{H:[3,6,10,150],M:[3,8,12,120],I:[3,10,15,75]}};
 function exOk(id,p){const e=EX[id],eq=(p.equip||"")+"0";return [...e[2]].every(c=>eq.includes(c))&&!(p.pain||[]).some(z=>e[6].includes(z))}
-function mkEx(id,p){const [n,g,,kind,a,c]=EX[id],S=SCHEME[p.goal][kind];let s=S[0];if(p.level==="deb"&&kind==="I")s=2;if(p.level==="av"&&kind!=="I")s++;if(isPrio(id,p))s=Math.min(5,s+1);
- return{id,n,g,a,c,s,r:[S[1],S[2]],rest:S[3],kind}}
+function mkEx(id,p){const [n,g,,kind,a,c]=EX[id],S=SCHEME[p.goal][kind];let s=S[0];if(p.level==="deb"&&kind==="I")s=2;if(p.level==="av"&&kind!=="I")s++;const pr=prioRank(id,p);if(pr===0||pr===1)s=Math.min(5,s+1);let r=[S[1],S[2]],rest=S[3];const am=p.aims||[];
+ if(am.includes("force")&&p.goal!=="force"&&kind==="H"){r=[5,8];rest=Math.max(rest,180)}if(am.includes("gras")&&p.goal!=="seche"&&kind!=="H")rest=Math.max(60,rest-30);
+ return{id,n,g,a,c,s,r,rest,kind}}
 const PRIOG={pecs:"Pecs",dos:"Dos",epaules:"Épaules",bras:"Bras",jambes:"Jambes",abdos:"Abdos"},GLUTE=["hipt","pont","bulg","rdl","rdlx","fentes"];
 const isPrio=(id,p)=>(p.prio||[]).some(k=>k==="fessiers"?GLUTE.includes(id):EX[id][1]===PRIOG[k]);
-const splitOf=p=>p.split&&p.split!=="auto"&&CYC[p.split]?p.split:AUTO[p.days.length]||"full";
+const splitOf=p=>p.split&&p.split!=="auto"&&CYC[p.split]?p.split:lowFocus(p)&&p.days.length>=3?"bas":AUTO[p.days.length]||"full";
 function seqFor(p){const ds=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7),c=CYC[splitOf(p)];return ds.map((d,i)=>[d,c[i%c.length]])}
 const splitName=p=>SPLITS.find(x=>x.v===splitOf(p)).l;
 /* Séance proposée par le coach, ou séance modifiée par l'utilisateur (gardée tant que le type de séance ne change pas). */
 function buildTraining(p){const days={},nMax={45:5,60:6,75:7,90:8}[p.dur]||6;
  for(const [d,k] of seqFor(p)){const T=TPL[k],cu=(p.custom||{})[d],own=!!(cu&&cu.k===k);let ids;
   if(own)ids=cu.ids.filter(i=>EX[i]&&exOk(i,p));
-  else{const used=new Set();ids=[];for(const sl of T.s){if(ids.length>=nMax)break;const id=SLOT[sl].find(i=>!used.has(i)&&exOk(i,p));if(!id)continue;used.add(id);ids.push(id)}ids.sort((a,b)=>isPrio(b,p)-isPrio(a,p))}
+  else{ids=pickSlots(k,p,nMax);if(!zoneList(p).length)ids.sort((a,b)=>isPrio(b,p)-isPrio(a,p))}
   days[d]={k,t:T.t,f:T.f,x:ids.map(i=>mkEx(i,p)),own}}
  return days}
 function migrate(p){if(!p)return p;const old={full:"mcshldbxp",small:"dbxpc",home:"db",bw:""};
  if(p.equip==null){p.equip=old[p.gym]??"mcdbxp";if(p.gym==="full"||p.gym==="small")p.gym="autre"}
- if(!p.days)p.days=SPLIT[p.freq].map(x=>x[0]);if(!p.split)p.split="auto";if(!p.prio)p.prio=[];p.freq=p.days.length;if(!p.rec){p.rec=p.days.length;p.recDur=p.dur}if(!p.months)p.months=6;if(p.refined==null)p.refined=p.store?{equip:1,food:1,taste:1}:{};for(const k in QDEF)if(p[k]==null||p[k]==="")p[k]=QDEF[k];return p}
+ if(!p.days)p.days=SPLIT[p.freq].map(x=>x[0]);if(!p.split)p.split="auto";if(!p.prio)p.prio=[];p.prio=p.prio.filter(k=>k!=="none");if(!p.aims)p.aims=[];if(!p.likes)p.likes=[];if(p.hasProg==null)p.hasProg="non";p.freq=p.days.length;if(!p.rec){p.rec=p.days.length;p.recDur=p.dur}if(!p.months)p.months=6;if(p.refined==null)p.refined=p.store?{equip:1,food:1,taste:1}:{};for(const k in QDEF)if(p[k]==null||p[k]==="")p[k]=QDEF[k];return p}
 const sessMin=s=>Math.round(s.x.reduce((m,e)=>m+e.s*(0.75+e.rest/60),0)+8);
 
 /* ================= Nutrition ================= */
@@ -164,8 +165,8 @@ const Q=[
  {t:"Quel style de plats ?",s:"Choisis-en un ou plusieurs. Rien de coché : un mélange de tout.",h:()=>`<div class="grid2">${STYLES.map(s=>`<button class="tile" data-m="styles" data-v="${s.v}" aria-pressed="${A.styles.includes(s.v)}"><span class="e">${s.e}</span><b>${s.l}</b></button>`).join("")}</div>`,ok:()=>true},
  ...[]
 ];
-/* Questionnaire d'accueil : 10 questions essentielles. Le reste (matériel, repas, goûts) se règle ensuite via « Affine ton profil ». */
-const STEPS=[{t:"Comment tu t'appelles ?",s:"Ton coach construit ton programme et tes repas à partir de tes réponses. 10 questions, 1 minute.",h:()=>Q[0].h()+`<div class="lab" style="margin-top:14px">Tu es…</div>`+Q[1].h(),ok:()=>Q[0].ok()&&Q[1].ok()},Q[2],Q[3],Q[4],Q[5],Q[6],Q[7],Q[9],Q[10],Q[11]];
+/* Questionnaire d'accueil : 13 questions essentielles. Le reste (matériel, repas, goûts) se règle ensuite via « Affine ton profil ». */
+const STEPS=[{t:"Comment tu t'appelles ?",s:"Ton coach construit ton programme et tes repas à partir de tes réponses. 13 questions, 2 minutes.",h:()=>Q[0].h()+`<div class="lab" style="margin-top:14px">Tu es…</div>`+Q[1].h(),ok:()=>Q[0].ok()&&Q[1].ok()},Q[2],Q[3],QAIMS,Q[4],QZONES,Q[5],Q[6],Q[7],Q[9],QPROG,Q[10],Q[11]];
 const REF={equip:Object.assign([Q[8]],{ref:"equip"}),food:Object.assign([Q[12],Q[13],Q[14],Q[15]],{ref:"food"})};
 const QDEF={store:"carrefour",pdjT:"both",ckt:30,batch:"non",spice:1};
 /* ================= Le coach décide ================= */
@@ -208,7 +209,9 @@ function coachDecide(p){const {n,av}=recN(p),dur=p.level==="deb"||p.goal==="sech
 function planWhy(p){const g=goalPlan(p),T=targets(),n=p.days.length,sp=splitName(p),L={deb:"débutant",int:"intermédiaire",av:"confirmé"}[p.level];
  const out=[];
  out.push(["🗓️",`${n} séances par semaine`,n===p.rec?(R=>R.n===p.rec?R.why[0].toUpperCase()+R.why.slice(1)+".":`En ${L}${g.fast?" avec un objectif ambitieux":""}, c'est le bon dosage : assez pour progresser vite, avec 48 h de repos pour les petits muscles et 72 h pour les gros.`)(recN(p)):`Ton coach recommandait ${p.rec} séances. Tu en as choisi ${n} pour coller à ton emploi du temps.`]);
- out.push(["🧩",sp,{full:"Tout le corps à chaque séance : chaque muscle est travaillé souvent, idéal pour apprendre les mouvements.",ul:"Haut du corps puis bas du corps : chaque muscle 2 fois par semaine, avec le temps de récupérer.",ppl:"Pousser, tirer, jambes : séances ciblées, chaque muscle 2 fois par semaine.",pplul:"Pousser, tirer, jambes, puis haut et bas : beaucoup de volume, chaque muscle 2 fois par semaine."}[splitOf(p)]]);
+ out.push(["🧩",sp,{full:"Tout le corps à chaque séance : chaque muscle est travaillé souvent, idéal pour apprendre les mouvements.",ul:"Haut du corps puis bas du corps : chaque muscle 2 fois par semaine, avec le temps de récupérer.",ppl:"Pousser, tirer, jambes : séances ciblées, chaque muscle 2 fois par semaine.",pplul:"Pousser, tirer, jambes, puis haut et bas : beaucoup de volume, chaque muscle 2 fois par semaine.",bas:"Jambes et fessiers 2 fois plus souvent que le haut du corps : ta priorité reçoit le plus de séances."}[splitOf(p)]]);
+ if((p.prio||[]).length)out.push(["🎯",`Priorités : ${p.prio.map(zoneL).join(" → ")}`,"Ces zones reçoivent plus d'exercices et une série de plus (priorités n°1 et n°2), en début de séance. Un tiers des exercices reste pour le reste du corps, pour garder un physique équilibré."]);
+ if((p.aims||[]).length)out.push(["🧭",AIMS.filter(a=>p.aims.includes(a.v)).map(a=>a.l).join(" · "),[p.aims.includes("posture")&&"Posture : plus d'arrière d'épaule et de haut du dos.",p.aims.includes("force")&&p.goal!=="force"&&"Force : 5 à 8 reps sur les gros exercices.",p.aims.includes("gras")&&p.goal!=="seche"&&"Perte de gras : repos plus courts sur l'isolation.",p.aims.includes("sport")&&"Sport : squat, soulevé de terre et gainage en avant."].filter(Boolean).join(" ")||"Ton coach en tient compte dans le choix des exercices."]);
  out.push(["⏱️",`${p.dur} min par séance`,"2 à 3 séries lourdes par exercice, 8 à 12 répétitions, 2 à 3 min de repos. Ajoute 2,5 kg dès que tu fais 12 reps sur toutes les séries."]);
  out.push(["🍽️",`${fr(T.kcal)} kcal et ${T.p} g de protéines par jour`,Math.abs(g.diff)<.5?"Calories autour de ta maintenance pour garder ton poids.":`${goalAdj(p)>0?"+":""}${goalAdj(p)} kcal par rapport à ta dépense, pour ${g.diff>0?"prendre":"perdre"} ${fr(Math.abs(g.pm),1)} kg par mois. Ton coach réajuste chaque semaine selon ta pesée.`]);
  out.push(["💊","Créatine 5 g par jour","Tous les jours, même les jours de repos. Et 2,5 à 3 L d'eau."]);
@@ -217,7 +220,7 @@ function showPlan(){view="plan";document.body.className="ob";const p=PROF,g=goal
  $("#app").innerHTML=`<div class="ob"><div class="ob-body" style="padding-top:20px"><div class="lab">Ton plan</div><h1>${esc(p.name)}, voilà ce qu'il te faut</h1>
  ${p.tw!=null?`<div class="hintbox"><span style="font-size:26px">🎯</span><span><b>${fr(p.w,1)} → ${fr(p.tw,1)} kg</b><br><small class="muted">Objectif vers ${end.toLocaleDateString("fr-FR",{month:"long",year:"numeric"})} · ${g.msg}</small></span></div>`:""}
  <div class="week" style="margin:6px 0">${WEEK.map(d=>`<button tabindex="-1" aria-pressed="${p.days.includes(d)}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
- <div class="stack">${planWhy(p).map(([e,h,s])=>`<div class="card" style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:26px">${e}</span><span><b>${h}</b><br><small class="muted">${s}</small></span></div>`).join("")}</div></div>
+ <div class="stack">${planWhy(p).map(([e,h,s])=>`<div class="card" style="display:flex;gap:12px;align-items:flex-start"><span style="font-size:26px">${e}</span><span><b>${h}</b><br><small class="muted">${s}</small></span></div>`).join("")}</div>${progCard(p)}</div>
  <div class="ob-foot stack"><button class="btn" id="plan-go">C'est parti</button><button class="btn ghost" id="plan-adj">Adapter à mon emploi du temps</button></div></div>`;window.scrollTo(0,0)}
 function startAdjust(){A=JSON.parse(JSON.stringify(PROF));if(!A.rec){A.rec=A.days.length;A.recDur=A.dur}FLOW=ADJ;obI=0;view="ob";renderOb()}
 function startTastes(){A=JSON.parse(JSON.stringify(PROF));A.taste=A.taste||{};FLOW=GOUTS;obI=0;view="ob";renderOb()}
@@ -226,13 +229,13 @@ function startRefine(k){if(k==="taste")return startTastes();A=JSON.parse(JSON.st
 function saveRefine(){const k=FLOW.ref;A.refined={...(A.refined||{}),[k]:1};PROF=A;LS.set("coach-profile",PROF);if(k==="food"){LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{})}TRAIN=buildTraining(PROF);FLOW=STEPS;view=k==="food"?"food":"train";render();toast(k==="food"?"Enregistré : nouvelle semaine de repas":"Matériel enregistré : programme mis à jour")}
 function saveAdjust(){A.freq=A.days.length;if(JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);FLOW=STEPS;showPlan();toast("Programme adapté")}
 
-function startOnboarding(edit){FLOW=STEPS;const dr=!edit&&!PROF&&LS.get("coach-draft",null);if(dr&&dr.A){A=dr.A;obI=Math.min(dr.obI||0,STEPS.length-1);view="ob";return render()}A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,budget:45,styles:[],avail:[...WEEK],taste:{},allerg:[],cuis:[],ckt:30,batch:"non",spice:1,nope:[],refined:{},store:"carrefour",pdjT:"both"};obI=0;view="ob";render()}
+function startOnboarding(edit){FLOW=STEPS;const dr=!edit&&!PROF&&LS.get("coach-draft",null);if(dr&&dr.A){A=dr.A;obI=Math.min(dr.obI||0,STEPS.length-1);view="ob";return render()}A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],aims:[],hasProg:"",progTxt:"",likes:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,budget:45,styles:[],avail:[...WEEK],taste:{},allerg:[],cuis:[],ckt:30,batch:"non",spice:1,nope:[],refined:{},store:"carrefour",pdjT:"both"};obI=0;view="ob";render()}
 const ADJ=[
  {t:"Quels jours tu t'entraînes ?",s:()=>{const R=recN(A),g=goalPlan(A),who=A.tw!=null&&Math.abs(g.diff)>=.5?`Pour ${g.diff>0?"+":"−"}${fr(Math.abs(g.diff),1)} kg, ton coach`:"Ton coach";return R.n===A.rec?`${who} recommande ${A.rec} séances de ${A.recDur||60} min parce que ${R.why}. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`:`Ton coach recommande ${A.rec||4} séances de ${A.recDur||60} min. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`},h:()=>`<div class="week">${WEEK.map(d=>`<button data-wd="${d}" aria-pressed="${A.days.includes(d)}">${DN[d]}<small>${A.days.includes(d)?"Séance":"Repos"}</small></button>`).join("")}</div>
    <div class="hintbox"><span style="font-size:26px">🗓️</span><span><b>${A.days.length} séance${A.days.length>1?"s":""} par semaine</b><br><small class="muted">${A.days.length<2?"Choisis au moins 2 jours.":A.days.length>6?"Garde au moins un jour de repos complet.":A.days.length<(A.rec||0)?`En dessous de la recommandation : ta progression sera plus lente que prévu.`:A.days.length>(A.rec||9)?"Au-dessus de la recommandation : veille à bien dormir et à manger tout ton plan.":"C'est ce que ton coach recommande."}</small></span></div>
    <div class="lab" style="margin-top:6px">Durée d'une séance</div><div class="row">${[45,60,75,90].map(n=>`<button class="chip" data-c="dur" data-v="${n}" aria-pressed="${A.dur===n}" style="flex:1">${n} min</button>`).join("")}</div>`,ok:()=>A.days.length>=2&&A.days.length<=6},
  {t:"Comment organiser ta semaine ?",s:"Choisis ta répartition, ou laisse le coach décider.",h:()=>opts("split",SPLITS)+`<div class="hintbox"><span style="font-size:26px">📋</span><span><b>Ta semaine</b><br><small class="muted">${seqFor(A).map(([d,k])=>`${DN[d]} : ${TPL[k].t}`).join(" · ")}</small></span></div>`,ok:()=>!!A.split},
- {t:"Des muscles à mettre en avant ?",s:"Ils passent en début de séance, avec une série de plus.",h:()=>opts("prio",PRIOS,true),ok:()=>true},
+ QZONES,
 ];
 let FLOW=STEPS;
 const INAPP=/Instagram|FBAN|FBAV|FB_IAB|Messenger|musical_ly|Bytedance|TikTok|Snapchat|Twitter|LinkedIn/i.test(navigator.userAgent),
@@ -250,7 +253,7 @@ function buildScreen(){document.body.className="ob";const L=["Lecture de tes ré
  <ul class="steps">${L.map(l=>`<li><i></i>${l}</li>`).join("")}</ul><div class="pbar"><i id="pb" style="width:0"></i><b id="pbt">0 %</b></div></div>`;
  const li=$$(".steps li"),t0=performance.now(),D=4200;
  (function step(){const now=performance.now(),k=Math.min(1,(now-t0)/D),n=Math.floor(k*li.length);li.forEach((x,i)=>{x.className=i<n?"ok":i===n?"now":"";x.firstChild.textContent=i<n?"✓":""});$("#pb").style.width=k*100+"%";$("#pbt").textContent=Math.round(k*100)+" %";
-  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;LS.del("coach-draft");for(const k in QDEF)if(A[k]==null||A[k]===""||(k==="ckt"&&!A[k]))A[k]=QDEF[k];if(!A.refined)A.refined=PROF?PROF.refined||{}:{};coachDecide(A);A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
+  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;LS.del("coach-draft");for(const k in QDEF)if(A[k]==null||A[k]===""||(k==="ckt"&&!A[k]))A[k]=QDEF[k];if(!A.refined)A.refined=PROF?PROF.refined||{}:{};coachDecide(A);A.likes=progLikes(A);A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
 
 /* ================= Écrans ================= */
 const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',train:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',food:'<path d="M7 3v8a3 3 0 0 0 3 3v7M10 3v6M4 3v6a3 3 0 0 0 3 3M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',prog:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
@@ -414,7 +417,7 @@ function saveWeight(){const v=+fromU(gNum($("#w-in").value)).toFixed(2);if(!(v>3
  const W=LS.get("coach-weights",[]),now=Date.now();if(W.length&&now-W[W.length-1].t<DAY/2)W[W.length-1].kg=v;else W.push({t:now,kg:v});LS.set("coach-weights",W);
  const m=coachAdjust();if(m)LS.set("coach-msg",m);toast(m?"Pesée enregistrée. Ton coach a analysé ta courbe.":"Pesée enregistrée.");render()}
 document.addEventListener("input",e=>{const t=e.target;
- if(view==="ob"){if(t.id==="i-name"){A.name=t.value;if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.id==="i-allerg"){A.allergTxt=t.value;$("#allerg-hit").innerHTML=allergHint(t.value);if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
+ if(view==="ob"){if(t.id==="i-name"){A.name=t.value;if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.id==="i-prog"){A.progTxt=t.value;const h=$("#prog-hit");if(h)h.innerHTML=progHint(t.value);if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.id==="i-allerg"){A.allergTxt=t.value;$("#allerg-hit").innerHTML=allergHint(t.value);if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
    if(k==="budget"){$("#v-budget").textContent=v;const pm=v/(7*A.meals);$("#v-pm").textContent=eur(pm)+" / repas";$("#v-lvl").textContent=pm<1.6?"Serré":pm<3?"Confortable":"Large"}else $("#v-"+k).textContent=`${fr(v,k==="w"||k==="tw"?1:0)} ${t.dataset.u}`;if(k==="tw"||k==="w"){const g=$("#gp");if(g)g.innerHTML=gpBox(A);obRefresh()}}
   obRefresh();return}
  if(G&&t.id==="g-k"){G.dk=t.value;gSave()}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
