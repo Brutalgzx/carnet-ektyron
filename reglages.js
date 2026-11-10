@@ -1,7 +1,7 @@
 /* ================= Paramètres : sauvegarde (fichiers, synchro en ligne), notifications push, affinage du profil =================
    Chargé avant app.js : uniquement des fonctions et des écouteurs. */
 /* Toutes les clés à sauvegarder : une seule liste pour l'export, l'import, la synchro et l'effacement. */
-const BK_KEYS=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest","coach-meas","coach-check","coach-notif","coach-set","coach-deload","coach-jeu"];
+const BK_KEYS=["coach-profile","carnet","carnet-xp","coach-weights","coach-kadj","coach-kadj-t","coach-week","coach-msg","coach-eaten","coach-shop","carnet-rest","coach-meas","coach-check","coach-notif","coach-set","coach-deload","coach-jeu","coach-del"];
 const GUIDE="https://github.com/brutalgzx/carnet-ektyron/blob/main/worker/README.md";
 const lk=(t=Date.now())=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
 const dfr=t=>new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
@@ -35,10 +35,11 @@ function bkMerge(k,a,b){if(a==null)return b;if(b==null)return a;
  if(k==="carnet-xp")return{...b,...a,xp:Math.max(a.xp||0,b.xp||0),games:byT(a.games,b.games).slice(-300)};
  if(Array.isArray(a)&&Array.isArray(b)&&["coach-weights","coach-meas","coach-check"].includes(k))return byT(a,b);
  if(k==="coach-eaten"){const o={...b};for(const d in a)o[d]={...b[d],...a[d]};return o}
+ if(k==="coach-del")return{g:[...new Set([...(a.g||[]),...(b.g||[])])],e:[...new Set([...(a.e||[]),...(b.e||[])])]};
  if(k==="coach-jeu")return{...b,...a,nd:{...b.nd,...a.nd},code:a.code||b.code||""};
  return a}
 function bkApply(o,quiet){if(o&&o.app==="ektyron-coach"&&o.data)o=o.data;if(!o||typeof o!=="object"||Array.isArray(o))throw new Error("format");const h0=hsh(JSON.stringify(bkData()));
- if(o["coach-profile"]||o.carnet){for(const k in o)if(o[k]!=null&&BK_KEYS.includes(k))LS.set(k,bkMerge(k,LS.get(k,null),o[k]))}else{const c=LS.get("carnet",{});for(const id in o)if(Array.isArray(o[id]))c[id]=[...(c[id]||[]),...o[id]];LS.set("carnet",c)}
+ if(o["coach-profile"]||o.carnet){for(const k in o)if(o[k]!=null&&BK_KEYS.includes(k))LS.set(k,bkMerge(k,LS.get(k,null),o[k]));delPurge()}else{const c=LS.get("carnet",{});for(const id in o)if(Array.isArray(o[id]))c[id]=[...(c[id]||[]),...o[id]];LS.set("carnet",c)}
  PROF=migrate(LS.get("coach-profile",PROF));if(PROF)LS.set("coach-profile",PROF);store=LS.get("carnet",{});TRAIN=null;if(PROF&&view==="ob"){view="today";LS.del("coach-draft");FLOW=STEPS}if(!quiet||hsh(JSON.stringify(bkData()))!==h0)render();if(!quiet)toast("Données restaurées.")}
 function bkFile(f){const r=new FileReader();r.onload=()=>{try{bkApply(JSON.parse(r.result))}catch(e){toast("Fichier illisible : rien n'a été modifié.")}};r.readAsText(f)}
 
@@ -87,7 +88,7 @@ function vPortal(mode){document.body.className="ob";const back=`<div class="ob-t
   <div class="ob-foot stack"><button class="btn" data-pt="new">Créer un compte</button><button class="btn ghost" data-pt="login">Se connecter</button><button class="link" data-pt="try">Essayer sans compte</button></div>`;
  $("#app").innerHTML=`<div class="ob">${body}</div>`;window.scrollTo(0,0)}
 /* Au lancement, connecté : récupère ce qui a été fait ailleurs, puis renvoie le tout. */
-async function acPull(){if(!acUser()||(typeof G!=="undefined"&&G))return;const o=await api("/backup");if(o)bkApply(o,1)}
+async function acPull(){if(!syncOk()||!syncCfg().auto||(typeof G!=="undefined"&&G))return;const o=await api("/backup");if(o)bkApply(o,1)}
 function newCode(){const a="abcdefghjkmnpqrstuvwxyz23456789",b=crypto.getRandomValues(new Uint8Array(16));return [...b].map(x=>a[x%a.length]).join("").match(/.{4}/g).join("-")}
 
 /* ---------- Notifications push ---------- */
@@ -186,4 +187,4 @@ document.addEventListener("change",e=>{if(e.target.id==="ob-f"&&e.target.files[0
 /* Lancé à la fin d'app.js : chaque donnée sauvegardée déclenche une synchro (regroupée), et la sortie de l'appli aussi. */
 function reglagesInit(){const set=LS.set;LS.set=(k,v)=>{set(k,v);if(BK_KEYS.includes(k))syncSoon()};
  document.addEventListener("visibilitychange",()=>{if(document.hidden&&syncCfg().auto)syncUp().catch(()=>{})});
- if(acUser())acPull().catch(()=>{}).finally(()=>syncUp().catch(()=>{}));else if(syncCfg().auto)syncUp().catch(()=>{})}
+ delPurge();if(syncOk()&&syncCfg().auto)acPull().catch(()=>{}).finally(()=>syncUp().catch(()=>{}))}

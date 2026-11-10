@@ -189,3 +189,12 @@ body.g-on{overflow:hidden}
 .pt-feat>span{font-size:26px;line-height:1}
 .pt-feat b{display:block}.pt-feat small{color:var(--muted)}
 .ob-foot.stack{gap:10px}
+
+/* Historique : calendrier */
+.hcal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.hcal small{color:var(--muted);font:500 11px var(--mono)}
+.hc{position:relative;aspect-ratio:1;border-radius:12px;border:1px solid transparent;background:none;color:var(--muted);font:600 14px var(--body)}
+.hc.on{background:var(--grad);color:#fff;box-shadow:0 0 12px rgba(255,46,58,.35)}
+.hc.today{border-color:var(--line)}
+.hc.sel{outline:2px solid #fff;outline-offset:1px}
+.hc i{position:absolute;top:-4px;right:-4px;font:700 10px var(--mono);background:#fff;color:#000;border-radius:8px;padding:1px 4px;font-style:normal}

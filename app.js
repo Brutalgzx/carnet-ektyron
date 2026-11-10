@@ -256,9 +256,9 @@ const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-
 const TABS=[["today","Aujourd'hui"],["train","Séances"],["food","Nutrition"],["prog","Progrès"],["me","Profil"]];
 function render(){if(!PROF&&view!=="ob")return LS.get("coach-draft",null)?startOnboarding():vPortal();if(view==="ob")return renderOb();if(view==="plan")return showPlan();document.body.className=G?"g-on":"";
  TRAIN=TRAIN||buildTraining(PROF);const L=level(xpProf().xp);
- const titles={today:`Salut ${esc(PROF.name)}`,train:"Tes séances",food:"Nutrition",prog:"Progrès",me:"Profil",set:"Paramètres",jeu:"Entre potes"};
- $("#app").innerHTML=`<header class="top"><h1>${titles[view]}</h1><div class="lvl"><b>Niv. ${L.l}</b>${xpProf().xp} XP</div></header><main class="stack">${({today:vToday,train:vTrain,food:vFood,prog:vProg,me:vMe,set:vSet,jeu:vJeu})[view]()}</main>
- <nav class="tabs">${TABS.map(([k,l])=>`<button data-tab="${k}" ${view===k||(k==="me"&&(view==="set"||view==="jeu"))?'aria-current="page"':""}><svg viewBox="0 0 24 24">${ICON[k]}</svg>${l}</button>`).join("")}</nav>`}
+ const titles={today:`Salut ${esc(PROF.name)}`,train:"Tes séances",food:"Nutrition",prog:"Progrès",me:"Profil",set:"Paramètres",jeu:"Entre potes",hist:"Historique"};
+ $("#app").innerHTML=`<header class="top"><h1>${titles[view]}</h1><div class="lvl"><b>Niv. ${L.l}</b>${xpProf().xp} XP</div></header><main class="stack">${({today:vToday,train:vTrain,food:vFood,prog:vProg,me:vMe,set:vSet,jeu:vJeu,hist:vHist})[view]()}</main>
+ <nav class="tabs">${TABS.map(([k,l])=>`<button data-tab="${k}" ${view===k||(k==="me"&&(view==="set"||view==="jeu"))||(k==="prog"&&view==="hist")?'aria-current="page"':""}><svg viewBox="0 0 24 24">${ICON[k]}</svg>${l}</button>`).join("")}</nav>`}
 const lastLog=id=>{const h=(store[id]||[]).filter(x=>!x.dl);return h[h.length-1]};
 function macroBlock(T,got){const r=52,C=2*Math.PI*r,k=Math.min(1,got.k/T.kcal);const b=(l,v,t,c)=>`<div>${l}<span>${Math.round(v)} / ${t} g</span><div class="bar"><i style="width:${Math.min(100,v/t*100)}%;background:${c}"></i></div></div>`;
  return `<div class="row" style="gap:16px"><div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="gp"><stop offset="0" stop-color="#FF7A6E"/><stop offset="1" stop-color="#E0242F"/></linearGradient></defs><circle class="b" cx="60" cy="60" r="${r}"/><circle class="f" cx="60" cy="60" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-k)}"/></svg><div><b>${fr(got.k)}</b><small>/ ${fr(T.kcal)} kcal</small></div></div>

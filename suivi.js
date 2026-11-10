@@ -100,7 +100,7 @@ function vProg(){const p=PROF,W=LS.get("coach-weights",[]),M=LS.get("coach-meas"
   ${C.length>=2?`<ul class="list">${C.slice(-4).reverse().map(c=>`<li><span class="sp muted">${new Date(c.t).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</span><b class="mono">😴${c.sommeil} ⚡${c.energie} 🍽️${c.faim} 🦵${c.courb} 🔥${c.moral}</b></li>`).join("")}</ul>`:""}`,` id="sec-bilan"`);
  /* Rappels : réglages dans Paramètres */
  const S_=syncCfg(),rap=card("Rappels",`<div class="row"><span class="sp small">${S_.push?"Push actif : ton coach te prévient même appli fermée.":N.on?"Rappels activés à l'ouverture de l'appli.":"Séance, pesée, mesures, bilan : choisis quand ton coach te prévient."}</span><button class="chip" data-tab="set">Régler</button></div>`);
- return `${dueBanner()}<div class="kpis"><div><strong>${X.games.length}</strong><small>séances jouées</small></div><div><strong>${weekGames()}/${p.freq}</strong><small>cette semaine</small></div><div><strong>${fr(vol/1000,1)} t</strong><small>soulevées</small></div></div>
+ return `${dueBanner()}<button class="btn ghost" data-tab="hist">📅 Historique de mes séances</button><div class="kpis"><div><strong>${X.games.length}</strong><small>séances jouées</small></div><div><strong>${weekGames()}/${p.freq}</strong><small>cette semaine</small></div><div><strong>${fr(vol/1000,1)} t</strong><small>soulevées</small></div></div>
  ${coachCard()}${poids}${mesures}${regul}${force}${bilan}${rap}`}
 function coachCheck(c){const g=PROF.goal,o=[];
  if(c.sommeil<=2)o.push("Sommeil court : vise 7 à 9 h, c'est pendant la nuit que le muscle se construit. Si ça dure, retire une série par exercice cette semaine.");
