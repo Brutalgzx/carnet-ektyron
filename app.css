@@ -177,3 +177,15 @@ body.g-on{overflow:hidden}
 .ntab{width:100%;border-collapse:collapse;font-size:14px}.ntab th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.7;text-align:right;font-weight:600;padding:4px 0 6px 8px}.ntab th:first-child{text-align:left}
 .ntab td{padding:6px 0 6px 8px;border-top:1px solid var(--line);text-align:right}.ntab td:first-child{text-align:left;padding-left:0}.ntab tr.sub td:first-child{padding-left:14px;opacity:.75}.ntab tr.tot td{font-weight:700}.ning td:first-child{max-width:48%}
 .ngoal{display:grid;gap:7px}.ngoal div{display:grid;grid-template-columns:80px 1fr 48px;gap:8px;align-items:center;font-size:13px}.ngoal i{height:8px;border-radius:4px;background:var(--line);overflow:hidden}.ngoal i b{display:block;height:100%;background:var(--pink)}.ngoal em{font-style:normal;text-align:right}
+
+/* Portail d'accueil */
+.pt{align-items:center;text-align:center;justify-content:center}
+.pt-logo img{width:96px;height:96px;border-radius:24px;box-shadow:0 10px 40px rgba(255,46,58,.35);display:block}
+.pt-logo.sm img{width:56px;height:56px;border-radius:14px}
+.pt-title{font:800 38px/1 "Barlow Condensed",var(--body);text-transform:uppercase;letter-spacing:.5px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pt-tag{margin:0;color:var(--muted);font-size:16px}
+.pt-feats{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;margin-top:6px}
+.pt-feat{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+.pt-feat>span{font-size:26px;line-height:1}
+.pt-feat b{display:block}.pt-feat small{color:var(--muted)}
+.ob-foot.stack{gap:10px}

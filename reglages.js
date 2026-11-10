@@ -65,11 +65,27 @@ async function acGo(create){const u=$("#ac-u").value.trim().toLowerCase(),p=$("#
  const old=syncCfg(),jc=typeof jeuCfg==="function"?jeuCfg().code:"";m.textContent=create?"Création…":"Connexion…";
  const S={...old,url:old.url||SYNC_URL,code:"compte:"+u+":"+p,user:u,auto:true,h:0,push:false,ps:""};
  try{const o=await fetch(S.url.replace(/\/+$/,"")+"/backup",{headers:{"X-Code":S.code}}).then(r=>r.status===404?null:r.ok?r.json():Promise.reject(new Error("le serveur répond "+r.status)));
-  if(!o&&!(create&&PROF))throw new Error(create?"remplis d'abord ton profil.":"identifiant ou mot de passe inconnu.");
+  if(!o&&!create)throw new Error("identifiant ou mot de passe inconnu.");if(create&&$("#ac-p2")&&$("#ac-p2").value!==p)throw new Error("les deux mots de passe sont différents.");
   if(jc&&old.code&&old.code!==S.code)try{await api("/group/"+jc,{method:"DELETE"})}catch(e){}
   LS.set("coach-sync",S);if(o)bkApply(o,1);if(PROF)await syncUp(true);if(jc)jeuSync().catch(()=>{});
+  if(!PROF&&!o){LS.del("coach-draft");startOnboarding();toast("Compte créé ! Quelques questions pour bâtir ton plan.");return}
   toast(o?"Connecté : tes données sont là.":"Compte créé : tout est sauvegardé automatiquement.");render()}
  catch(e){LS.set("coach-sync",old);m.textContent="Échec : "+e.message}}
+/* Portail d'accueil (aucun profil sur ce téléphone) : présentation, créer un compte, se connecter. */
+function vPortal(mode){document.body.className="ob";const back=`<div class="ob-top"><button class="back" data-pt="" aria-label="Retour">‹</button></div>`,
+ pw=n=>`<input class="txt" id="${n}" type="password" autocomplete="${n==="ac-p"&&mode==="login"?"current":"new"}-password" placeholder="${n==="ac-p"?"Mot de passe (6 caractères min.)":"Confirme le mot de passe"}">`,
+ user=`<label class="stack" style="gap:6px"><b class="small">Identifiant</b><input class="txt" id="ac-u" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex. raph"></label>`;
+ const body=mode==="new"?`${back}<div class="ob-body"><div class="pt-logo sm"><img src="icons/icon-192.png" alt=""></div><h1>Crée ton compte</h1><p class="muted" style="margin:0">Un identifiant et un mot de passe : tes séances, pesées et repas sont sauvegardés tout seuls et te suivent sur n'importe quel téléphone.</p>
+  ${user}<label class="stack" style="gap:6px"><b class="small">Mot de passe</b>${pw("ac-p")}${pw("ac-p2")}</label><p class="small" id="ac-m" style="margin:0"></p></div>
+  <div class="ob-foot stack"><button class="btn" id="ac-new">Créer mon compte</button><button class="link" data-pt="login">J'ai déjà un compte : me connecter</button></div>`
+ :mode==="login"?`${back}<div class="ob-body"><div class="pt-logo sm"><img src="icons/icon-192.png" alt=""></div><h1>Content de te revoir</h1><p class="muted" style="margin:0">Connecte-toi : ton programme, tes séances et tes mensurations reviennent sur ce téléphone.</p>
+  ${user}<label class="stack" style="gap:6px"><b class="small">Mot de passe</b>${pw("ac-p")}</label><p class="small" id="ac-m" style="margin:0"></p>
+  <details class="card"><summary class="small" style="cursor:pointer">Pas de compte ? Restaurer un ancien export</summary><textarea class="txt" id="bk-t" rows="3" placeholder="Colle ton code de sauvegarde ici" style="width:100%;margin-top:8px"></textarea><button class="btn sm" id="bk-i" style="margin-top:8px">Restaurer</button><p class="small" id="bk-m" style="margin:6px 0 0"></p><button class="btn ghost sm" id="ob-file" style="margin-top:8px">Ou importer un fichier .json</button><input type="file" id="ob-f" accept=".json,application/json,text/plain" hidden></details></div>
+  <div class="ob-foot stack"><button class="btn" id="ac-in">Se connecter</button><button class="link" data-pt="new">Pas encore de compte ? En créer un</button></div>`
+ :`<div class="ob-body pt"><div class="pt-logo"><img src="icons/icon-192.png" alt=""></div><div class="pt-title">Ektyron Coach</div><p class="pt-tag">Ton coach muscu et nutrition, dans ta poche.</p>
+  <div class="pt-feats">${[["🏋️","Un programme sur mesure","Selon ton objectif, ta salle, tes jours et tes douleurs. Ton coach monte les charges pour toi."],["🥗","Tes repas et ta liste de courses","Les menus de la semaine, les quantités et les macros, adaptés à tes goûts."],["📈","Un suivi qui s'ajuste","Pesées, mensurations, records : le coach corrige le plan chaque semaine."],["🎮","Des défis entre potes","Ton personnage monte de niveau, et chaque machine a son roi."]].map(([e,t,b])=>`<div class="pt-feat"><span>${e}</span><div><b>${t}</b><small>${b}</small></div></div>`).join("")}</div>${obNotice()}</div>
+  <div class="ob-foot stack"><button class="btn" data-pt="new">Créer un compte</button><button class="btn ghost" data-pt="login">Se connecter</button><button class="link" data-pt="try">Essayer sans compte</button></div>`;
+ $("#app").innerHTML=`<div class="ob">${body}</div>`;window.scrollTo(0,0)}
 /* Au lancement, connecté : récupère ce qui a été fait ailleurs, puis renvoie le tout. */
 async function acPull(){if(!acUser()||(typeof G!=="undefined"&&G))return;const o=await api("/backup");if(o)bkApply(o,1)}
 function newCode(){const a="abcdefghjkmnpqrstuvwxyz23456789",b=crypto.getRandomValues(new Uint8Array(16));return [...b].map(x=>a[x%a.length]).join("").match(/.{4}/g).join("-")}
@@ -141,6 +157,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
  if(t.id==="bk-imp"){$("#bk-file").click();return}
  if(t.id==="ob-file"){$("#ob-f").click();return}
  if(t.id==="ac-in"||t.id==="ac-new"){acGo(t.id==="ac-new");return}
+ if(D.pt!==undefined&&!PROF){if(D.pt==="try"){LS.del("coach-draft");startOnboarding()}else vPortal(D.pt);return}
  if(!PROF)return;
  if(t.id==="ac-out"){if(confirm("Te déconnecter ? Tes données restent sur ce téléphone.")){const S=syncCfg();S.user="";S.code="";S.auto=false;S.push=false;LS.set("coach-sync",S);render()}return}
  if(t.id==="bk-exp"){bkExport();return}

@@ -236,12 +236,10 @@ const ADJ=[
 let FLOW=STEPS;
 const INAPP=/Instagram|FBAN|FBAV|FB_IAB|Messenger|musical_ly|Bytedance|TikTok|Snapchat|Twitter|LinkedIn/i.test(navigator.userAgent),
  STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-function obNotice(){return `${INAPP?`<div class="hintbox" style="border-color:var(--warn)"><span style="font-size:26px">⚠️</span><span><b>Ouvre ce lien dans Safari ou Chrome</b><br><small class="muted">Tu es dans le navigateur d'une appli (TikTok, Insta…) : il efface tout à la fermeture. Touche ⋯ puis « Ouvrir dans le navigateur ».</small></span></div>`:!STANDALONE?`<div class="hintbox"><span style="font-size:26px">📲</span><span><b>Astuce : installe l'appli</b><br><small class="muted">Partager ⬆️ puis « Sur l'écran d'accueil ». Ton profil reste enregistré sur ce téléphone.</small></span></div>`:""}
- <div class="card stack"><b>J'ai déjà un compte</b>${acForm(0)}</div>
- <details class="card"><summary class="small" style="cursor:pointer">J'ai déjà un profil : restaurer avec mon code</summary><textarea class="txt" id="bk-t" rows="3" placeholder="Colle ton code de sauvegarde ici" style="width:100%;margin-top:8px"></textarea><button class="btn sm" id="bk-i" style="margin-top:8px">Restaurer</button><p class="small" id="bk-m" style="margin:6px 0 0"></p><button class="btn ghost sm" id="ob-file" style="margin-top:8px">Ou importer un fichier .json</button><input type="file" id="ob-f" accept=".json,application/json,text/plain" hidden></details>`}
+function obNotice(){return `${INAPP?`<div class="hintbox" style="border-color:var(--warn)"><span style="font-size:26px">⚠️</span><span><b>Ouvre ce lien dans Safari ou Chrome</b><br><small class="muted">Tu es dans le navigateur d'une appli (TikTok, Insta…) : il efface tout à la fermeture. Touche ⋯ puis « Ouvrir dans le navigateur ».</small></span></div>`:!STANDALONE?`<div class="hintbox"><span style="font-size:26px">📲</span><span><b>Astuce : installe l'appli</b><br><small class="muted">Partager ⬆️ puis « Sur l'écran d'accueil ». Ton profil reste enregistré sur ce téléphone.</small></span></div>`:""}`}
 function renderOb(){const S=FLOW[obI];if(FLOW===STEPS&&!PROF)LS.set("coach-draft",{A,obI});document.body.className="ob";
- $("#app").innerHTML=`<div class="ob"><div class="ob-top"><button class="back" id="ob-back" aria-label="Retour" ${obI===0&&!PROF?"style=visibility:hidden":""}>‹</button><div class="ob-bar"><i style="width:${(obI+1)/FLOW.length*100}%"></i></div><span class="ob-step">${obI+1}/${FLOW.length}</span></div>
- <div class="ob-body"><h1>${S.t}</h1><p class="muted" style="margin:0">${typeof S.s==="function"?S.s():S.s}</p>${S.h()}${obI===0&&FLOW===STEPS&&!PROF?obNotice():""}</div>
+ $("#app").innerHTML=`<div class="ob"><div class="ob-top"><button class="back" id="ob-back" aria-label="Retour" >‹</button><div class="ob-bar"><i style="width:${(obI+1)/FLOW.length*100}%"></i></div><span class="ob-step">${obI+1}/${FLOW.length}</span></div>
+ <div class="ob-body"><h1>${S.t}</h1><p class="muted" style="margin:0">${typeof S.s==="function"?S.s():S.s}</p>${S.h()}${obI===0&&FLOW===STEPS&&!PROF&&INAPP?obNotice():""}</div>
  <div class="ob-foot"><button class="btn" id="ob-next" ${S.ok()?"":"disabled"}>${obI===FLOW.length-1?(FLOW===ADJ?"Valider mon programme":FLOW.ref?"Enregistrer":FLOW===GOUTS?"Enregistrer mes goûts":"Construire mon plan"):"Continuer"}</button></div></div>`;
  const n=$("#i-name");if(n&&!A.name)setTimeout(()=>n.focus(),50)}
 function obRefresh(){const b=$("#ob-next");if(b)b.disabled=!FLOW[obI].ok()}
@@ -256,7 +254,7 @@ function buildScreen(){document.body.className="ob";const L=["Lecture de tes ré
 /* ================= Écrans ================= */
 const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',train:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',food:'<path d="M7 3v8a3 3 0 0 0 3 3v7M10 3v6M4 3v6a3 3 0 0 0 3 3M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',prog:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
 const TABS=[["today","Aujourd'hui"],["train","Séances"],["food","Nutrition"],["prog","Progrès"],["me","Profil"]];
-function render(){if(!PROF&&view!=="ob")return startOnboarding();if(view==="ob")return renderOb();if(view==="plan")return showPlan();document.body.className=G?"g-on":"";
+function render(){if(!PROF&&view!=="ob")return LS.get("coach-draft",null)?startOnboarding():vPortal();if(view==="ob")return renderOb();if(view==="plan")return showPlan();document.body.className=G?"g-on":"";
  TRAIN=TRAIN||buildTraining(PROF);const L=level(xpProf().xp);
  const titles={today:`Salut ${esc(PROF.name)}`,train:"Tes séances",food:"Nutrition",prog:"Progrès",me:"Profil",set:"Paramètres",jeu:"Entre potes"};
  $("#app").innerHTML=`<header class="top"><h1>${titles[view]}</h1><div class="lvl"><b>Niv. ${L.l}</b>${xpProf().xp} XP</div></header><main class="stack">${({today:vToday,train:vTrain,food:vFood,prog:vProg,me:vMe,set:vSet,jeu:vJeu})[view]()}</main>
@@ -429,7 +427,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
   if(D.t){A.taste=A.taste||{};const v=A.taste[D.t]||0,n=v===0?1:v===1?-1:0;if(n)A.taste[D.t]=n;else delete A.taste[D.t];renderOb();return}
   if(D.av!==undefined){const w=+D.av,a=A.avail||[...WEEK];A.avail=a.includes(w)?a.filter(x=>x!==w):[...a,w];renderOb();return}
   if(t.id==="nope-clr"){A.nope=[];renderOb();return}
-  if(t.id==="ob-back"){if(obI>0){obI--;renderOb()}else if(PROF){view=FLOW===ADJ?"train":"me";render()}return}
+  if(t.id==="ob-back"){if(obI>0){obI--;renderOb()}else if(PROF){view=FLOW===ADJ?"train":"me";render()}else{LS.del("coach-draft");view="today";vPortal()}return}
   if(t.id==="ob-next"){if(!FLOW[obI].ok())return;if(obI<FLOW.length-1){obI++;renderOb();window.scrollTo(0,0)}else if(FLOW===ADJ)saveAdjust();else if(FLOW===GOUTS)saveTastes();else if(FLOW.ref)saveRefine();else buildScreen();return}
   return}
  /* partie */
