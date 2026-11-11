@@ -47,8 +47,8 @@ const QZONES={t:"Les zones à travailler en priorité",s:"Touche-les dans l'ordr
 function zoneLabel(v){return zoneL(v)}
 const QAIMS={t:"Ce que tu veux vraiment",s:"Coche tout ce qui compte pour toi. Ton coach ajuste les exercices, les reps et les repos.",h:()=>opts("aims",AIMS,true),ok:()=>true};
 const QPROG={t:"As-tu déjà un programme ?",s:"Si oui, colle-le : ton coach garde ce qui marche et corrige le reste.",
- h:()=>opts("hasProg",[{v:"non",e:"🆕",l:"Non, je pars de zéro"},{v:"oui",e:"📋",l:"Oui, je le colle ici",s:"Jours, exercices, séries × reps"}])+(A.hasProg==="oui"?`<textarea class="txt" id="i-prog" rows="9" maxlength="4000" placeholder="Lundi : jambes&#10;Squat 4x8&#10;Hip thrust 3x10&#10;Leg curl 3x12&#10;&#10;Mercredi : haut&#10;Développé couché 4x8&#10;Tirage vertical 3x10" style="font-size:15px;padding:12px;margin-top:12px;width:100%;resize:vertical">${esc(A.progTxt||"")}</textarea><div id="prog-hit" class="small muted" style="margin-top:6px">${progHint(A.progTxt)}</div>`:""),
- ok:()=>A.hasProg==="non"||(A.hasProg==="oui"&&(A.progTxt||"").trim().length>=8)};
+ h:()=>opts("hasProg",[{v:"non",e:"🆕",l:"Non, je pars de zéro"},{v:"oui",e:"📋",l:"Oui, je le colle ici",s:"Jours, exercices, séries × reps"}])+(A.hasProg==="oui"?`<textarea class="txt" id="i-prog" rows="9" maxlength="4000" placeholder="Lundi : jambes&#10;Squat 4x8&#10;Hip thrust 3x10&#10;Leg curl 3x12&#10;&#10;Mercredi : haut&#10;Développé couché 4x8&#10;Tirage vertical 3x10" style="font-size:15px;padding:12px;margin-top:12px;width:100%;resize:vertical">${esc(A.progTxt||"")}</textarea><div id="prog-hit" class="small muted" style="margin-top:6px">${progHint(A.progTxt)}</div><div class="lab" style="margin-top:16px">Ton coach en fait quoi ?</div>`+opts("progKeep",[{v:"tel",e:"🔒",l:"Je le garde tel quel",s:"Le coach ne change rien : il suit tes charges et te dit quand augmenter"},{v:"compare",e:"🔁",l:"Je veux l'avis du coach",s:"Il l'analyse et te propose sa version, tu choisis"}]):""),
+ ok:()=>A.hasProg==="non"||(A.hasProg==="oui"&&(A.progTxt||"").trim().length>=8&&!!A.progKeep)};
 
 /* ================= Lecture d'un programme collé ================= */
 const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
@@ -122,14 +122,14 @@ function progAnalyze(p){const D=progParse(p.progTxt,p);if(!D.length)return null;
 /* ================= Garder son propre programme ================= */
 const WDRX=/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|jour\s*\d+|j\s*\d+|s[ée]ance\s*\d+|day\s*\d+)\s*[:\-–·]?\s*/i;
 /* Programme collé → séances gardées telles quelles. Les exercices non reconnus deviennent des exercices perso suivis comme les autres. */
-function ownSetup(p){const D=progParse(p.progTxt,p).slice(0,6),ex={};
+function ownSetup(p){const D=progParse(p.progTxt,p.progKeep==="tel"?null:p).slice(0,6),ex={};
  p.ownDays=D.map((d,i)=>{let t=d.t.replace(WDRX,"").trim();t=t?t[0].toUpperCase()+t.slice(1):`Séance ${i+1}`;
-  return{t,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}return{id,s:x.s,r:x.r}})}});
+  return{t,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}const o={id,s:x.s,r:x.r};if(p.progKeep==="tel")o.n=(x.raw[0].toUpperCase()+x.raw.slice(1)).slice(0,50);return o})}});
  p.ownEx=ex;regOwn(p);return p}
 const regOwn=p=>{if(p&&p.ownEx)Object.assign(EX,p.ownEx)};
 const ownDaysFor=p=>spreadDays(Math.min(6,Math.max(1,(p.ownDays||[]).length)),p.avail&&p.avail.length>=2?p.avail:WEEK);
 /* Fourchette pour la double progression : un nombre fixe de reps devient « reps → reps + 2 ». */
-function mkOwn(o,p){const [n,g,,kind,a,c]=EX[o.id],S=SCHEME[p.goal][kind],r=o.r[0]===o.r[1]?[o.r[0],o.r[0]+2]:[o.r[0],o.r[1]];return{id:o.id,n,g,a,c,s:o.s,r,rest:S[3],kind}}
+function mkOwn(o,p){const [n,g,,kind,a,c]=EX[o.id],S=SCHEME[p.goal][kind],r=o.r[0]===o.r[1]?[o.r[0],o.r[0]+2]:[o.r[0],o.r[1]];return{id:o.id,n:o.n||n,g,a,c,s:o.s,r,rest:S[3],kind}}
 function buildOwn(p){regOwn(p);const days={},L=p.ownDays,ds=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7);
  ds.forEach((d,i)=>{const k="own"+(i%L.length),O=L[i%L.length],cu=(p.custom||{})[d],own=!!(cu&&cu.k===k);
   const x=own?cu.ids.filter(id=>EX[id]).map(id=>{const o=O.x.find(y=>y.id===id);return o?mkOwn(o,p):mkEx(id,p)}):O.x.map(o=>mkOwn(o,p));
