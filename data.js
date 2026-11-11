@@ -58,7 +58,7 @@ const EX = {
  rdlx:["Soulevé de terre roumain barre","Jambes","x","H","rdl","Barre collée aux jambes, fesses en arrière, dos neutre.","bw"],
  hipt:["Hip thrust","Jambes","db","M","","Haut du dos sur le banc, menton rentré, serre les fessiers en haut.",""],
  pont:["Pont fessier une jambe","Jambes","0","I","","Dos au sol, une jambe tendue, pousse dans le talon et serre les fessiers.",""],
- addab:["Adducteurs + abducteurs (superset)","Jambes","m","I","addab","Enchaîne les deux machines sans pause.",""],
+ addab:["Abduction dos penché","Jambes","m","I","addab","Enchaîne les deux machines sans pause.",""],
  moll:["Mollets debout","Jambes","m","I","moll","Amplitude complète, pause en bas en étirement.",""],
  moll2:["Mollets assis","Jambes","m","I","moll2","Pour le soléaire. Pause en bas.",""],
  mollh:["Mollets sur une marche, haltère en main","Jambes","d","I","moll","Une jambe à la fois, talon qui descend sous la marche.",""],
