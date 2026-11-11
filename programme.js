@@ -51,10 +51,14 @@ const QPROG={t:"As-tu déjà un programme ?",s:"Si oui, colle-le : ton coach gar
  ok:()=>A.hasProg==="non"||(A.hasProg==="oui"&&(A.progTxt||"").trim().length>=8&&!!A.progKeep)};
 
 /* ================= Lecture d'un programme collé ================= */
+const DOWN=["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"],dowList=t=>DOWN.map((d,i)=>new RegExp("\\b"+d+"\\b").test(norm(t))?i:-1).filter(i=>i>=0);
 const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 /* Ordre important : les règles précises d'abord. */
 const ALIAS=[
- [/hip ?thrust|poussee de hanche/,["hipt"]],[/barre au front|skull|french press|extension.*(nuque|derriere la tete|au dessus)|overhead.*tri/,["ovh","extd"]],
+ [/dead ?bug/,["deadbug"]],[/heel ?taps?|touche.{0,8}talons?/,["heeltap"]],[/suit ?case/,["suitc"]],[/russian|twist/,["rtwist"]],[/suspendu|hanging/,["hlr"]],[/gainage|planche|plank/,["gain"]],
+ [/sumo/,["sumosq"]],[/step ?up/,["stepup"]],[/abduct/,["abd"]],[/rowing assis|seated row|tirage (assis|horizontal|poulie basse)/,["rowc","rowm"]],
+ [/(dumbbell?|haltere).{0,6}row|row.{0,12}(dumbbell?|haltere)|rowing unilat/,["rowu"]],[/curl biceps|biceps curl|curl (aux )?halteres?$/,["curld","cpou"]],[/press(e)? couche|leg press/,["press","hack"]],
+ [/hip ?t?h?rust|poussee de hanche/,["hipt"]],[/barre au front|skull|french press|extension.*(nuque|derriere la tete|au dessus)|overhead.*tri/,["ovh","extd"]],
  [/triceps|pushdown|push down|extension.*corde/,["tri1","triv","extd","dipsbanc"]],[/kick ?back|ruade|extension de hanche/,["kick","pont"]],
  [/pont fessier|glute bridge|\bpont\b/,["pont","hipt"]],[/bulgare|bulgarian|split squat/,["bulg","fentes"]],[/fente|lunge|step ?up/,["fentes","bulg"]],
  [/roumain|rdl|jambes tendues|stiff|good ?morning/,["rdlx","rdl"]],[/souleve de terre|deadlift|\bsdt\b/,["rdlx","rdl"]],[/hack/,["hack","smsq"]],
@@ -75,13 +79,16 @@ function progMatch(name,p){const n=norm(name);for(const [rx,ids] of ALIAS)if(rx.
   const sc=id=>{const eq=EX[id][2];return(p&&exOk(id,p)?4:0)+(/halt|dumbbell|\bdb\b/.test(n)&&eq.includes("d")?2:0)+(/barre|\bbar\b/.test(n)&&eq.includes("x")?2:0)+(/machine|poulie|cable/.test(n)&&/[mc]/.test(eq)?1:0)-ids.indexOf(id)*.1};
   return [...ids].sort((a,b)=>sc(b)-sc(a))[0]}return null}
 function progParse(txt,p){const days=[];let cur=null;
- for(let raw of String(txt||"").split(/\n|;/)){let l=raw.replace(/^\s*([-•*–·>]+|\d+[.)])\s*/,"").trim();if(!l)continue;const n=norm(l),m=n.match(SRX);
-  if(!m&&(/:\s*$/.test(l)||DAYRX.test(n))&&l.length<60&&!progMatch(l.replace(/:.*$/,""),p)){cur={t:l.replace(/:\s*$/,""),x:[]};days.push(cur);continue}
+ for(let raw of String(txt||"").split(/\n|;/)){let l=raw.replace(/^\s*([-•*–·>◦▪●○]+|\d+[.)])\s*/,"").trim();if(!l)continue;
+  {const pd=norm(l).match(/^\(([^)]*)\)$/);if(pd){const w=dowList(pd[1]);if(w.length&&cur)cur.dow=w;if(w.length)continue}}
+  let kg=null;l=l.replace(/\(?\s*(\d+(?:[.,]\d+)?)\s*kg\s*\)?/i,(_,v)=>{kg=+v.replace(",",".");return " "}).replace(/\s{2,}/g," ").trim();const n=norm(l),m=n.match(SRX);
+  if(!m&&(/:\s*$/.test(l)||DAYRX.test(n))&&l.length<60&&!progMatch(l.replace(/:.*$/,""),p)){cur={t:l.replace(/:\s*$/,""),x:[]};const w=dowList(n);if(w.length)cur.dow=w;days.push(cur);continue}
   let name=l;if(m)name=l.slice(0,n.indexOf(m[0]))+l.slice(n.indexOf(m[0])+m[0].length);
   if(!m&&/:/.test(l)&&DAYRX.test(n)){cur={t:l.split(":")[0].trim(),x:[]};days.push(cur);name=l.split(":").slice(1).join(":")}
   name=name.replace(/\(?\s*(repos|rest|recup)[^)]*\)?/i,"").replace(/[:,\-–]+\s*$/,"").trim();if(!/[a-z]/i.test(name))continue;
   if(!cur){cur={t:"Séance 1",x:[]};days.push(cur)}
-  const s=m?+m[1]:3,lo=m?+m[2]:10,hi=m&&m[3]?+m[3]:lo;cur.x.push({raw:name,id:progMatch(name,p),s:Math.min(10,s),r:[Math.min(lo,hi),Math.max(lo,hi)]})}
+  const tm=m&&n.slice(n.indexOf(m[0])+m[0].length).match(/^\s*(min|mn|s\b|sec)/),mul=tm&&/^m/.test(tm[1])?60:1;if(tm)name=name.replace(/^\s*(min|mn|sec|s)\b\s*/i,"").replace(/\(\s*(min|mn|sec|s)\s*\)/i,"").trim()+" (en secondes)";
+  const s=m?+m[1]:3,lo=m?+m[2]*mul:10,hi=m&&m[3]?+m[3]*mul:lo;cur.x.push({raw:name.replace(/\(\s*\)/g,"").replace(/\s{2,}/g," ").trim(),id:progMatch(name,p),s:Math.min(10,s),r:[Math.min(lo,hi),Math.max(lo,hi)],kg})}
  return days.filter(d=>d.x.length)}
 function progHint(txt){const D=progParse(txt,A),X=D.flatMap(d=>d.x);if(!X.length)return "Un exercice par ligne, avec ses séries × reps. Les jours sur leur propre ligne.";
  const ok=X.filter(x=>x.id).length;return `✅ ${D.length} séance${D.length>1?"s":""}, ${ok} exercice${ok>1?"s":""} reconnu${ok>1?"s":""} sur ${X.length}${ok<X.length?" (les autres seront remplacés)":""}.`}
@@ -124,12 +131,13 @@ const WDRX=/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|jour\s*\d+|j\s
 /* Programme collé → séances gardées telles quelles. Les exercices non reconnus deviennent des exercices perso suivis comme les autres. */
 function ownSetup(p){const D=progParse(p.progTxt,p.progKeep==="tel"?null:p).slice(0,6),ex={};
  p.ownDays=D.map((d,i)=>{let t=d.t.replace(WDRX,"").trim();t=t?t[0].toUpperCase()+t.slice(1):`Séance ${i+1}`;
-  return{t,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}const o={id,s:x.s,r:x.r};if(p.progKeep==="tel")o.n=(x.raw[0].toUpperCase()+x.raw.slice(1)).slice(0,50);return o})}});
+  return{t,dow:d.dow&&d.dow.length===1?d.dow[0]:null,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}const o={id,s:x.s,r:x.r};if(x.kg)o.kg=x.kg;if(p.progKeep==="tel")o.n=(x.raw[0].toUpperCase()+x.raw.slice(1)).slice(0,50);return o})}});
+ if(p.ownDays.length&&p.ownDays.every(d=>d.dow!=null)&&new Set(p.ownDays.map(d=>d.dow)).size===p.ownDays.length)p.ownDays.sort((a,b)=>(a.dow+6)%7-(b.dow+6)%7);
  p.ownEx=ex;regOwn(p);return p}
 const regOwn=p=>{if(p&&p.ownEx)Object.assign(EX,p.ownEx)};
-const ownDaysFor=p=>spreadDays(Math.min(6,Math.max(1,(p.ownDays||[]).length)),p.avail&&p.avail.length>=2?p.avail:WEEK);
+const ownDaysFor=p=>{const w=(p.ownDays||[]).map(d=>d.dow);return w.length&&w.every(x=>x!=null)&&new Set(w).size===w.length?w:spreadDays(Math.min(6,Math.max(1,(p.ownDays||[]).length)),p.avail&&p.avail.length>=2?p.avail:WEEK)};
 /* Fourchette pour la double progression : un nombre fixe de reps devient « reps → reps + 2 ». */
-function mkOwn(o,p){const [n,g,,kind,a,c]=EX[o.id],S=SCHEME[p.goal][kind],r=o.r[0]===o.r[1]?[o.r[0],o.r[0]+2]:[o.r[0],o.r[1]];return{id:o.id,n:o.n||n,g,a,c,s:o.s,r,rest:S[3],kind}}
+function mkOwn(o,p){const [n,g,,kind,a,c]=EX[o.id],S=SCHEME[p.goal][kind],r=o.r[0]===o.r[1]?[o.r[0],o.r[0]+2]:[o.r[0],o.r[1]];return{id:o.id,n:o.n||n,g,a,c,s:o.s,r,rest:S[3],kind,kg:o.kg}}
 function buildOwn(p){regOwn(p);const days={},L=p.ownDays,ds=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7);
  ds.forEach((d,i)=>{const k="own"+(i%L.length),O=L[i%L.length],cu=(p.custom||{})[d],own=!!(cu&&cu.k===k);
   const x=own?cu.ids.filter(id=>EX[id]).map(id=>{const o=O.x.find(y=>y.id===id);return o?mkOwn(o,p):mkEx(id,p)}):O.x.map(o=>mkOwn(o,p));

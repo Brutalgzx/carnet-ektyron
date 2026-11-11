@@ -67,7 +67,18 @@ const EX = {
  releve:["Relevés de jambes allongé","Abdos","0","I","","Bas du dos plaqué au sol, monte les jambes sans élan.",""],
  bext:["Back extensions","Dos","m","I","bext","Pour les lombaires. Remonte jusqu'à l'alignement, pas au-delà.",""],
  superman:["Superman au sol","Dos","0","I","","À plat ventre, décolle bras et jambes 2 secondes.",""],
- kick:["Kickback fessier à la poulie","Jambes","c","I","","Cheville attachée à la poulie basse, buste penché, pousse la jambe en arrière en serrant le fessier.",""]
+ kick:["Kickback fessier à la poulie","Jambes","c","I","","Cheville attachée à la poulie basse, buste penché, pousse la jambe en arrière en serrant le fessier.",""],
+ sumosq:["Sumo squat haltère","Jambes","db","M","","Pieds très écartés, pointes vers l'extérieur, haltère entre les jambes. Genoux dans l'axe des pieds.",""],
+ stepup:["Step up sur banc","Jambes","db","M","","Tout le pied sur le banc, pousse dans le talon. La jambe d'en bas ne pousse pas.",""],
+ abd:["Abduction machine","Jambes","m","I","","Dos calé, écarte les genoux en contrôlant le retour. Penchée en avant = plus de fessier.",""],
+ rowc:["Rowing assis poulie","Dos","c","M","","Buste droit, tire la poignée vers le nombril en serrant les omoplates.",""],
+ curld:["Curl biceps haltères","Bras","db","I","","Coudes fixes le long du corps, monte sans balancer le buste.",""],
+ hlr:["Relevés de jambes suspendu","Abdos","0","I","","Suspendu à la barre, monte les jambes sans élan, redescends lentement.",""],
+ deadbug:["Dead bug","Abdos","0","I","","Bas du dos plaqué au sol. Tends un bras et la jambe opposée, sans cambrer.",""],
+ heeltap:["Heel taps","Abdos","0","I","","Épaules décollées, touche un talon puis l'autre en gardant la tension.",""],
+ rtwist:["Russian twist","Abdos","0","I","","Buste incliné en arrière, dos droit, tourne les épaules d'un côté à l'autre.",""],
+ suitc:["Suitcase crunch","Abdos","0","I","","Allongée, ramène genoux et buste l'un vers l'autre, puis tends tout sans toucher le sol.",""],
+ gain:["Gainage","Abdos","0","I","","Coudes sous les épaules, corps aligné, fessiers et abdos serrés.",""]
 };
 
 /* Emplacements : pour chaque rôle, les exercices par ordre de préférence. */
@@ -238,4 +249,4 @@ const TIPS = [
 ];
 
 /* Animations ajoutées : l'identifiant d'animation = identifiant de l'exercice */
-for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","ytw","dmil","pike","curlh","marth","curlpdc","extd","dipsbanc","diam","gobsq","squatpdc","fentes","nordic","hipt","pont","releve","superman"])if(EX[id]&&!EX[id][4])EX[id][4]=id;
+for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","ytw","dmil","pike","curlh","marth","curlpdc","extd","dipsbanc","diam","gobsq","squatpdc","fentes","nordic","hipt","pont","releve","superman","kick","sumosq","stepup","abd","rowc","curld","hlr","deadbug","heeltap","rtwist","suitc","gain"])if(EX[id]&&!EX[id][4])EX[id][4]=id;

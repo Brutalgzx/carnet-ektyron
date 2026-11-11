@@ -363,14 +363,14 @@ function gClose(){clearInterval(gInt);G=null;LS.del(GK);$("#game").hidden=true;d
 function gTop(){const n=gList().length;return `<div class="g-top"><button id="g-quit" aria-label="Quitter la partie">✕</button><div class="g-segs">${gList().map((x,i)=>`<i class="${i<G.ei?"ok":i===G.ei&&G.ph!=="done"?"now":""}"></i>`).join("")}</div><span>${Math.min(G.ei+1,n)}/${n}</span></div>`}
 function gSuggest(ex){const last=lastLog(ex.id),ls=last?.sets||[],prev=ls[G.si]||ls[ls.length-1],before=(G.sets[ex.id]||[])[G.si-1];
  const up=!!last&&ls.length>=ex.s&&ls.every(s=>s.r>=ex.r[1]);
- let k=before?before.k:prev?(up?prev.k+2.5:prev.k):"",r=before?before.r:prev?(up?ex.r[0]:Math.min(prev.r+1,ex.r[1])):ex.r[0];
+ let k=before?before.k:prev?(up?prev.k+2.5:prev.k):(ex.kg??""),r=before?before.r:prev?(up?ex.r[0]:Math.min(prev.r+1,ex.r[1])):ex.r[0];
  if(!before&&prev&&deloadOn()){k=r25(prev.k*.85);r=ex.r[0]}
  return{prev,up:up&&!deloadOn(),k:G.dk??(k===""?"":kIn(k)),r:G.dr??r}}
 function gShow(){clearInterval(gInt);const box=$("#g-in");
  if(G.ph==="set"){const ex=gEx(),s=gSuggest(ex);
   box.innerHTML=gTop()+`<div class="lab">Exercice ${G.ei+1} · Série ${G.si+1}/${ex.s}</div><h2 class="g-name">${ex.n}</h2>
   ${ex.a?`<canvas class="anim g-anim" data-id="${ex.a}" width="640" height="480" aria-label="Animation : ${esc(ex.n)}"></canvas>`:""}<div class="small">${ex.c}</div>
-  <div class="g-goal"><span>Objectif <b>${ex.r[0]}–${ex.r[1]} reps</b></span><span>${s.prev?`Dernière fois : ${kgS(s.prev.k)} × ${s.prev.r}`:"Première fois : reste léger et propre"}</span></div>
+  <div class="g-goal"><span>Objectif <b>${ex.r[0]}–${ex.r[1]} reps</b></span><span>${s.prev?`Dernière fois : ${kgS(s.prev.k)} × ${s.prev.r}`:ex.kg?`Ta charge de départ : ${kgS(ex.kg)}`:"Première fois : reste léger et propre"}</span></div>
   ${s.up&&G.si===0?`<div class="g-up">Tu as tout validé la dernière fois : on monte d'un cran.</div>`:""}${deloadOn()&&G.si===0?`<div class="g-up">Semaine de décharge : charges −15 %, garde 2-3 reps en réserve.</div>`:""}
   <div class="g-step"><label for="g-k">${wU()==="lb"?"Livres":"Kilos"}</label><button data-gs="k" data-v="-${wU()==="lb"?5:2.5}" aria-label="Moins ${wU()==="lb"?"5 lb":"2,5 kg"}">−</button><input id="g-k" inputmode="decimal" value="${s.k}" placeholder="0"><button data-gs="k" data-v="${wU()==="lb"?5:2.5}" aria-label="Plus ${wU()==="lb"?"5 lb":"2,5 kg"}">+</button></div>
   <div class="g-step"><label for="g-r">Reps</label><button data-gs="r" data-v="-1" aria-label="Moins une rep">−</button><input id="g-r" inputmode="numeric" value="${s.r}"><button data-gs="r" data-v="1" aria-label="Plus une rep">+</button></div>
