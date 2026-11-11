@@ -131,7 +131,7 @@ const WDRX=/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|jour\s*\d+|j\s
 /* Programme collé → séances gardées telles quelles. Les exercices non reconnus deviennent des exercices perso suivis comme les autres. */
 function ownSetup(p){const D=progParse(p.progTxt,p.progKeep==="tel"?null:p).slice(0,6),ex={};
  p.ownDays=D.map((d,i)=>{let t=d.t.replace(WDRX,"").replace(/\s*\(([^)]*)\)\s*$/,(m,x)=>dowList(x).length?"":m).trim();t=t?t[0].toUpperCase()+t.slice(1):`Séance ${i+1}`;
-  return{t,dow:d.dow&&d.dow.length===1?d.dow[0]:null,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}const o={id,s:x.s,r:x.r};if(x.kg)o.kg=x.kg;if(p.progKeep==="tel")o.n=(x.raw[0].toUpperCase()+x.raw.slice(1)).slice(0,50);return o})}});
+  return{t,dow:d.dow&&d.dow.length===1?d.dow[0]:null,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}const o={id,s:x.s,r:x.r};if(x.kg)o.kg=x.kg;if(p.progKeep==="tel"&&!["abd","abdp"].includes(id))o.n=(x.raw[0].toUpperCase()+x.raw.slice(1)).slice(0,50);return o})}});
  if(p.ownDays.length&&p.ownDays.every(d=>d.dow!=null)&&new Set(p.ownDays.map(d=>d.dow)).size===p.ownDays.length)p.ownDays.sort((a,b)=>(a.dow+6)%7-(b.dow+6)%7);
  p.ownEx=ex;regOwn(p);return p}
 const regOwn=p=>{if(p&&p.ownEx)Object.assign(EX,p.ownEx)};

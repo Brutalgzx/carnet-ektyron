@@ -76,8 +76,8 @@ Object.assign(AN,{
  kick:{v:"s",m:["glu","ham"],l:"Grand fessier",A:{t:35,th:0,sh:0,th2:8,sh2:-8,ua:70,fa:70,anc:{j:"ankle",x:170,y:204}},B:{th2:-48,sh2:-40}},
  sumosq:{v:"f",m:["glu","add","quad"],l:"Fessiers + adducteurs",A:{hy:128,la:22,ab:6,fa:6},B:{hy:160,la:34}},
  stepup:{v:"s",m:["quad","glu"],l:"Quadriceps + fessiers",A:{t:18,th:88,sh:-4,th2:-8,sh2:-8,ua:0,fa:0,anc:{j:"ankle",x:180,y:170}},B:{t:4,th:0,sh:0,th2:40,sh2:-50},pr:[{k:"rect",x:150,y:172,w:80,h:32},"db"]},
- abdp:{v:"b",m:["glu"],l:"Fessiers · buste penché en avant",A:{hy:150,la:6,ls:.35,ab:30,fa:20,ts:.6},B:{la:40},pr:["seatF"]},
- abd:{v:"f",m:["glu"],l:"Moyen fessier · dos droit",A:{hy:150,la:6,ls:.35,ab:15,fa:40},B:{la:38},pr:["seatF"]},
+ abdp:{v:"f",m:["glu"],l:"Fessiers · buste penché",A:{hy:150,la:6,ls:.35,ab:12,fa:8,lean:45},B:{la:40},pr:["seatF"]},
+ abd:{v:"f",m:["glu"],l:"Fessiers · dos droit",A:{hy:150,la:6,ls:.35,ab:15,fa:40,lean:-8},B:{la:38},pr:["seatF"]},
  rowc:{v:"s",m:["lat","deltP"],l:"Milieu du dos",A:{hx:110,hy:180,t:18,th:82,sh:72,ua:85,fa:85},B:{t:-4,ua:-40,fa:80},pr:[{k:"rect",x:60,y:186,w:110,h:12},{k:"cable",x:250,y:150},"handle"]},
  curld:{v:"s",m:["bic"],l:"Biceps",A:{ua:-3,fa:3},B:{fa:145},pr:["db"]},
  hlr:{v:"s",m:["abs"],l:"Bas des abdos",A:{t:0,th:0,sh:0,th2:0,sh2:0,ua:180,fa:180,anc:{j:"hand",x:150,y:22}},B:{th:95,sh:95,th2:95,sh2:95},pr:[{k:"rect",x:110,y:16,w:80,h:6}]},
@@ -122,7 +122,7 @@ function joints(v,p,uni){let J;
   const leg=(th,s)=>{const k=ad(hip,ml(dA(th),44)),an=ad(k,ml(dA(s),40));return[k,an,ad(an,[14*Math.cos(p.fo*R),14*Math.sin(p.fo*R)])]};
   const L1=leg(p.th,p.sh),L2=leg(th2,sh2),el=ad(sh,ml(dA(u),34)),el2=ad(sh,ml(dA(u2),34));
   J={up,n,t:p.t,hip,sh,head:ad(ad(hip,ml(up,82)),ml(n,2)),el,hand:ad(el,ml(dA(f),30)),el2,hand2:ad(el2,ml(dA(f2),30)),knee:L1[0],ankle:L1[1],toe:L1[2],knee2:L2[0],ankle2:L2[1],toe2:L2[2],a:{u,f,u2,f2,th:p.th,sh:p.sh,th2,sh2}};
- }else{const cx=160,hip=[cx,p.hy],sy=p.hy-60*p.ts;J={cx,hip,sy,arms:[],legs:[]};
+ }else{const cx=160,hip=[cx,p.hy],sy=p.hy-60*p.ts;J={cx,hip,sy,arms:[],legs:[],lean:p.lean||0};
   for(const s of[1,-1]){const q=(uni&&s<0)?{ab:5,fa:5,hf:0}:p,shp=[cx+s*27,sy+4],hf=q.hf,fh=q.fh??hf;
    const el=ad(shp,[s*34*Math.sin(q.ab*R)*Math.cos(hf*R),34*Math.cos(q.ab*R)]),hd=ad(el,[s*30*Math.sin(q.fa*R)*Math.cos(fh*R),30*Math.cos(q.fa*R)]);
    const ze=34*Math.sin(q.ab*R)*Math.sin(hf*R);J.arms.push({s,sh:shp,el,hand:hd,z:{el:ze,hand:ze+30*Math.sin(q.fa*R)*Math.sin(fh*R)}});const hj=[cx+s*11,p.hy+2],k=ad(hj,[s*46*p.ls*Math.sin(p.la*R),46*p.ls*Math.cos(p.la*R)]),an=ad(k,[s*4,40]);
@@ -254,8 +254,9 @@ function build(e,J,act){for(const k in N)N[k]=0;const side=e.v=="s",hot=ks=>ks.s
   arms=[{s:1,sh:T3(J.sh,17),el:T3(J.el,19),hand:T3(J.hand,17)},{s:-1,sh:T3(J.sh,-17),el:T3(J.el2,-19),hand:T3(J.hand2,-17)}];
   legs=[{s:1,hip:T3(J.hip,9),knee:T3(J.knee,10),ankle:T3(J.ankle,10),toe:T3(J.toe,11)},{s:-1,hip:T3(J.hip,-9),knee:T3(J.knee2,-10),ankle:T3(J.ankle2,-10),toe:T3(J.toe2,-11)}];
   outw=s=>V(0,0,s);fr=d=>V(-d.y,d.x,0);const u=S.clone().sub(H).normalize();tf=V(u.y,-u.x,0)}
- else{const cx=J.cx;H=T3(J.hip);S=T3([cx,J.sy+4]);HD=T3([cx,J.sy-21]);
-  arms=J.arms.map(A=>({s:A.s,sh:T3(A.sh),el:T3(A.el,A.z.el),hand:T3(A.hand,A.z.hand)}));
+ else{const cx=J.cx,ln=(J.lean||0)*R,rot=(pt,z)=>{const dy=J.hip[1]-pt[1];return T3([pt[0],J.hip[1]-(dy*Math.cos(ln)-z*Math.sin(ln))],dy*Math.sin(ln)+z*Math.cos(ln))};
+  H=T3(J.hip);S=rot([cx,J.sy+4],0);HD=rot([cx,J.sy-21],0);
+  arms=J.arms.map(A=>({s:A.s,sh:rot(A.sh,0),el:rot(A.el,A.z.el),hand:rot(A.hand,A.z.hand)}));
   legs=J.legs.map(L=>({s:L.s,hip:T3(L.hip),knee:T3(L.knee,L.z.knee),ankle:T3(L.ankle,L.z.ankle),toe:T3(L.toe,L.z.toe)}));
   outw=s=>V(s,0,0);fr=()=>V(0,0,1);tf=V(0,0,1)}
  const BT=basis(S.clone().sub(H),tf),LT=H.distanceTo(S),slT=1;
