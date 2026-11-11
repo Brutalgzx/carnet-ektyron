@@ -76,7 +76,8 @@ Object.assign(AN,{
  kick:{v:"s",m:["glu","ham"],l:"Grand fessier",A:{t:35,th:0,sh:0,th2:8,sh2:-8,ua:70,fa:70,anc:{j:"ankle",x:170,y:204}},B:{th2:-48,sh2:-40}},
  sumosq:{v:"f",m:["glu","add","quad"],l:"Fessiers + adducteurs",A:{hy:128,la:22,ab:6,fa:6},B:{hy:160,la:34}},
  stepup:{v:"s",m:["quad","glu"],l:"Quadriceps + fessiers",A:{t:18,th:88,sh:-4,th2:-8,sh2:-8,ua:0,fa:0,anc:{j:"ankle",x:180,y:170}},B:{t:4,th:0,sh:0,th2:40,sh2:-50},pr:[{k:"rect",x:150,y:172,w:80,h:32},"db"]},
- abd:{v:"f",m:["glu"],l:"Moyen fessier",A:{hy:150,la:6,ls:.35,ab:15,fa:40},B:{la:38},pr:["seatF"]},
+ abdp:{v:"b",m:["glu"],l:"Fessiers · buste penché en avant",A:{hy:150,la:6,ls:.35,ab:30,fa:20,ts:.6},B:{la:40},pr:["seatF"]},
+ abd:{v:"f",m:["glu"],l:"Moyen fessier · dos droit",A:{hy:150,la:6,ls:.35,ab:15,fa:40},B:{la:38},pr:["seatF"]},
  rowc:{v:"s",m:["lat","deltP"],l:"Milieu du dos",A:{hx:110,hy:180,t:18,th:82,sh:72,ua:85,fa:85},B:{t:-4,ua:-40,fa:80},pr:[{k:"rect",x:60,y:186,w:110,h:12},{k:"cable",x:250,y:150},"handle"]},
  curld:{v:"s",m:["bic"],l:"Biceps",A:{ua:-3,fa:3},B:{fa:145},pr:["db"]},
  hlr:{v:"s",m:["abs"],l:"Bas des abdos",A:{t:0,th:0,sh:0,th2:0,sh2:0,ua:180,fa:180,anc:{j:"hand",x:150,y:22}},B:{th:95,sh:95,th2:95,sh2:95},pr:[{k:"rect",x:110,y:16,w:80,h:6}]},
@@ -110,7 +111,7 @@ function ikFix(J,p){if(p.hkx!=null){[J.el,J.hand]=ik2(J.sh,[p.hkx,p.hky],34,30,p
  const toe=a=>ad(a,[14*Math.cos(p.fo*R),14*Math.sin(p.fo*R)]);
  if(p.fkx!=null){[J.knee,J.ankle]=ik2(J.hip,[p.fkx,p.fky],44,40,p.kb||1);J.toe=toe(J.ankle);if(p.fk2){J.knee2=J.knee;J.ankle2=J.ankle;J.toe2=J.toe}}}
 function phz(e,now){if(e.ph=="hold")return[.5+.5*Math.sin(now/1400),"TIENS LA POSITION · RESPIRE"];if(e.ph=="flow")return[.5-.5*Math.cos(now/700),"EN RYTHME, SANS FORCER"];return phase((now/2600)%1)}
-const DEF={hx:150,hy:128,t:0,ua:5,fa:5,th:0,sh:0,fo:0,ab:8,hf:0,la:4,ls:1};
+const DEF={hx:150,hy:128,t:0,ua:5,fa:5,th:0,sh:0,fo:0,ab:8,hf:0,la:4,ls:1,ts:1};
 const R=Math.PI/180, dA=a=>[Math.sin(a*R),Math.cos(a*R)], ad=(a,b)=>[a[0]+b[0],a[1]+b[1]], ml=(v,k)=>[v[0]*k,v[1]*k], mid=(a,b,k=.5)=>[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k], fn=a=>[Math.cos(a*R),-Math.sin(a*R)];
 const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
 function phase(t){if(t<.28)return[ease(t/.28),"MONTÉE EXPLOSIVE"];if(t<.4)return[1,"CONTRACTION"];if(t<.9)return[1-ease((t-.4)/.5),"DESCENTE CONTRÔLÉE"];return[0,"ÉTIREMENT"]}
@@ -121,7 +122,7 @@ function joints(v,p,uni){let J;
   const leg=(th,s)=>{const k=ad(hip,ml(dA(th),44)),an=ad(k,ml(dA(s),40));return[k,an,ad(an,[14*Math.cos(p.fo*R),14*Math.sin(p.fo*R)])]};
   const L1=leg(p.th,p.sh),L2=leg(th2,sh2),el=ad(sh,ml(dA(u),34)),el2=ad(sh,ml(dA(u2),34));
   J={up,n,t:p.t,hip,sh,head:ad(ad(hip,ml(up,82)),ml(n,2)),el,hand:ad(el,ml(dA(f),30)),el2,hand2:ad(el2,ml(dA(f2),30)),knee:L1[0],ankle:L1[1],toe:L1[2],knee2:L2[0],ankle2:L2[1],toe2:L2[2],a:{u,f,u2,f2,th:p.th,sh:p.sh,th2,sh2}};
- }else{const cx=160,hip=[cx,p.hy],sy=p.hy-60;J={cx,hip,sy,arms:[],legs:[]};
+ }else{const cx=160,hip=[cx,p.hy],sy=p.hy-60*p.ts;J={cx,hip,sy,arms:[],legs:[]};
   for(const s of[1,-1]){const q=(uni&&s<0)?{ab:5,fa:5,hf:0}:p,shp=[cx+s*27,sy+4],hf=q.hf,fh=q.fh??hf;
    const el=ad(shp,[s*34*Math.sin(q.ab*R)*Math.cos(hf*R),34*Math.cos(q.ab*R)]),hd=ad(el,[s*30*Math.sin(q.fa*R)*Math.cos(fh*R),30*Math.cos(q.fa*R)]);
    const ze=34*Math.sin(q.ab*R)*Math.sin(hf*R);J.arms.push({s,sh:shp,el,hand:hd,z:{el:ze,hand:ze+30*Math.sin(q.fa*R)*Math.sin(fh*R)}});const hj=[cx+s*11,p.hy+2],k=ad(hj,[s*46*p.ls*Math.sin(p.la*R),46*p.ls*Math.cos(p.la*R)]),an=ad(k,[s*4,40]);

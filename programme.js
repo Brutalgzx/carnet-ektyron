@@ -56,7 +56,7 @@ const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""
 /* Ordre important : les règles précises d'abord. */
 const ALIAS=[
  [/dead ?bug/,["deadbug"]],[/heel ?taps?|touche.{0,8}talons?/,["heeltap"]],[/suit ?case/,["suitc"]],[/russian|twist/,["rtwist"]],[/suspendu|hanging/,["hlr"]],[/gainage|planche|plank/,["gain"]],
- [/sumo/,["sumosq"]],[/step ?up/,["stepup"]],[/abduct/,["abd"]],[/rowing assis|seated row|tirage (assis|horizontal|poulie basse)/,["rowc","rowm"]],
+ [/sumo/,["sumosq"]],[/step ?up/,["stepup"]],[/abduct.{0,20}(pench|avant)/,["abdp","abd"]],[/abduct/,["abd"]],[/rowing assis|seated row|tirage (assis|horizontal|poulie basse)/,["rowc","rowm"]],
  [/(dumbbell?|haltere).{0,6}row|row.{0,12}(dumbbell?|haltere)|rowing unilat/,["rowu"]],[/curl biceps|biceps curl|curl (aux )?halteres?$/,["curld","cpou"]],[/press(e)? couche|leg press/,["press","hack"]],
  [/hip ?t?h?rust|poussee de hanche/,["hipt"]],[/barre au front|skull|french press|extension.*(nuque|derriere la tete|au dessus)|overhead.*tri/,["ovh","extd"]],
  [/triceps|pushdown|push down|extension.*corde/,["tri1","triv","extd","dipsbanc"]],[/kick ?back|ruade|extension de hanche/,["kick","pont"]],
@@ -130,7 +130,7 @@ function progAnalyze(p){const D=progParse(p.progTxt,p);if(!D.length)return null;
 const WDRX=/^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|jour\s*\d+|j\s*\d+|s[ée]ance\s*\d+|day\s*\d+)\s*[:\-–·]?\s*/i;
 /* Programme collé → séances gardées telles quelles. Les exercices non reconnus deviennent des exercices perso suivis comme les autres. */
 function ownSetup(p){const D=progParse(p.progTxt,p.progKeep==="tel"?null:p).slice(0,6),ex={};
- p.ownDays=D.map((d,i)=>{let t=d.t.replace(WDRX,"").trim();t=t?t[0].toUpperCase()+t.slice(1):`Séance ${i+1}`;
+ p.ownDays=D.map((d,i)=>{let t=d.t.replace(WDRX,"").replace(/\s*\(([^)]*)\)\s*$/,(m,x)=>dowList(x).length?"":m).trim();t=t?t[0].toUpperCase()+t.slice(1):`Séance ${i+1}`;
   return{t,dow:d.dow&&d.dow.length===1?d.dow[0]:null,x:d.x.map(x=>{let id=x.id;if(!id){id="u_"+norm(x.raw).replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,24);ex[id]=[x.raw.slice(0,50),"Autre","0","M","","Ton exercice, gardé tel quel. Amplitude complète, descente contrôlée, pas d'élan.",""]}const o={id,s:x.s,r:x.r};if(x.kg)o.kg=x.kg;if(p.progKeep==="tel")o.n=(x.raw[0].toUpperCase()+x.raw.slice(1)).slice(0,50);return o})}});
  if(p.ownDays.length&&p.ownDays.every(d=>d.dow!=null)&&new Set(p.ownDays.map(d=>d.dow)).size===p.ownDays.length)p.ownDays.sort((a,b)=>(a.dow+6)%7-(b.dow+6)%7);
  p.ownEx=ex;regOwn(p);return p}

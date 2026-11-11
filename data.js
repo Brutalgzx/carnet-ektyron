@@ -70,6 +70,7 @@ const EX = {
  kick:["Kickback fessier à la poulie","Jambes","c","I","","Cheville attachée à la poulie basse, buste penché, pousse la jambe en arrière en serrant le fessier.",""],
  sumosq:["Sumo squat haltère","Jambes","db","M","","Pieds très écartés, pointes vers l'extérieur, haltère entre les jambes. Genoux dans l'axe des pieds.",""],
  stepup:["Step up sur banc","Jambes","db","M","","Tout le pied sur le banc, pousse dans le talon. La jambe d'en bas ne pousse pas.",""],
+ abdp:["Abduction machine, penchée en avant","Jambes","m","I","","Buste penché en avant, mains sur les poignées : le grand fessier travaille plus. Écarte les genoux, retour contrôlé.",""],
  abd:["Abduction machine","Jambes","m","I","","Dos calé, écarte les genoux en contrôlant le retour. Penchée en avant = plus de fessier.",""],
  rowc:["Rowing assis poulie","Dos","c","M","","Buste droit, tire la poignée vers le nombril en serrant les omoplates.",""],
  curld:["Curl biceps haltères","Bras","db","I","","Coudes fixes le long du corps, monte sans balancer le buste.",""],
@@ -249,4 +250,4 @@ const TIPS = [
 ];
 
 /* Animations ajoutées : l'identifiant d'animation = identifiant de l'exercice */
-for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","ytw","dmil","pike","curlh","marth","curlpdc","extd","dipsbanc","diam","gobsq","squatpdc","fentes","nordic","hipt","pont","releve","superman","kick","sumosq","stepup","abd","rowc","curld","hlr","deadbug","heeltap","rtwist","suitc","gain"])if(EX[id]&&!EX[id][4])EX[id][4]=id;
+for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","ytw","dmil","pike","curlh","marth","curlpdc","extd","dipsbanc","diam","gobsq","squatpdc","fentes","nordic","hipt","pont","releve","superman","kick","sumosq","stepup","abd","rowc","curld","hlr","deadbug","heeltap","rtwist","suitc","gain","abdp"])if(EX[id]&&!EX[id][4])EX[id][4]=id;
