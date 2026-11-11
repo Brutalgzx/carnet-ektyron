@@ -439,7 +439,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.pick){const ids=curIds();if(pickAt>=0)ids[pickAt]=D.pick;else ids.push(D.pick);$("#sheet")?.remove();setCustom(ids);toast(pickAt>=0?"Exercice remplacé":"Exercice ajouté");return}
  /* questionnaire */
  if(view==="ob"&&t.id!=="bk-i"){
-  if(D.o){A[D.o]=isNaN(+D.v)?D.v:+D.v;if(D.o==="split")return renderOb();$$(`[data-o="${D.o}"]`).forEach(b=>b.setAttribute("aria-pressed",b===t));obRefresh();return}
+  if(D.o){A[D.o]=isNaN(+D.v)?D.v:+D.v;if(D.o==="split")return renderOb();if(D.o==="hasProg"){renderOb();if(D.v==="oui")setTimeout(()=>{const x=$("#i-prog");if(x)x.focus()},50);return}$$(`[data-o="${D.o}"]`).forEach(b=>b.setAttribute("aria-pressed",b===t));obRefresh();return}
   if(D.m){let a=A[D.m]||[];if(D.v==="none")a=[];else a=a.includes(D.v)?a.filter(x=>x!==D.v):[...a,D.v];A[D.m]=a;renderOb();return}
   if(D.c){A[D.c]=+D.v;renderOb();return}
   if(D.t){A.taste=A.taste||{};const v=A.taste[D.t]||0,n=v===0?1:v===1?-1:0;if(n)A.taste[D.t]=n;else delete A.taste[D.t];renderOb();return}
