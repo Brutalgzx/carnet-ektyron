@@ -427,17 +427,17 @@ EXOS["benchx"] = dict(
 def pushup(kind):
     if kind == "decl":
         A = dict(pel=(-0.11, 0.56), t=2.1, th=182.1, sh=182.1, fo=-80, h=(0.44, 0.25, 0.04), ep=(-0.5, 0.9, 0))
-        B = dict(pel=(-0.137, 0.317), t=-14.7, th=165.3, sh=165.3)
+        B = dict(pel=(-0.125, 0.372), t=-10.85, th=169.15, sh=169.15)
         bad = dict(B=dict(pel=(-0.137, 0.24), pv=-30, t=-8, th=168, sh=168, hd=35, ep=(0, 1, 0)))
         pr = [dict(k="box", c=(-1.0, 0, 0.225), s=(0.42, 0.55, 0.45), m="pad", bev=0.02)]
     else:
         A = dict(pel=(-0.149, 0.381), t=19.4, th=199.4, sh=199.4, fo=-80, h=(0.40, 0.25, 0.04), ep=(-0.5, 0.9, 0))
-        B = dict(pel=(-0.111, 0.137), t=2.5, th=182.5, sh=182.5)
-        bad = dict(B=dict(pel=(-0.111, 0.08), pv=-20, t=10, th=184, sh=184, hd=30, ep=(0, 1, 0)))
+        B = dict(pel=(-0.116, 0.197), t=6.65, th=186.65, sh=186.65)
+        bad = dict(B=dict(pel=(-0.116, 0.12), pv=-20, t=14, th=185, sh=185, hd=30, ep=(0, 1, 0)))
         pr = []
     if kind == "diam":
         A.update(h=(0.40, 0.07, 0.04), ep=(-1, 0.2, 0))
-    return dict(A=A, B=B, bad=bad, props=pr + floor_mat(-1.3, 0.8), cam=dict(az=-55, el=18))
+    return dict(A=A, B=B, bad=bad, props=pr + floor_mat(-1.3, 0.8), cam=dict(az=-78, el=14))
 
 
 EXOS["pompes"] = dict(pushup("std"), zgood=["pecL", "pecR"], zbad=["lowback", "shoulderL", "shoulderR"],
@@ -543,7 +543,7 @@ EXOS["rowm"] = dict(
 
 EXOS["rowx"] = dict(
     A=dict(pel=(-0.15, 0.85), t=40, a=(0.04, 0.15, 0.085), kp=(1, 0, 0), h=("S", (0.42, 0.24, -0.32)), ep=(-1, 0.3, 0.3)),
-    B=dict(h=("S", (0.25, 0.24, -0.42))),
+    B=dict(h=("S", (0.12, 0.24, -0.40))),
     bad=dict(A=dict(t=30, t2=5, hd=15), B=dict(t=70, t2=60)),
     zgood=["latL", "latR", "midback"], zbad=["lowback"],
     tgood="dos neutre à 45°, barre vers le nombril", tbad="le dos s'arrondit puis se redresse d'un coup",
@@ -737,7 +737,7 @@ EXOS["ovh"] = dict(
 )
 
 EXOS["extd"] = dict(
-    A=dict(pel=(0, 0.55), t=90, th=-3, sh=-92, ab=8, sab=4, h=("S", (-0.12, 0.02, 0.36)), ep=(0, 0.4, 1)),
+    A=dict(pel=(0, 0.55), t=90, th=-3, sh=-92, ab=8, sab=4, h=("S", (-0.20, 0.02, 0.20)), ep=(0, 0.4, 1)),
     B=dict(h=("S", (0.02, 0.02, 0.58))),
     bad=dict(A=dict(ep=(0, 1, 0.3), t=100), B=dict(ep=(0, 1, 0.3), t=104)),
     zgood=["triL", "triR"], zbad=["elbowL", "elbowR", "lowback"],
@@ -747,14 +747,14 @@ EXOS["extd"] = dict(
 )
 
 EXOS["dipsbanc"] = dict(
-    A=dict(pel=(-0.27, 0.48), t=88, a=(0.45, 0.15, 0.085), kp=(0.3, 0, 1), h=(-0.32, 0.20, 0.47), ep=(-1, 0.3, 0)),
-    B=dict(pel=(-0.24, 0.24)),
-    bad=dict(B=dict(pel=(-0.22, 0.12), hd=20, ep=(0, 1, 0))),
+    A=dict(pel=(-0.25, 0.48), t=88, a=(0.45, 0.15, 0.085), kp=(0.3, 0, 1), h=(-0.42, 0.20, 0.47), ep=(-1, 0.3, 0)),
+    B=dict(pel=(-0.22, 0.24)),
+    bad=dict(B=dict(pel=(-0.20, 0.12), hd=20, ep=(0, 1, 0))),
     zgood=["triL", "triR"], zbad=["shoulderL", "shoulderR"],
     tgood="coudes vers l'arrière, descends à 90°", tbad="trop bas, coudes ouverts : épaules en danger",
-    props=[dict(k="box", c=(-0.52, 0, 0.42), s=(0.4, 0.44, 0.05), m="pad", bev=0.015),
-           dict(k="box", c=(-0.70, 0, 0.66), s=(0.04, 0.44, 0.44), m="pad", bev=0.015)]
-          + [dict(k="box", c=(x, y, 0.2), s=(0.035, 0.035, 0.4), m="metal") for x in (-0.34, -0.70) for y in (-0.19, 0.19)],
+    props=[dict(k="box", c=(-0.62, 0, 0.42), s=(0.4, 0.44, 0.05), m="pad", bev=0.015),
+           dict(k="box", c=(-0.80, 0, 0.66), s=(0.04, 0.44, 0.44), m="pad", bev=0.015)]
+          + [dict(k="box", c=(x, y, 0.2), s=(0.035, 0.035, 0.4), m="metal") for x in (-0.44, -0.80) for y in (-0.19, 0.19)],
     cam=dict(az=-60, el=14),
 )
 
@@ -868,7 +868,7 @@ def calf(kind):
         zg = ["calfR"]
     return dict(A=A, B=B, bad=bad, props=pr, zgood=zg, zbad=["kneeL", "kneeR"] if kind == "mach" else ["kneeR"],
                 tgood="amplitude complète, pause en bas en étirement", tbad="demi-amplitude, le genou rebondit",
-                cam=dict(az=-60, el=10))
+                cam=dict(az=-60, el=10) if kind == "mach" else dict(az=-100, el=8))
 
 
 EXOS["moll"] = calf("mach")
@@ -879,7 +879,7 @@ EXOS["mollpdc"] = calf("bw")
 EXOS["crun"] = dict(
     A=dict(pel=(0, 0.52), t=80, th=-90, sh=180, fo=-80, h=("S", (0.12, 0.10, 0.18)), ep=(0.3, 0.3, -1)),
     B=dict(t=40, t2=-10, hd=30),
-    bad=dict(B=dict(pel=(-0.25, 0.32), th=-160, sh=180, t=30, t2=22, hd=5)),
+    bad=dict(B=dict(pel=(-0.15, 0.40), th=-130, sh=180, t=25, t2=20, hd=5)),
     zgood=["abs"], zbad=["lowback"],
     tgood="bassin immobile, enroule la poitrine vers les genoux", tbad="les fesses reculent : les hanches font le travail",
     props=floor_mat(-0.75, 0.9) + [column(0.55, 0, 2.3),
@@ -974,7 +974,7 @@ EXOS["w_dislo"] = dict(
 
 EXOS["w_band"] = dict(
     A=dict(STAND, h=("S", (0.52, 0.12, 0.0)), ep=(0, 0.3, 1)),
-    B=dict(h=("S", (0.10, 0.55, 0.0))),
+    B=dict(h=("S", (0.08, 0.74, 0.02)), ep=(0, 0, -1)),
     bad=dict(B=dict(t=104, hd=-10, h=("S", (0.25, 0.45, 0.15)))),
     zgood=["drearL", "drearR", "midback"], zbad=["trap", "lowback"],
     tgood="bras tendus, serre les omoplates", tbad="épaules haussées, le buste recule",
@@ -1037,7 +1037,7 @@ EXOS["w_lat"] = dict(
     bad=dict(B=dict(abR=40, lb=-20), C=dict(lb=18)),
     zgood=["addR", "gmedR"], zbad=["lowback"],
     tgood="buste stable, la jambe balance devant toi", tbad="le buste penche à chaque balancement",
-    props=[dict(k="box", c=(0.55, 0, 1.0), s=(0.06, 0.8, 2.0), m="frame")], cam=dict(az=-15, el=10),
+    props=[dict(k="box", c=(0.55, 0, 1.0), s=(0.06, 0.8, 2.0), m="frame")], cam=dict(az=160, el=12),
 )
 
 ALIAS["w_plank"] = "gain"

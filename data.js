@@ -254,8 +254,8 @@ for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","yt
 
 /* Vidéos 3D « mauvais / bon mouvement » pré-calculées (renders/<id>.mp4, voir renders/gen.py).
    On cherche d'abord l'exercice, puis son animation ; sinon pas d'animation. */
-const VIDS=new Set(["abd","abdp","bulg","dch","deadbug","heeltap","hipt","hlr","kick","lcurl2","press","rdl","rowc","rowu","smsq","stepup","sumosq","tvert"]);
-const VALIAS={addab:"abdp"};
+const VIDS=new Set(["abd","abdp","bulg","curld","dch","deadbug","facep","gain","heeltap","hipt","hlr","kick","lcurl2","press","rdl","rowc","rowu","rtwist","smsq","stepup","suitc","sumosq","tvert"]);
+const VALIAS={addab:"abdp",w_plank:"gain"};
 function animTag(id,a,name,cls){const v=VIDS.has(id)?id:VALIAS[id]||(VIDS.has(a)?a:VALIAS[a]||null);cls=cls?" "+cls:"";
  if(v)return `<video class="anim anim-v${cls}" data-src="renders/${v}.mp4?v=1" data-id="${a||""}" muted loop playsinline preload="none" aria-label="Animation : ${name}"></video>`;
  return ""}
