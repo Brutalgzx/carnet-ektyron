@@ -90,6 +90,7 @@ function jeuCoach(){if(!PROF)return"";const X=jeuXP();if(jeuTotal(X)<200)return"
  return hi[2]-lo[2]>=1?`<p class="small" style="margin:0" id="jeu-coach">🎮 Stat en retard : <b>${lo[1]}</b> (niv. ${lo[2]} contre ${hi[2]} en ${hi[1]}). Pour la remonter, ${JEU_TIP[lo[0]]}.</p>`:""}
 
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(D.tab==="jeu"&&jeuCfg().code)setTimeout(()=>jeuSync().catch(()=>{}),0);
  if(D.jsel!==undefined){jeuSel=D.jsel||null;render();if(jeuSel)window.scrollTo(0,0);return}
  if(D.jsh){const c=jeuCfg();c.share[D.jsh]=c.share[D.jsh]?0:1;LS.set("coach-jeu",c);render();jeuSync().catch(()=>{});return}
  const nick=()=>($("#jeu-nick").value.trim()||PROF.name).slice(0,24);
@@ -102,7 +103,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
 
 /* Lancé à la fin d'app.js : séance, pesée ou repas coché → instantané envoyé au groupe (regroupé). */
 function jeuInit(){const set=LS.set;LS.set=(k,v)=>{set(k,v);if(["carnet","carnet-xp","coach-weights","coach-eaten"].includes(k))jeuSoon()};
- if(jeuCfg().code)setTimeout(()=>jeuSync().catch(()=>{}),2000)}
+ if(jeuCfg().code)setTimeout(()=>jeuSync().catch(()=>{}),2000);
+ document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&jeuCfg().code)jeuSync().catch(()=>{})})}
 
 /* Carte d'accueil : le personnage et le groupe en premier plan. */
 function jeuHome(){if(!PROF)return"";const acc=acUser()?"":`<button class="hintbox" data-tab="me" id="ac-nudge" style="width:100%;text-align:left;cursor:pointer;border-color:var(--warn)"><span style="font-size:24px">🔐</span><span class="small"><b>Crée ton identifiant</b><br><span class="muted">Tes données seront sauvegardées et restaurées toutes seules.</span></span></button>`;const c=jeuCfg(),X=jeuXP(),L=c.last,K=jeuKings(L),mine=L?Object.values(K).filter(k=>k.id===L.me).length:0;
