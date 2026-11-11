@@ -29,6 +29,7 @@ export default{
     return json({ok:r.ok,status:r.status,detail:r.ok?"":await r.text()},r.ok?200:502)}
    if(p==="/group"&&req.method==="POST"){let code,n=0;do{code=gCode();n++}while(n<5&&await env.EK.get("g:"+code));
     await env.EK.put("g:"+code,JSON.stringify({t:Date.now(),m:{}}));return json({code})}
+   if(p==="/admin"||p.startsWith("/admin/"))return admin(req,env,id,p);
    const gm=p.match(/^\/group\/([A-Z0-9]{6})$/);if(gm)return group(req,env,id,gm[1]);
    return json({error:"introuvable"},404)}catch(e){return json({error:String(e&&e.message||e)},500)}},
  async scheduled(ev,env,ctx){ctx.waitUntil(tick(env))}
@@ -56,6 +57,20 @@ async function group(req,env,id,code){const key="g:"+code,G=JSON.parse(await env
    try{await sendPush(env,S.sub,{t:`👑 ${G.m[mid].s.nick} t'a pris ${L.length>1?L.length+" machines":"une machine"}`,b:L.slice(0,4).join(", ")+" : à toi de la reprendre !",go:"jeu",tag:"roi"})}catch(e){}}
   return out()}
  return json({error:"méthode non gérée"},405)}
+
+/* ---------- Admin : le premier compte qui le réclame devient l'unique admin. Il voit tous les groupes et peut retirer un membre ou supprimer un groupe. ---------- */
+async function admin(req,env,id,p){const cur=await env.EK.get("admin");
+ if(p==="/admin/claim"&&req.method==="POST"){if(!cur){await env.EK.put("admin",id);return json({ok:true})}return cur===id?json({ok:true}):json({error:"un admin existe déjà"},403)}
+ if(cur!==id)return json({error:"réservé à l'admin"},403);
+ if(p==="/admin"&&req.method==="GET"){const out=[];let cursor;
+  do{const L=await env.EK.list({prefix:"g:",cursor});cursor=L.list_complete?null:L.cursor;
+   for(const {name} of L.keys){const G=JSON.parse(await env.EK.get(name)||"null");if(!G)continue;
+    out.push({code:name.slice(2),t:G.t,members:Object.entries(G.m).map(([k,x])=>({mid:k,nick:x.s.nick,t:x.s.t,lvl:x.s.lvl,me:x.id===id}))})}}while(cursor);
+  return json({groups:out})}
+ const m=p.match(/^\/admin\/group\/([A-Z0-9]{6})(?:\/([\w-]{1,20}))?$/);
+ if(m&&req.method==="DELETE"){const key="g:"+m[1],G=JSON.parse(await env.EK.get(key)||"null");if(!G)return json({error:"groupe introuvable"},404);
+  if(m[2]){delete G.m[m[2]];await env.EK.put(key,JSON.stringify(G))}else await env.EK.delete(key);return json({ok:true})}
+ return json({error:"introuvable"},404)}
 
 /* Heure locale de l'utilisateur (fuseau envoyé par l'appli). */
 function local(tz){let f;try{f=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",weekday:"short",hourCycle:"h23"}).formatToParts(new Date())}

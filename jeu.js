@@ -113,3 +113,23 @@ function jeuHome(){if(!PROF)return"";const acc=acUser()?"":`<button class="hintb
  return `${acc}<button class="card stack" data-tab="jeu" id="jeu-home" style="text-align:left;width:100%;cursor:pointer"><div class="row"><span style="font-size:30px">🧙</span><span class="sp"><div class="lab">Mon personnage et mes potes</div><b>${esc(c.nick||PROF.name)} · Niv. ${level(xpProf().xp).l}</b></span><span style="font-size:22px">›</span></div>
  <div class="row" style="flex-wrap:wrap;gap:6px 10px">${st}</div>
  ${c.code?`<div class="small"><b>Groupe ${esc(c.code)}</b> · 👑 ${mine} machine${mine>1?"s":""}</div>${grp}`:`<div class="small muted">🎮 Crée ton groupe ou rejoins celui de tes potes : qui tient sa série, qui est le Roi de chaque machine.</div>`}</button>`}
+
+/* ---------- Admin : un seul compte (le premier qui le réclame). Voit tous les groupes, retire un membre ou supprime un groupe. ---------- */
+let admData=null,admBusy=0;
+const admDate=t=>t?new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"?";
+function admCard(){if(!acUser())return"";
+ if(!LS.get("coach-admin",0))return `<div style="text-align:center"><button class="chip" id="adm-claim">🛠️ Admin</button></div>`;
+ if(admData===null)setTimeout(admLoad,0);
+ const G=admData,body=G===null?`<p class="small muted" style="margin:0">Chargement…</p>`:!G.length?`<p class="small muted" style="margin:0">Aucun groupe.</p>`:G.map(g=>`<div class="stack" style="gap:6px;border-top:1px solid var(--line);padding-top:8px">
+  <div class="row"><b class="sp">Groupe ${esc(g.code)} · ${g.members.length} membre${g.members.length>1?"s":""}</b><button class="chip" data-admg="${g.code}">Supprimer le groupe</button></div>
+  <ul class="list">${g.members.map(m=>`<li><span class="sp small"><b>${esc(m.nick)}</b>${m.me?" (toi)":""} <span class="muted">· niv. ${m.lvl||1} · dernière activité ${admDate(m.t)}</span></span><button class="chip" data-admm="${g.code}/${m.mid}" data-admn="${esc(m.nick)}">Retirer</button></li>`).join("")||'<li class="small muted">Vide</li>'}</ul></div>`).join("");
+ return `<div class="card stack" id="sec-admin"><div class="row"><span class="sp"><div class="lab">🛠️ Admin</div><b>Tous les groupes</b></span><button class="chip" id="adm-ref">↻</button></div>${body}</div>`}
+async function admLoad(){if(admBusy)return;admBusy=1;
+ try{admData=(await api("/admin")).groups.sort((a,b)=>b.members.length-a.members.length)}catch(e){admData=[];toast("Admin : "+jeuErr(e))}admBusy=0;render()}
+document.addEventListener("click",async e=>{const t=e.target.closest("#adm-claim,#adm-ref,[data-admm],[data-admg]");if(!t||!PROF)return;const D=t.dataset;
+ try{
+  if(t.id==="adm-claim"){if(!confirm("Devenir l'admin de l'app ? Un seul compte peut l'être."))return;await api("/admin/claim",{method:"POST"});LS.set("coach-admin",1);toast("Tu es l'admin.")}
+  else if(D.admm){if(!confirm(`Retirer ${D.admn} du groupe ?`))return;await api("/admin/group/"+D.admm,{method:"DELETE"});toast(D.admn+" retiré.")}
+  else if(D.admg){if(!confirm(`Supprimer tout le groupe ${D.admg} ? Ses membres devront en rejoindre un autre.`))return;await api("/admin/group/"+D.admg,{method:"DELETE"});toast("Groupe supprimé.")}
+  admData=null;render();if(jeuCfg().code)jeuSync().catch(()=>{})
+ }catch(err){toast("Admin : "+(/403/.test(err.message)?"refusé, un autre compte est déjà admin.":jeuErr(err)))}});
