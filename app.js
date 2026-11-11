@@ -42,12 +42,12 @@ function migrate(p){if(!p)return p;regOwn(p);if(!p.mode)p.mode="coach";const old
  if(p.equip==null){p.equip=old[p.gym]??"mcdbxp";if(p.gym==="full"||p.gym==="small")p.gym="autre"}
  if(!p.days)p.days=SPLIT[p.freq].map(x=>x[0]);if(!p.split)p.split="auto";if(!p.prio)p.prio=[];p.prio=p.prio.filter(k=>k!=="none");if(!p.aims)p.aims=[];if(!p.likes)p.likes=[];if(p.hasProg==null)p.hasProg="non";p.freq=p.days.length;if(!p.rec){p.rec=p.days.length;p.recDur=p.dur}if(!p.months)p.months=6;if(p.refined==null)p.refined=p.store?{equip:1,food:1,taste:1}:{};for(const k in QDEF)if(p[k]==null||p[k]==="")p[k]=QDEF[k];
  /* v2 : programme collé relu avec le nouveau lecteur (noms sans poids, nouveaux exercices animés). L'historique suit l'exercice. */
- if(p.hasProg==="oui"&&(p.mode==="own"||p.mode==="choose")&&p.progTxt&&(p.ownV||0)<5){if(!p.progKeep)p.progKeep="tel";
+ if(p.hasProg==="oui"&&(p.mode==="own"||p.mode==="choose")&&p.progTxt&&(p.ownV||0)<6){if(!p.progKeep)p.progKeep="tel";
   const old=JSON.parse(JSON.stringify(p.ownDays||[])),oldEx={...EX,...(p.ownEx||{})},bd=JSON.stringify(p.days),wd=/lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/i;
   ownSetup(p);
   try{const st=LS.get("carnet",{});let ch=0;p.ownDays.forEach((d,i)=>{const ol=old[i]?old[i].x.filter(o=>!wd.test((oldEx[o.id]||[""])[0])):[];
    d.x.forEach((x,j)=>{const o=ol[j];if(o&&o.id!==x.id&&st[o.id]&&!st[x.id]){st[x.id]=st[o.id];ch=1}})});if(ch)LS.set("carnet",st)}catch(e){}
-  const nd=ownDaysFor(p);if(JSON.stringify(nd)!==bd){p.days=nd;p.freq=nd.length}p.custom={};p.ownV=5}
+  const nd=ownDaysFor(p);if(JSON.stringify(nd)!==bd){p.days=nd;p.freq=nd.length}p.custom={};p.ownV=6}
  return p}
 const sessMin=s=>Math.round(s.x.reduce((m,e)=>m+e.s*(0.75+e.rest/60),0)+8);
 
@@ -261,7 +261,7 @@ function buildScreen(){document.body.className="ob";const L=["Lecture de tes ré
  <ul class="steps">${L.map(l=>`<li><i></i>${l}</li>`).join("")}</ul><div class="pbar"><i id="pb" style="width:0"></i><b id="pbt">0 %</b></div></div>`;
  const li=$$(".steps li"),t0=performance.now(),D=4200;
  (function step(){const now=performance.now(),k=Math.min(1,(now-t0)/D),n=Math.floor(k*li.length);li.forEach((x,i)=>{x.className=i<n?"ok":i===n?"now":"";x.firstChild.textContent=i<n?"✓":""});$("#pb").style.width=k*100+"%";$("#pbt").textContent=Math.round(k*100)+" %";
-  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;LS.del("coach-draft");for(const k in QDEF)if(A[k]==null||A[k]===""||(k==="ckt"&&!A[k]))A[k]=QDEF[k];if(!A.refined)A.refined=PROF?PROF.refined||{}:{};coachDecide(A);A.likes=progLikes(A);if(A.hasProg==="oui"){ownSetup(A);A.ownV=5;A.mode=!A.ownDays.length?"coach":A.progKeep==="tel"?"own":"choose";if(A.mode==="own"){A.days=ownDaysFor(A);A.custom={}}}else A.mode="coach";A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
+  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;LS.del("coach-draft");for(const k in QDEF)if(A[k]==null||A[k]===""||(k==="ckt"&&!A[k]))A[k]=QDEF[k];if(!A.refined)A.refined=PROF?PROF.refined||{}:{};coachDecide(A);A.likes=progLikes(A);if(A.hasProg==="oui"){ownSetup(A);A.ownV=6;A.mode=!A.ownDays.length?"coach":A.progKeep==="tel"?"own":"choose";if(A.mode==="own"){A.days=ownDaysFor(A);A.custom={}}}else A.mode="coach";A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
 
 /* ================= Écrans ================= */
 const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',train:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',food:'<path d="M7 3v8a3 3 0 0 0 3 3v7M10 3v6M4 3v6a3 3 0 0 0 3 3M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',prog:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
