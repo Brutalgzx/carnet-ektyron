@@ -50,7 +50,7 @@ function pStartItem(i){const L=pList();G.pi=i;G.pz=0;const it=L[i];G.pTot=it.d*(
 function pLeave(){clearInterval(pInt);if(G.ph==="warm"){G.ph="set";G.fb="";gSave();gShow()}else{G.ph="done";G.strDone=1;gSave();gShow()}$("#game").scrollTop=0}
 function pShow(){clearInterval(gInt);clearInterval(pInt);const L=pList(),i=G.pi||0,it=L[i],nx=L[i+1],warm=G.ph==="warm",run=!!G.pEnd;
  $("#g-in").innerHTML=gTop()+`<div class="lab" style="text-align:center">${warm?"🔥 Échauffement":"🧘 Étirements"} · ${i+1}/${L.length} · ~${prepMin(L)} min</div>
- <h2 class="g-name" style="text-align:center">${it.e} ${it.n}</h2>${it.a?`<canvas class="anim g-anim" data-id="${it.a}" width="640" height="480" aria-label="Animation : ${esc(it.n)}"></canvas>`:""}<p class="small muted" style="text-align:center;margin:0 0 6px">${it.c}</p>
+ <h2 class="g-name" style="text-align:center">${it.e} ${it.n}</h2>${animTag(it.a,it.a,esc(it.n),"g-anim")}<p class="small muted" style="text-align:center;margin:0 0 6px">${it.c}</p>
  <div class="g-ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="p-arc" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg><b id="p-t" role="timer">${fmtT(it.d*(it.side?2:1))}</b></div>
  <p class="small" id="p-side" style="text-align:center;min-height:1.4em;margin:0 0 8px;color:var(--warn)">${it.side?"Côté gauche puis côté droit":""}</p>
  <div class="g-adj"><button id="p-pz" aria-label="Pause">${run?(G.pz?"▶":"⏸"):"⏸"}</button><button id="p-go" style="font:800 20px var(--display);text-transform:uppercase;background:var(--grad);border:0;color:#fff">${run?"Suivant ⏭":"Démarrer"}</button><button id="p-skip" style="font:600 13px var(--mono)">Passer</button></div>

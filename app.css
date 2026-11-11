@@ -115,6 +115,8 @@ nav.tabs button[aria-current="page"]{color:var(--pink)}
 .ex .hd{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .ex .hd b{font-size:15.5px} .ex .sc{font:500 13px var(--mono);color:var(--pink2);white-space:nowrap}
 .anim{display:block;width:100%;aspect-ratio:4/3;border-radius:12px;background:#1b1f26}
+.anim-v{aspect-ratio:9/16;width:auto;height:min(62vh,620px);max-width:100%;margin:0 auto;object-fit:contain;background:#0b0f16}
+.anim-v.g-anim{height:46vh;max-height:46vh}
 .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .list li{display:flex;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:14px}
 .list li:last-child{border-bottom:0}

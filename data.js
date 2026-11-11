@@ -251,3 +251,11 @@ const TIPS = [
 
 /* Animations ajoutées : l'identifiant d'animation = identifiant de l'exercice */
 for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","ytw","dmil","pike","curlh","marth","curlpdc","extd","dipsbanc","diam","gobsq","squatpdc","fentes","nordic","hipt","pont","releve","superman","kick","sumosq","stepup","abd","rowc","curld","hlr","deadbug","heeltap","rtwist","suitc","gain","abdp"])if(EX[id]&&!EX[id][4])EX[id][4]=id;
+
+/* Vidéos 3D « mauvais / bon mouvement » pré-calculées (renders/<id>.mp4, voir renders/gen.py).
+   On cherche d'abord l'exercice, puis son animation ; sinon pas d'animation. */
+const VIDS=new Set(["abd","abdp","bulg","dch","deadbug","heeltap","hipt","hlr","kick","lcurl2","press","rdl","rowc","rowu","smsq","stepup","sumosq","tvert"]);
+const VALIAS={addab:"abdp"};
+function animTag(id,a,name,cls){const v=VIDS.has(id)?id:VALIAS[id]||(VIDS.has(a)?a:VALIAS[a]||null);cls=cls?" "+cls:"";
+ if(v)return `<video class="anim anim-v${cls}" data-src="renders/${v}.mp4?v=1" data-id="${a||""}" muted loop playsinline preload="none" aria-label="Animation : ${name}"></video>`;
+ return ""}
