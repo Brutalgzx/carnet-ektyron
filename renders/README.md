@@ -26,7 +26,7 @@ Tout est construit par nos scripts (aucun modèle ni vidéo tiers). L'ancien mot
 4. Test local (`python3 -m http.server`), commit, **accord de l'utilisateur avant `git push origin main`**.
 
 ## Suivi
-- [x] Lot Romy (22 + hip thrust) : planche vérifiée, rendu lancé
-- [ ] Lot 2 (52 exercices) : planche en cours, puis corrections et rendu
-- [ ] Lot 3 (25 échauffements / étirements) : écrit, à vérifier puis rendre
+- [x] Lot Romy (22 + hip thrust) : en ligne
+- [x] Lot 2 (52 exercices) : rendu
+- [x] Lot 3 (25 échauffements / étirements) : rendu
 - [ ] Fin : `vids.py`, versions, test, commit, accord, push

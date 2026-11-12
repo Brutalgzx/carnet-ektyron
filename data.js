@@ -254,7 +254,7 @@ for(const id of ["pompes","pompesd","dbfly","rowx","rowinv","facep","oiseau","yt
 
 /* Vidéos 3D « mauvais / bon mouvement » pré-calculées (renders/<id>.mp4, voir renders/gen.py).
    On cherche d'abord l'exercice, puis son animation ; sinon pas d'animation. */
-const VIDS=new Set(["abd","abdp","bulg","curld","dch","deadbug","facep","gain","heeltap","hipt","hlr","kick","lcurl2","press","rdl","rowc","rowu","rtwist","smsq","stepup","suitc","sumosq","tvert"]);
+const VIDS=new Set(["abd","abdp","benchx","bext","bulg","cpou","crun","curld","curlh","curlpdc","dbfly","dbinc","dch","deadbug","diam","dips","dipsb","dipsbanc","dmil","ecbh","elat","elath","elmac","extd","facep","fentes","gain","gobsq","hack","heeltap","hipt","hlr","incl","kick","lcurl1","lcurl2","lext","mart","marth","moll","moll2","mollh","mollpdc","nordic","oiseau","ovh","pfly","pike","pompes","pompesd","pont","press","pupi","rdl","rdlx","releve","rfly","rowc","rowinv","rowm","rowu","rowx","rtwist","s_bic","s_but","s_calf","s_child","s_cobra","s_cross","s_ham","s_hands","s_hip","s_knee","s_lat","s_pec","s_pig","s_quad","s_tri","smsq","squatpdc","stepup","suitc","sumosq","superman","tlarg","tract","tri1","triv","tvert","w_band","w_card","w_cat","w_cerc","w_dislo","w_lat","w_pont","w_swing","w_thor","w_wrist","ytw"]);
 const VALIAS={addab:"abdp",w_plank:"gain"};
 function animTag(id,a,name,cls){const v=VIDS.has(id)?id:VALIAS[id]||(VIDS.has(a)?a:VALIAS[a]||null);cls=cls?" "+cls:"";
  if(v)return `<video class="anim anim-v${cls}" data-src="renders/${v}.mp4?v=1" data-id="${a||""}" muted loop playsinline preload="none" aria-label="Animation : ${name}"></video>`;
