@@ -486,68 +486,6 @@ def place_body(J):
         place("hand" + s, hand, frame_quat(hand - el, nc))
 
 
-# ---- musculature détaillée (MUSC=1) : ventres musculaires séparés pour des reliefs nets
-MUSC = os.environ.get("MUSC", "0") == "1"
-if MUSC:
-    for s in "LR":
-        elem("pec" + s, "ELLIPSOID", 0.05, (0.75, 1.3, 0.5))
-        elem("trap" + s, "ELLIPSOID", 0.036, (0.8, 1.3, 0.7))
-        elem("lat" + s, "ELLIPSOID", 0.045, (1.7, 0.7, 0.9))
-        elem("bic" + s, "ELLIPSOID", 0.028, (1.9, 1, 1))
-        elem("tri" + s, "ELLIPSOID", 0.028, (2.0, 1, 1))
-        elem("fore" + s, "ELLIPSOID", 0.027, (1.7, 1, 1))
-        elem("dfront" + s, "BALL", 0.034)
-        elem("drear" + s, "BALL", 0.032)
-        elem("vlat" + s, "ELLIPSOID", 0.045, (2.0, 1, 1))
-        elem("vmed" + s, "ELLIPSOID", 0.036, (1.4, 1, 1))
-        elem("ham" + s, "ELLIPSOID", 0.046, (2.1, 1, 1))
-        elem("gasi" + s, "ELLIPSOID", 0.032, (1.7, 1, 1))
-        elem("gase" + s, "ELLIPSOID", 0.03, (1.6, 1, 1))
-        for i in range(3):
-            elem("abs%d%s" % (i, s), "ELLIPSOID", 0.026, (0.95, 1.0, 0.55))
-
-
-def perp(v, ref, fb):
-    p = v - ref * v.dot(ref)
-    return p.normalized() if p.length > 1e-3 else fb
-
-
-def place_musc(J):
-    u1, n1, u2, nc, upv, npv = J["u1"], J["n1"], J["u2"], J["nc"], J["upv"], J["npv"]
-    S, M, H = J["S"], J["M"], J["H"]
-    for s in "LR":
-        sh, el, hand = J["sh" + s], J["el" + s], J["hand" + s]
-        lat = perp(sh - S, u2, J["Yc"] if s == "L" else -J["Yc"])
-        q = frame_quat(u2, nc)
-        place("pec" + s, S - u2 * 0.075 + nc * 0.09 + lat * 0.07, q)
-        place("trap" + s, S + u2 * 0.015 - nc * 0.035 + lat * 0.06, q)
-        place("lat" + s, S - u2 * 0.13 - nc * 0.045 + lat * 0.1, q)
-        place("dfront" + s, sh + nc * 0.035 + u2 * 0.005)
-        place("drear" + s, sh - nc * 0.035 + u2 * 0.005)
-        ad = (el - sh).normalized()
-        fl = perp(hand - el, ad, nc)
-        place("bic" + s, (sh + el) / 2 + ad * 0.02 + fl * 0.028, X.rotation_difference(ad))
-        place("tri" + s, (sh + el) / 2 - ad * 0.01 - fl * 0.03, X.rotation_difference(ad))
-        fd = (hand - el).normalized()
-        place("fore" + s, el + fd * 0.07 + perp(sh - el, fd, nc) * 0.012, X.rotation_difference(fd))
-        latm = perp(sh - S, u1, lat)
-        for i, k in enumerate((0.07, 0.0, -0.07)):
-            place("abs%d%s" % (i, s), M + u1 * k + n1 * 0.085 + latm * 0.03, frame_quat(u1, n1))
-        hip, knee, ank = J["hip" + s], J["knee" + s], J["ank" + s]
-        td = (knee - hip).normalized()
-        out = perp(hip - H, td, lat)
-        fr = perp(npv, td, nc)
-        qt = X.rotation_difference(td)
-        place("vlat" + s, hip + td * 0.2 + out * 0.045 + fr * 0.01, qt)
-        place("vmed" + s, knee - td * 0.09 - out * 0.03 + fr * 0.02, qt)
-        place("ham" + s, hip + td * 0.21 - fr * 0.05, qt)
-        sd, back = J["sd" + s], J["back" + s]
-        sout = perp(out, sd, out)
-        qs = X.rotation_difference(sd)
-        place("gasi" + s, knee + sd * 0.11 + back * 0.04 - sout * 0.02, qs)
-        place("gase" + s, knee + sd * 0.1 + back * 0.035 + sout * 0.022, qs)
-
-
 # ================================================================ matériel
 def box(c, size, m, bevel=0.0, rot=(0, 0, 0)):
     bpy.ops.mesh.primitive_cube_add(size=1, location=c, rotation=tuple(R(a) for a in rot))
@@ -667,8 +605,6 @@ for f in frames:
     p = phase(f)
     J = pose_points(interp(KEYS, p))
     place_body(J)
-    if MUSC:
-        place_musc(J)
     for i in range(len(mb.elements)):
         mb.keyframe_insert(f"elements[{i}].co", frame=f)
         mb.keyframe_insert(f"elements[{i}].rotation", frame=f)
