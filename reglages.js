@@ -152,7 +152,32 @@ function vSet(){const N=notifCfg(),T=N.types,S=syncCfg(),C=SET(),last=bkLast(),p
  const coach=card("Coach",`<div class="lab">Semaine de décharge</div>${chips("dlw",[5,6],C.dlw,v=>`Toutes les ${v} semaines`)}<p class="small muted" style="margin:0">Une semaine plus légère après ${C.dlw-1} semaines d'entraînement, ou plus tôt si plusieurs exercices stagnent.</p>`);
  const units=card("Unités",`<div class="lab">Charges et poids</div>${chips("wu",["kg","lb"],C.wu,v=>v==="kg"?"Kilos (kg)":"Livres (lb)")}<div class="lab">Mensurations</div>${chips("lu",["cm","in"],C.lu,v=>v==="cm"?"Centimètres":"Pouces (in)")}`);
  const data=card("Données",`<p class="small muted" style="margin:0">Efface ton profil, tes séances, tes pesées et tes mesures de ce téléphone. Exporte d'abord si tu veux les garder.</p><button class="link" id="wipe">Tout effacer et recommencer</button>`);
- return `<div class="row" style="margin-top:-8px"><button class="chip" data-tab="me">‹ Profil</button></div>${notif}${save}${sync}${coach}${units}${data}`}
+ const vids=card("Vidéos hors ligne",`<p class="small muted" style="margin:0">Garde sur ce téléphone les vidéos des exercices de ton programme (échauffements et étirements compris), pour les voir à la salle sans réseau.${IOS&&!STANDALONE?" Sur iPhone, installe d'abord l'appli sur l'écran d'accueil pour qu'elles restent.":""}</p>
+  <p class="small" id="vd-m" style="margin:0">…</p><div class="row"><button class="btn sm" id="vd-go" style="flex:1">⬇️ Télécharger les vidéos de mon programme</button></div><button class="link" id="vd-del" hidden>Retirer les vidéos de ce téléphone</button>`,"sec-vids");
+ setTimeout(vidFill,0);
+ return `<div class="row" style="margin-top:-8px"><button class="chip" data-tab="me">‹ Profil</button></div>${notif}${save}${sync}${vids}${coach}${units}${data}`}
+
+/* Vidéos hors ligne : seulement celles du programme, rangées dans le cache « ektyron-vids » que sw.js sert sans réseau. */
+const VC="ektyron-vids";let vidBusy=0;
+function progVids(){const s=new Set(),add=(id,a)=>{const v=vidOf(id,a);if(v)s.add(v)};
+ for(const S of Object.values(TRAIN||{})){if(!S||!S.x)continue;S.x.forEach(e=>add(e.id,e.a));try{[...warmList(S),...stretchList(S)].forEach(it=>add(it.a,it.a))}catch(e){}}
+ return [...s]}
+const vidKey=r=>new URL(r.url).pathname.split("/").pop().replace(/\.mp4$/,"");
+async function vidFill(){const m=$("#vd-m"),b=$("#vd-go"),d=$("#vd-del");if(!m||vidBusy)return;
+ if(!("caches"in window)){m.textContent="Ce navigateur ne permet pas de garder les vidéos.";b.disabled=true;return}
+ const c=await caches.open(VC),ks=await c.keys(),L=progVids(),have=new Set(ks.map(vidKey));let o=0;
+ for(const k of ks){const r=await c.match(k);o+=+(r&&r.headers.get("content-length"))||0}
+ const n=L.filter(v=>have.has(v)).length,mo=o?` (${(o/1048576).toFixed(1).replace(".",",")} Mo)`:"";
+ m.innerHTML=!L.length?"Aucun exercice avec vidéo dans ton programme.":n===L.length?`✅ <b>${n} vidéos sur ${L.length}</b> prêtes hors ligne${mo}.`:n?`⚠️ <b>${n} sur ${L.length}</b> prêtes${mo} : ton programme a changé, mets à jour.`:`Aucune vidéo gardée. Ton programme en compte <b>${L.length}</b> (environ ${String(Math.round(L.length*1.4)/10).replace(".",",")} Mo).`;
+ b.textContent=n&&n===L.length?"🔄 Revérifier les vidéos":n?"🔄 Mettre à jour les vidéos":"⬇️ Télécharger les vidéos de mon programme";b.disabled=!L.length;if(d)d.hidden=!ks.length}
+async function vidDownload(){if(vidBusy||!("caches"in window))return;vidBusy=1;const L=progVids(),c=await caches.open(VC),say=t=>{const m=$("#vd-m");if(m)m.textContent=t};let ok=0,ko=0;
+ try{for(const k of await c.keys())if(!L.includes(vidKey(k)))await c.delete(k);
+  for(const [i,v] of L.entries()){say(`Téléchargement… ${i+1} sur ${L.length}`);const u=`renders/${v}.mp4?v=1`;
+   try{if(!await c.match(u,{ignoreSearch:true})){const r=await fetch(u,{cache:"no-cache"});if(!r.ok)throw 0;await c.put(u,r)}ok++}catch(e){ko++}}
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}}
+ finally{vidBusy=0}
+ toast(ko?`${ok} vidéos prêtes, ${ko} ratées : réessaie avec du réseau.`:`${ok} vidéos prêtes pour la salle, même sans réseau.`);vidFill()}
+async function vidDel(){if(!confirm("Retirer les vidéos de ce téléphone ? Elles restent visibles avec du réseau."))return;await caches.delete(VC);toast("Vidéos retirées.");vidFill()}
 
 document.addEventListener("change",e=>{if(e.target.id==="bk-file"&&e.target.files[0])bkFile(e.target.files[0])});
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;const D=t.dataset;
@@ -163,6 +188,8 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
  if(!PROF)return;
  if(t.id==="ac-out"){if(confirm("Te déconnecter ? Tes données restent sur ce téléphone.")){const S=syncCfg();S.user="";S.code="";S.auto=false;S.push=false;LS.set("coach-sync",S);render()}return}
  if(t.id==="bk-exp"){bkExport();return}
+ if(t.id==="vd-go"){vidDownload();return}
+ if(t.id==="vd-del"){vidDel();return}
  if(D.ref){startRefine(D.ref);return}
  const setN=f=>{const N=notifCfg();f(N);LS.set("coach-notif",N);notifPublish();notifCheck();render()},setC=f=>{const C=SET();f(C);LS.set("coach-set",C);notifPublish();render()};
  if(D.nty){setN(N=>{N.types={...N.types,[D.nty]:N.types[D.nty]?0:1}});return}

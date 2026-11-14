@@ -1,13 +1,18 @@
-const CACHE="ektyron-v50";
+const CACHE="ektyron-v51",VC="ektyron-vids";
 const ASSETS=["./", "index.html", "fonts.css","app.css","data.js","app.js","nutri.js","suivi.js","coach.js","reglages.js","prep.js","programme.js","eau.js","jeu.js","hist.js","anim.js", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "fonts/BarlowCondensed-600.woff2", "fonts/BarlowCondensed-800.woff2", "fonts/IBMPlexMono-500.woff2", "fonts/IBMPlexSans-400.woff2", "fonts/IBMPlexSans-600.woff2"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(u=>new Request(u,{cache:"reload"})))).then(()=>self.skipWaiting())));
-self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!=="ektyron-data").map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!=="ektyron-data"&&k!==VC).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 /* Réseau d'abord (toujours la dernière version), cache seulement hors ligne. */
 self.addEventListener("fetch",e=>{if(e.request.method!=="GET"||new URL(e.request.url).origin!==location.origin)return;
-  if(/\.mp4$/.test(new URL(e.request.url).pathname))return; /* vidéos : réseau seulement (trop lourdes pour le cache hors ligne) */
+  /* Vidéos : celles du programme sont gardées dans « ektyron-vids » (bouton dans Réglages) ; les autres viennent du réseau. */
+  if(/\.mp4$/.test(new URL(e.request.url).pathname)){e.respondWith(caches.open(VC).then(c=>c.match(e.request,{ignoreSearch:true})).then(r=>r?ranged(r,e.request):fetch(e.request)));return}
   const nav=e.request.mode==="navigate";
   e.respondWith(fetch(e.request,{cache:"no-cache"}).then(r=>{if(r.ok){const k=r.clone();caches.open(CACHE).then(c=>c.put(nav?"./":e.request,k))}return r})
    .catch(()=>caches.match(nav?"./":e.request,{ignoreSearch:true})))});
+/* Safari lit les vidéos par morceaux (en-tête Range) : il faut lui rendre le morceau demandé (réponse 206). */
+async function ranged(r,req){const g=req.headers.get("range");if(!g)return r;const b=await r.blob(),n=b.size,m=/bytes=(\d*)-(\d*)/.exec(g)||[];
+  let s=m[1]?+m[1]:m[2]?n-+m[2]:0,t=m[1]&&m[2]?Math.min(+m[2],n-1):n-1;if(s>=n)return new Response(null,{status:416,headers:{"Content-Range":`bytes */${n}`}});
+  return new Response(b.slice(s,t+1),{status:206,headers:{"Content-Type":"video/mp4","Content-Range":`bytes ${s}-${t}/${n}`,"Content-Length":String(t-s+1),"Accept-Ranges":"bytes"}})}
 /* Rappels en arrière-plan (Chrome Android, appli installée) : l'appli recopie l'état utile dans le cache « ektyron-data ». */
 self.addEventListener("periodicsync",e=>{if(e.tag==="coach-reminders")e.waitUntil(remind())});
 async function remind(){const c=await caches.open("ektyron-data"),r=await c.match("reminders");if(!r)return;const D=await r.json();if(!D.on)return;
