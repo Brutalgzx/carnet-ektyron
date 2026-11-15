@@ -13,3 +13,12 @@ crons = ["*/15 * * * *"]
 [vars]
 VAPID_PUBLIC = "BDrX-g9ibka3agIBtCyCH1H9AGse42LqyvIDVwVSmHB6gbpNYz-DilyW8C81V7KyOERA59Rw3IXPTYf-RIsTVOw"
 VAPID_SUBJECT = "https://brutalgzx.github.io/carnet-ektyron/"
+
+# Mode duo : salle partagée entre deux téléphones (objet durable, inclus dans l'offre gratuite).
+[[durable_objects.bindings]]
+name = "DUO"
+class_name = "DuoHub"
+
+[[migrations]]
+tag = "duo-v1"
+new_sqlite_classes = ["DuoHub"]

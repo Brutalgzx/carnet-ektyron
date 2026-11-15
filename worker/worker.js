@@ -15,6 +15,7 @@ export default{
   const p=new URL(req.url).pathname.replace(/\/+$/,"")||"/";
   try{
    if(p==="/"||p==="/vapid")return json({ok:true,app:"ektyron-coach",key:env.VAPID_PUBLIC||null,kv:!!env.EK});
+   if(p.startsWith("/duo/")){if(!env.DUO)return json({error:"salle duo non activée sur le serveur"},500);return env.DUO.get(env.DUO.idFromName("hub")).fetch(req)}
    if(!env.EK)return json({error:"espace KV « EK » non lié au Worker"},500);
    const id=await idOf(req.headers.get("X-Code"));if(!id)return json({error:"code manquant ou trop court"},401);
    if(p==="/backup"){
@@ -102,3 +103,39 @@ export async function encrypt(sub,text){const ua=ub64(sub.keys.p256dh),auth=ub64
  const hd=new Uint8Array(21);hd.set(salt,0);new DataView(hd.buffer).setUint32(16,4096);hd[20]=65;return cat(hd,as,ct)}
 export async function sendPush(env,sub,msg){const body=await encrypt(sub,JSON.stringify(msg));
  return fetch(sub.endpoint,{method:"POST",headers:{"Content-Encoding":"aes128gcm","Content-Type":"application/octet-stream",TTL:"86400",Urgency:"normal",Authorization:`vapid t=${await jwt(env,new URL(sub.endpoint).origin)}, k=${env.VAPID_PUBLIC}`},body})}
+
+/* ---------- Mode duo : un seul objet durable « hub » ----------
+   Le « check » : deux téléphones qui se tapent l'un contre l'autre envoient chacun /duo/bump ; deux chocs à moins de 1,2 s d'écart = une paire.
+   La salle : un code de 4 lettres, l'état de chaque membre (carte de profil, série en cours, dernière série), et à qui le tour.
+   Aucune donnée de compte : chaque téléphone a un identifiant au hasard (dev). Les salles s'effacent après 6 h. */
+const DUO_L="ABCDEFGHJKMNPQRSTUVWXYZ";
+export class DuoHub{
+ constructor(ctx){this.ctx=ctx;this.rooms=null;this.wait=[]}
+ async load(){if(!this.rooms){this.rooms=(await this.ctx.storage.get("rooms"))||{};const old=Date.now()-6*3600e3;for(const c in this.rooms)if(this.rooms[c].t<old)delete this.rooms[c]}}
+ save(){return this.ctx.storage.put("rooms",this.rooms)}
+ code(){let c;do{c=Array.from({length:4},()=>DUO_L[Math.floor(Math.random()*DUO_L.length)]).join("")}while(this.rooms[c]);return c}
+ room(dev,card){const c=this.code(),R={code:c,t:Date.now(),v:1,host:dev,ph:"lobby",turn:dev,m:{}};R.m[dev]=this.mem(card);this.rooms[c]=R;return R}
+ mem(card){return{card:card||{},seen:Date.now(),cur:null,last:null,done:false}}
+ out(R,dev){const now=Date.now(),o={code:R.code,v:R.v,ph:R.ph,turn:R.turn,host:R.host,me:dev,m:{}};for(const [k,x] of Object.entries(R.m))o.m[k]={...x,away:now-x.seen>30e3};return json(o)}
+ async fetch(req){await this.load();const u=new URL(req.url),p=u.pathname.replace(/\/+$/,""),b=req.method==="POST"?await req.json().catch(()=>({})):{},dev=String(b.dev||u.searchParams.get("dev")||"").slice(0,40);
+  if(dev.length<8)return json({error:"appareil inconnu"},400);
+  if(p==="/duo/bump"){const tb=Date.now()-Math.min(Math.max(+b.ago||0,0),3000);this.wait=this.wait.filter(w=>Date.now()-w.at<4000&&w.dev!==dev);
+   const m=this.wait.filter(w=>Math.abs(w.tb-tb)<1200).sort((x,y)=>Math.abs(x.tb-tb)-Math.abs(y.tb-tb))[0];
+   if(m){this.wait=this.wait.filter(w=>w!==m);const R=this.room(m.dev,m.card);R.m[dev]=this.mem(b.card);R.v++;await this.save();m.ok(R.code);return this.out(R,dev)}
+   const code=await new Promise(ok=>{const w={dev,tb,at:Date.now(),card:b.card,ok};this.wait.push(w);setTimeout(()=>{this.wait=this.wait.filter(x=>x!==w);ok(null)},2500)});
+   return code&&this.rooms[code]?this.out(this.rooms[code],dev):json({none:true})}
+  if(p==="/duo/new"){const R=this.room(dev,b.card);await this.save();return this.out(R,dev)}
+  const R=this.rooms[String(b.code||u.searchParams.get("code")||"").toUpperCase()];if(!R)return json({error:"salle introuvable"},404);
+  if(p==="/duo/join"){if(!R.m[dev]){if(Object.keys(R.m).length>=2)return json({error:"salle déjà complète"},409);R.m[dev]=this.mem(b.card);R.v++;await this.save()}return this.out(R,dev)}
+  const M=R.m[dev];if(!M)return json({error:"tu n'es pas dans cette salle"},403);M.seen=Date.now();
+  if(p==="/duo/state")return this.out(R,dev);
+  if(p==="/duo/act"){const other=Object.keys(R.m).find(k=>k!==dev);
+   if(b.op==="card")M.card=b.card||M.card;
+   else if(b.op==="start"){if(R.ph!=="play"){R.ph="play";R.turn=dev;for(const x of Object.values(R.m)){x.done=false;x.last=null;x.cur=null}}}
+   else if(b.op==="cur")M.cur=b.cur||null;
+   else if(b.op==="set"){M.last={...b.set,at:Date.now()};if(R.turn===dev&&other&&!R.m[other].done)R.turn=other}
+   else if(b.op==="end"){M.done=true;M.cur=null;if(other&&!R.m[other].done)R.turn=other}
+   else if(b.op==="leave"){delete R.m[dev];if(!Object.keys(R.m).length)delete this.rooms[R.code];else{R.turn=other;R.host=R.host===dev?other:R.host}R.v++;await this.save();return json({ok:true})}
+   else return json({error:"action inconnue"},400);
+   R.v++;await this.save();return this.out(R,dev)}
+  return json({error:"introuvable"},404)}}
