@@ -53,7 +53,7 @@ function pShow(){clearInterval(gInt);clearInterval(pInt);const L=pList(),i=G.pi|
  <h2 class="g-name" style="text-align:center">${it.e} ${it.n}</h2>${animTag(it.a,it.a,esc(it.n),"g-anim")}<p class="small muted" style="text-align:center;margin:0 0 6px">${it.c}</p>
  <div class="g-ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="p-arc" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg><b id="p-t" role="timer">${fmtT(it.d*(it.side?2:1))}</b></div>
  <p class="small" id="p-side" style="text-align:center;min-height:1.4em;margin:0 0 8px;color:var(--warn)">${it.side?"Côté gauche puis côté droit":""}</p>
- <div class="g-adj"><button id="p-pz" aria-label="Pause">${run?(G.pz?"▶":"⏸"):"⏸"}</button><button id="p-go" style="font:800 20px var(--display);text-transform:uppercase;background:var(--grad);border:0;color:#fff">${run?"Suivant ⏭":"Démarrer"}</button><button id="p-skip" style="font:600 13px var(--mono)">Passer</button></div>
+ <div class="g-adj"><button id="p-pz" aria-label="Pause">${run?(G.pz?"▶":"⏸"):"⏸"}</button><button id="p-go" style="font:800 20px var(--display);text-transform:uppercase;background:var(--grad);border:0;color:var(--on-acc)">${run?"Suivant ⏭":"Démarrer"}</button><button id="p-skip" style="font:600 13px var(--mono)">Passer</button></div>
  ${nx?`<div class="g-next"><small>Ensuite</small><b>${nx.e} ${nx.n}</b><span>${fmtT(nx.d*(nx.side?2:1))}${nx.side?" · 2 côtés":""}</span></div>`:""}
  ${warm&&!nx?`<div class="coachmsg">Ensuite : 1 à 2 séries d'approche légères sur ton premier exercice avant les vraies séries.</div>`:""}
  <button class="link" id="p-all">${warm?"Je suis déjà chaud : passer l'échauffement":"Passer les étirements"}</button>`;
