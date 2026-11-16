@@ -66,7 +66,7 @@ const RECI=Object.fromEntries(REC.map(r=>[r.id,r]));
 const RM={};
 function rmac(r){if(RM[r.id])return RM[r.id];let k=0,P=0,C=0,F=0,e=0;for(const [i,g] of r.i){const d=ING[i];k+=d[1]*g/100;P+=d[2]*g/100;C+=d[3]*g/100;F+=d[4]*g/100;e+=ppk(i).e*g/1000}return RM[r.id]={k,P,C,F,e}}
 const dietOk=r=>PROF.diet==="vege"?r.v==="vege":PROF.diet==="pesco"?r.v!=="omni":true;
-const PG=new Set(["poulet","dinde","boeuf","thon","saumon","oeuf","tofu","fblanc","skyr","whey","porc","jambon","cabil"]),CG=new Set(["riz","pates","semoule","avoine","painc","wrap","painb","pdt","patd","banane","pomme","miel","lentilles","poischi","harico","mais","frouges","lait","galriz","quinoa","nouilles","bveg"]);
+const PG=new Set(["poulet","dinde","boeuf","thon","saumon","oeuf","tofu","fblanc","skyr","whey","porc","jambon","cabil","cottage","crevette","truite"]),CG=new Set(["riz","pates","semoule","avoine","painc","wrap","painb","pdt","patd","banane","pomme","miel","lentilles","poischi","harico","mais","frouges","lait","galriz","quinoa","nouilles","bveg","farine","farriz","sarrasin","feuilriz","cornfl","butternut","dattes","mangue","ananas","peche"]);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 /* Portions : on ajuste séparément les aliments protéinés et les féculents pour viser à la fois les calories et les protéines du repas. */
 /* Compléments du jour (PROF.supp = {id: portions par jour}, PROF.suppX = produits ajoutés à la main) : comptés dans la journée, les repas laissent la place. */

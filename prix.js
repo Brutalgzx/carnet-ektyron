@@ -18,7 +18,11 @@ const PRIX=
   "banane": 1.90, "pomme": 2.40, "frouges": 6.50, "cacah": 8.50, "amandes": 15.00, "huile": 8.90, "miel": 10.00,
   "brocoli": 2.60, "courgette": 2.50, "poivron": 3.90, "tomate": 1.90, "oignon": 1.70, "carotte": 1.30, "hverts": 2.60,
   "epinard": 2.40, "soja": 4.50, "coco": 5.00, "avocat": 6.50, "mais": 3.00, "salade": 4.50, "porc": 12.50, "jambon": 13.50,
-  "cabil": 14.00, "bveg": 1.90, "galriz": 9.50, "quinoa": 7.50, "nouilles": 4.50, "champi": 4.20
+  "cabil": 14.00, "bveg": 1.90, "galriz": 9.50, "quinoa": 7.50, "nouilles": 4.50, "champi": 4.20,
+  "parmesan": 20.00, "bacon": 15.00, "chevre": 13.00, "butternut": 2.20, "cottage": 7.50, "ffrais": 9.00, "farine": 1.10, "farriz": 4.00,
+  "sarrasin": 4.50, "crevette": 22.00, "truite": 24.00, "feuilriz": 12.00, "cornfl": 5.00, "cacao": 16.00, "chocnoir": 12.00, "chocblanc": 11.00,
+  "dattes": 8.00, "chia": 14.00, "mangue": 4.50, "ananas": 3.00, "cocorap": 9.00, "noisettes": 18.00, "cajou": 16.00, "peche": 3.50,
+  "concombre": 2.00, "tomfr": 3.20, "chou": 1.80, "betterave": 3.00, "biscuit": 7.00
  },
 
  "gammes": {
