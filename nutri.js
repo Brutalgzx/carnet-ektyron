@@ -144,3 +144,40 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
  if(t.id==="sx-add"){const n=$("#sx-n").value.trim(),k=+$("#sx-k").value||0,P=+$("#sx-p").value||0,eu=+$("#sx-e").value||0;if(!n){toast("Donne un nom au produit.");return}
   const id="x"+Date.now().toString(36);PROF.suppX=[...(PROF.suppX||[]),{id,n,e:"🧴",u:"portion",k,P,C:0,F:0,eur:eu}];SUPQ[id]=1;LS.set("coach-profile",PROF);supSheet();return}
  if(t.id==="sup-ok"){const S={};for(const k in SUPQ)if(SUPQ[k]>0)S[k]=SUPQ[k];PROF.supp=S;LS.set("coach-profile",PROF);$("#sheet")?.remove();render();toast(Object.keys(S).length?"Compléments enregistrés : tes repas sont ajustés.":"Aucun complément.");return}});
+
+/* Extras : un petit plat en plus (yaourt, fruit…) noté sur un repas d'un jour de la semaine en cours, compté dans les totaux du jour.
+   Rangés par date dans « coach-extra » (gardés 14 jours) : ils ne reviennent pas la semaine suivante. */
+const exDate=d=>new Date(Date.now()+(wIdx(+d)-wIdx(new Date().getDay()))*DAY).toISOString().slice(0,10);
+function exList(d,slot){const E=LS.get("coach-extra",{})[exDate(d)]||{};return slot?E[slot]||[]:Object.values(E).flat()}
+function exTot(d,slot){return exList(d,slot).reduce((a,x)=>({k:a.k+x.k,P:a.P+x.P,C:a.C+x.C,F:a.F+x.F}),{k:0,P:0,C:0,F:0})}
+function exSave(d,slot,f){const E=LS.get("coach-extra",{}),k=exDate(d),lim=new Date(Date.now()-14*DAY).toISOString().slice(0,10);E[k]=E[k]||{};E[k][slot]=f(E[k][slot]||[]);if(!E[k][slot].length)delete E[k][slot];
+ for(const x in E)if(x<lim||!Object.keys(E[x]).length)delete E[x];LS.set("coach-extra",E)}
+function exBlock(slot,d){const L=exList(d,slot);return `<div class="lab">En plus à ce repas</div>${L.length?`<ul class="list">${L.map((x,i)=>`<li><span class="sp">${esc(x.n)}<br><small class="muted">${x.g?x.g+" g · ":""}${fr(x.k)} kcal · ${fr(x.P)} g protéines</small></span><button class="chip" data-exdel="${i}" data-slot="${slot}" data-day="${d}" aria-label="Retirer ${esc(x.n)}">✕</button></li>`).join("")}</ul>`:""}<button class="btn ghost" data-exadd="${slot}" data-day="${d}">＋ J'ai mangé un petit extra</button>`}
+let exBase=null;
+function exForm(slot,d){exBase=null;const f=(id,l)=>`<label class="small" style="flex:1">${l}<input class="txt" id="ex-${id}" type="number" inputmode="decimal" min="0" style="font-size:17px;padding:10px"></label>`;
+ pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">Un petit extra</h2><button class="chip" data-exback aria-label="Retour">✕</button></div>
+ <p class="small muted" style="margin:0">Tape ce que tu as mangé : s'il est dans la liste, le calcul est fait tout seul. Sinon, cherche-le en ligne ou recopie l'étiquette (valeurs pour la quantité mangée).</p>
+ <input class="txt" id="ex-n" list="ex-ing" maxlength="60" placeholder="Ex. : yaourt nature, banane, carré de chocolat" style="font-size:17px;padding:12px"><datalist id="ex-ing">${Object.keys(ING).map(i=>`<option value="${esc(ING[i][0])}">`).join("")}</datalist>
+ <label class="small">Quantité mangée (g)<input class="txt" id="ex-g" type="number" inputmode="decimal" min="0" value="125" style="font-size:17px;padding:10px"></label>
+ <button class="btn ghost" id="ex-find">🔎 Chercher les valeurs en ligne</button><div id="ex-res" class="stack small muted"></div>
+ <div class="row" style="gap:8px">${f("k","kcal")}${f("P","Protéines (g)")}</div><div class="row" style="gap:8px">${f("C","Glucides (g)")}${f("F","Lipides (g)")}</div>
+ <button class="btn" id="ex-ok" data-slot="${slot}" data-day="${d}">Ajouter à ce repas</button>`,"Ajouter un extra")}
+function exFill(){if(!exBase)return;const g=+$("#ex-g").value||0;for(const k of ["k","P","C","F"])$("#ex-"+k).value=Math.round(exBase[k]*g/100*(k==="k"?1:10))/(k==="k"?1:10)}
+document.addEventListener("input",e=>{if(!$("#ex-ok"))return;if(e.target.id==="ex-n"){const v=e.target.value.trim().toLowerCase(),i=Object.keys(ING).find(i=>ING[i][0].toLowerCase()===v);
+ if(i){const x=ING[i];exBase={k:x[1],P:x[2],C:x[3],F:x[4]};$("#ex-res").textContent="Trouvé dans la liste : valeurs calculées pour la quantité.";exFill()}}
+ else if(e.target.id==="ex-g")exFill();else if(/^ex-[kPCF]$/.test(e.target.id))exBase=null});
+let exOff=[];
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(D.exadd){exForm(D.exadd,D.day);return}
+ if(D.exback!==undefined){recBack?openRecipe(...recBack):$("#sheet")?.remove();return}
+ if(D.exdel){exSave(D.day,D.slot,L=>L.filter((_,i)=>i!==+D.exdel));openRecipe(...recBack);render();return}
+ if(t.id==="ex-find"){const n=$("#ex-n").value.trim(),R=$("#ex-res");if(n.length<2)return toast("Écris d'abord ce que tu as mangé.");R.textContent="Recherche…";
+  /* Open Food Facts : ancienne recherche (ouverte à tous les sites), sinon la nouvelle ; en cas d'échec, saisie de l'étiquette. */
+  const q=encodeURIComponent(n),get=u=>fetch(u).then(r=>{if(!r.ok)throw 0;return r.json()});
+  get(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${q}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments`).catch(()=>get(`https://search.openfoodfacts.org/search?q=${q}&page_size=8&fields=product_name,brands,nutriments`)).then(j=>{
+   exOff=(j.products||j.hits||[]).map(p=>({...p,brands:Array.isArray(p.brands)?p.brands.join(","):p.brands})).filter(p=>p.product_name&&p.nutriments&&p.nutriments["energy-kcal_100g"]!=null).slice(0,5);
+   R.innerHTML=exOff.length?`<span>Choisis le bon produit (valeurs pour 100 g, Open Food Facts) :</span>${exOff.map((p,i)=>`<button class="btn ghost" data-exoff="${i}" style="text-align:left">${esc(p.product_name)}${p.brands?" · "+esc(p.brands.split(",")[0]):""}<br><small class="muted">${fr(p.nutriments["energy-kcal_100g"])} kcal · ${fr(p.nutriments.proteins_100g||0,1)} g protéines</small></button>`).join("")}`:"Rien trouvé : recopie l'étiquette ci-dessous."}).catch(()=>{R.textContent="Pas de connexion : recopie l'étiquette ci-dessous."});return}
+ if(D.exoff){const p=exOff[+D.exoff],n=p.nutriments;exBase={k:+n["energy-kcal_100g"]||0,P:+n.proteins_100g||0,C:+n.carbohydrates_100g||0,F:+n.fat_100g||0};$("#ex-n").value=p.product_name.slice(0,60);$("#ex-res").textContent="Valeurs reprises pour la quantité mangée.";exFill();return}
+ if(t.id==="ex-ok"){const n=$("#ex-n").value.trim(),v=k=>Math.max(0,+$("#ex-"+k).value||0),x={n,g:Math.round(+$("#ex-g").value||0),k:v("k"),P:v("P"),C:v("C"),F:v("F")};
+  if(!n)return toast("Écris ce que tu as mangé.");if(!x.k)return toast("Indique au moins les calories.");
+  exSave(D.day,D.slot,L=>[...L,x]);openRecipe(...recBack);render();toast(`${n} ajouté : +${fr(x.k)} kcal, +${fr(x.P)} g de protéines.`)}});
