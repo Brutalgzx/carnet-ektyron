@@ -92,6 +92,10 @@ function pkSave(sel,only){PROF.pick=[...sel];PROF.pickOnly=!!only&&sel.size>0;PR
  LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{});$("#sheet")?.remove();nutTab="week";render();
  toast(sel.size?`Semaine recomposée avec tes ${sel.size} plat${sel.size>1?"s":""}.`:"Sélection effacée : le coach choisit à nouveau.")}
 function pkSheet(html,label){$("#sheet")?.remove();const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in stack" role="dialog" aria-label="${label}">${html}</div>`;document.body.appendChild(el);return el}
+/* « Modifier » : choisir les repas pris dans la journée, puis recomposer la semaine. */
+function mealSheet(){const s=mealsOf(PROF);pkSheet(`<h2 style="margin:18px 0 0">Mes repas de la journée</h2><p class="small muted" style="margin:0">Décoche ceux que tu ne prends pas : tes calories et tes protéines sont réparties sur les autres.</p>
+ <ul class="list">${MEALS4.map(([k,l])=>`<li><button class="chk ${s.includes(k)?"on":""}" data-msel="${k}" aria-label="${l}">${s.includes(k)?"✓":""}</button><span class="sp">${l}</span></li>`).join("")}</ul>
+ <button class="btn" id="meal-ok">Recomposer ma semaine</button><button class="btn ghost" data-close>Annuler</button>`,"Mes repas de la journée")}
 function pkList(){PKS=PKS||new Set(PROF.pick||[]);const only=!!PROF.pickOnly,no=PROF.nope||[];
  pkSheet(`<h2 style="margin:18px 0 0">Choisir mes plats</h2><p class="small muted" style="margin:0">Coche les plats que tu veux manger cette semaine.</p>
  <div class="seg"><button data-pkm="0" aria-pressed="${!only}">Les mettre en priorité</button><button data-pkm="1" aria-pressed="${only}">Seulement eux</button></div>
@@ -109,6 +113,9 @@ function pkSwipe(){if(!PKD){const all=PK_G.flatMap(([m])=>safeRec(m)),seen=new S
 function pkVote(keep){const r=PKD[PKI],c=$("#pk-card");if(keep)PKS.add(r.id);else{PKS.delete(r.id);PROF.nope=[...new Set([...(PROF.nope||[]),r.id])];LS.set("coach-profile",PROF)}
  if(c)c.style.transform=`translateX(${keep?120:-120}%) rotate(${keep?15:-15}deg)`;PKI++;setTimeout(pkSwipe,c?220:0)}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(t.id==="meal-edit"){mealSheet();return}
+ if(D.msel){t.classList.toggle("on");t.textContent=t.classList.contains("on")?"✓":"";return}
+ if(t.id==="meal-ok"){const sel=MEALK.filter(k=>$(`#sheet [data-msel="${k}"]`)?.classList.contains("on"));if(!sel.length)return toast("Garde au moins un repas.");PROF.mealSel=sel;PROF.meals=sel.length;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{});$("#sheet")?.remove();nutTab="week";render();toast("Repas mis à jour : nouvelle semaine composée.");return}
  if(t.id==="pk-list"){PKS=null;pkList();return}
  if(t.id==="pk-swipe"){PKD=null;pkSwipe();return}
  if(D.pk){PKS.has(D.pk)?PKS.delete(D.pk):PKS.add(D.pk);t.classList.toggle("on");t.textContent=PKS.has(D.pk)?"✓":"";return}

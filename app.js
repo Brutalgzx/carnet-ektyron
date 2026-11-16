@@ -61,7 +61,10 @@ function targets(){const p=PROF,w=curWeight();
  return{bmr:Math.round(bmr),tdee:Math.round(tdee),kcal,p:pr,f:fat,c:carb}}
 const MEALS3=[["pdj","Petit-déjeuner",.25],["dej","Déjeuner",.4],["din","Dîner",.35]];
 const MEALS4=[["pdj","Petit-déjeuner",.22],["dej","Déjeuner",.33],["snack","Collation",.15],["din","Dîner",.3]];
-const mealSlots=()=>PROF.meals===4?MEALS4:MEALS3;
+const MEALK=["pdj","dej","snack","din"];
+/* Repas pris dans la journée (mealSel). Profils plus anciens : déduits de « meals » (4 → tous, sinon les 3 principaux). Les parts sont recalculées sur les repas gardés pour que la journée atteigne toujours l'objectif. */
+const mealsOf=p=>p&&Array.isArray(p.mealSel)&&p.mealSel.length?MEALK.filter(k=>p.mealSel.includes(k)):p&&p.meals===4?[...MEALK]:["pdj","dej","din"];
+const mealSlots=()=>{const s=mealsOf(PROF);if(s.join()==="pdj,dej,din")return MEALS3;const L=MEALS4.filter(x=>s.includes(x[0])),t=L.reduce((a,x)=>a+x[2],0);return L.map(([k,l,f])=>[k,l,f/t])};
 const RECI=Object.fromEntries(REC.map(r=>[r.id,r]));
 const RM={};
 function rmac(r){if(RM[r.id])return RM[r.id];let k=0,P=0,C=0,F=0,e=0;for(const [i,g] of r.i){const d=ING[i];k+=d[1]*g/100;P+=d[2]*g/100;C+=d[3]*g/100;F+=d[4]*g/100;e+=ppk(i).e*g/1000}return RM[r.id]={k,P,C,F,e}}
@@ -75,10 +78,10 @@ const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 /* Compléments du jour (PROF.supp = {id: portions par jour}, PROF.suppX = produits ajoutés à la main) : comptés dans la journée, les repas laissent la place. */
 function supList(){const S=PROF.supp||{},all=[...SUP,...(PROF.suppX||[])];return all.filter(x=>S[x.id]>0).map(x=>({...x,q:S[x.id]}))}
 function supTot(){return supList().reduce((a,x)=>({k:a.k+x.k*x.q,P:a.P+x.P*x.q,C:a.C+(x.C||0)*x.q,F:a.F+(x.F||0)*x.q,e:a.e+(x.eur||0)*x.q}),{k:0,P:0,C:0,F:0,e:0})}
-function portion(rid,slot){const T=targets(),sl=mealSlots().find(s=>s[0]===slot),r=RECI[rid],St=supTot(),K=Math.max(T.kcal*.6,T.kcal-St.k)*sl[2],Pt=Math.max(T.p*.4,T.p-St.P)*sl[2];
+function portion(rid,slot,ex){let T=targets(),sl=mealSlots().find(s=>s[0]===slot)||MEALS4.find(s=>s[0]===slot)||[slot,"",.3],r=RECI[rid],St=supTot(),K=Math.max(T.kcal*.6,T.kcal-St.k)*sl[2],Pt=Math.max(T.p*.4,T.p-St.P)*sl[2];if(ex){K+=ex.k;Pt+=ex.P}
  const a={k:0,P:0},b={k:0,P:0},c={k:0,P:0};for(const [i,g] of r.i){const d=ING[i],x=PG.has(i)?a:CG.has(i)?b:c;x.k+=d[1]*g/100;x.P+=d[2]*g/100}
  let fp=1,fc=1;const det=a.P*b.k-b.P*a.k;
- if(a.k&&b.k&&Math.abs(det)>1e-6){fp=((Pt-c.P)*b.k-b.P*(K-c.k))/det;fc=(a.P*(K-c.k)-(Pt-c.P)*a.k)/det;fp=clamp(fp,.6,2);fc=clamp(fc,.4,3.2);fc=clamp((K-c.k-a.k*fp)/b.k,.4,3.2)}
+ if(a.k&&b.k&&Math.abs(det)>1e-6){fp=((Pt-c.P)*b.k-b.P*(K-c.k))/det;fc=(a.P*(K-c.k)-(Pt-c.P)*a.k)/det;fp=clamp(fp,.6,ex&&ex.P>0?2.6:2);fc=clamp(fc,.4,3.2);fc=clamp((K-c.k-a.k*fp)/b.k,.4,3.2)}
  else if(a.k){fp=clamp((K-c.k-b.k)/a.k,.6,2.4)}else if(b.k){fc=clamp((K-c.k)/b.k,.5,3)}
  fp=Math.round(fp*20)/20;fc=Math.round(fc*20)/20;const fi=i=>PG.has(i)?fp:CG.has(i)?fc:1;
  let k=0,P=0,C=0,F=0,e=0;for(const [i,g] of r.i){const d=ING[i],q=g*fi(i);k+=d[1]*q/100;P+=d[2]*q/100;C+=d[3]*q/100;F+=d[4]*q/100;e+=ppk(i).e*q/1000}
@@ -109,7 +112,7 @@ function tasteScore(r){const p=PROF,t=p.taste||{};let s=0;for(const k in t)if(t[
 function genWeek(seed){const g0=GL;GL=gAuto();for(const k in RM)delete RM[k];try{return genWeek0(seed)}finally{GL=g0;for(const k in RM)delete RM[k]}}
 function genWeek0(seed){const R=rng(seed),T=targets(),slots=mealSlots(),B=PROF.budget/(7*slots.length);
  const pick=(m,n,styled)=>{let c=pool(m);if(styled&&PROF.styles.length&&!c.some(isPick)){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
-  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)+goalScore(r)+(isPick(r)?2.5+mm.P*4/mm.k*3:0)}}).sort((a,b)=>b.s-a.s);
+  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||slots.find(x=>x[0]==="dej")||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)+goalScore(r)+(isPick(r)?2.5+mm.P*4/mm.k*3:0)}}).sort((a,b)=>b.s-a.s);
   const out=[];for(let i=0;out.length<n;i++)out.push(sc[i%sc.length].r.id);return out};
  const pdj=pick("pdj",2),snk=pick("snack",2),days=[];
  if(PROF.batch==="oui"){const M=pick("main",4,true);/* 2 plats cuisinés le dimanche pour lun–mer, 2 le mercredi soir pour jeu–dim */
@@ -126,7 +129,11 @@ function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Da
  /* Semaines déjà enregistrées : si un plat contient un aliment refusé, on recompose une fois (si ça fait mieux). */
  else if(W.hc!==2){const n=hateN(W);if(n){const N={...genWeek(Date.now()%1e9),v:2};if(hateN(N)<n){W=N;LS.set("coach-shop",{})}}W.hc=2;LS.set("coach-week",W)}return W}
 const wIdx=d=>(d+6)%7;
-function dayMeals(d){const D=week().days[wIdx(d)];return mealSlots().map(([k,l])=>({slot:k,l,...portion(D[k],k),left:k==="dej"&&D.left,bt:k!=="pdj"&&k!=="snack"&&D.bt}))}
+/* Les portions ont des limites : ce qu'un repas ne peut pas absorber est reporté sur les autres, pour que la journée atteigne ses calories et ses protéines. */
+function dayMeals(d){const D=week().days[wIdx(d)],S=mealSlots(),T=targets(),St=supTot(),gk=Math.max(T.kcal*.6,T.kcal-St.k),gp=Math.max(T.p*.4,T.p-St.P),ex={};let M,best,bE=1/0;
+ for(let it=0;it<8;it++){M=S.map(([k,l])=>({slot:k,l,...portion(D[k],k,ex[k]),left:k==="dej"&&D.left,bt:k!=="pdj"&&k!=="snack"&&D.bt}));
+  const dk=gk-M.reduce((a,m)=>a+m.k,0),dp=gp-M.reduce((a,m)=>a+m.P,0),er=Math.abs(dk)/gk+Math.abs(dp)/gp;if(er<bE){bE=er;best=M}if(Math.abs(dk)<gk*.02&&Math.abs(dp)<gp*.03)break;
+  S.forEach(([k,,f])=>{const e=ex[k]||{k:0,P:0};ex[k]={k:e.k+dk*f,P:e.P+dp*f}})}return best}
 function weekCost(){let t=supTot().e*7;for(const d of WEEK)for(const m of dayMeals(d))t+=m.e;return t}
 function shopping(){const tot={};for(const d of WEEK)for(const m of dayMeals(d))for(const [i,g] of m.r.i)tot[i]=(tot[i]||0)+g*m.fi(i);
  const by={};for(const i in tot){const g=tot[i],ry=ingRay(i);(by[ry]=by[ry]||[]).push({i,n:ingName(i),tag:ingTag(i),pk:ppk(i).e,g,q:i==="oeuf"?`${Math.ceil(g/60)} œufs`:i==="lait"?`${fr(Math.ceil(g/250)/4,2)} L`:g>=1000?`${fr(Math.ceil(g/100)/10,1)} kg`:`${Math.ceil(g/50)*50} g`,e:g/1000*ppk(i).e,st:ppk(i).v})}
@@ -181,7 +188,7 @@ const Q=[
  {t:"Une zone à ménager ?",s:"Le coach écarte les exercices qui la sollicitent trop. En cas de douleur qui dure, consulte un kiné.",h:()=>opts("pain",PAINS,true),ok:()=>true},
  {t:"En dehors de la salle, tu es…",s:"Ta dépense de la journée compte autant que tes séances.",h:()=>opts("act",ACTS),ok:()=>!!A.act},
  {t:"Ce que tu manges",s:"Les recettes de ta semaine respectent ton choix.",h:()=>opts("diet",DIETS),ok:()=>!!A.diet},
- {t:"Combien de repas par jour ?",s:"Tes calories sont réparties entre eux.",h:()=>opts("meals",[{v:3,e:"🍽️",l:"3 repas",s:"Petit-déjeuner, déjeuner, dîner"},{v:4,e:"🥤",l:"3 repas + une collation",s:"Pratique quand les calories sont élevées"}]),ok:()=>!!A.meals},
+ {t:"Quels repas prends-tu dans la journée ?",s:"Décoche ceux que tu ne prends pas : tes calories et tes protéines sont réparties sur les autres.",h:()=>{const s=mealsOf(A);return `<div class="opts">${[["pdj","☕","Petit-déjeuner"],["dej","🍽️","Déjeuner"],["snack","🥤","Collation","Pratique quand les calories sont élevées"],["din","🌙","Dîner"]].map(([v,e,l,x])=>`<button class="opt" data-ms="${v}" aria-pressed="${s.includes(v)}"><span class="e">${e}</span><span><b>${l}</b>${x?`<small>${x}</small>`:""}</span></button>`).join("")}</div>`},ok:()=>mealsOf(A).length>0},
  {t:"Où fais-tu tes courses ?",s:"Plusieurs choix possibles : pour chaque article, le coach prend le moins cher.",h:()=>`<div class="grid2">${STORES.map(s=>`<button class="store" data-m="stores" data-v="${s.v}" aria-pressed="${(A.stores||[]).includes(s.v)}">${s.l}</button>`).join("")}</div>`,ok:()=>!!(A.stores||[]).length},
  {t:"Quel budget pour tes repas ?",s:"Par semaine, pour tes courses.",h:()=>{const pm=A.budget/(7*A.meals),lvl=pm<1.6?"Serré":pm<3?"Confortable":"Large";return `<div style="font:800 64px/1 var(--display);text-align:center;margin-top:10px"><span id="v-budget">${A.budget}</span> €<small class="muted" style="font:500 16px var(--body)"> / semaine</small></div>
    <input type="range" id="s-budget" data-s="budget" data-u="€" min="15" max="150" step="5" value="${A.budget}" aria-label="Budget par semaine">
@@ -254,7 +261,7 @@ function startRefine(k){if(k==="taste")return startTastes();A=JSON.parse(JSON.st
 function saveRefine(){const k=FLOW.ref;if((A.stores||[]).length)A.store=A.stores[0];coursesReset();A.refined={...(A.refined||{}),[k]:1};if(k==="nut"){A.refined.food=A.refined.taste=1;nutTab="week"}PROF=A;LS.set("coach-profile",PROF);if(k==="food"||k==="nut"){LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{})}TRAIN=buildTraining(PROF);FLOW=STEPS;view=k==="food"||k==="nut"?"food":"train";render();toast(k==="nut"?"C'est parti : ta semaine de repas est prête":k==="food"?"Enregistré : nouvelle semaine de repas":"Matériel enregistré : programme mis à jour")}
 function saveAdjust(){A.freq=A.days.length;if(JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);FLOW=STEPS;showPlan();toast("Programme adapté")}
 
-function startOnboarding(edit){FLOW=STEPS;const dr=!edit&&!PROF&&LS.get("coach-draft",null);if(dr&&dr.A){A=dr.A;obI=Math.min(dr.obI||0,STEPS.length-1);view="ob";return render()}A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],aims:[],hasProg:"",progTxt:"",likes:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:3,budget:45,styles:[],avail:[...WEEK],taste:{},allerg:[],cuis:[],ckt:30,batch:"non",spice:1,nope:[],refined:{},store:"carrefour",pdjT:"both"};obI=0;view="ob";render()}
+function startOnboarding(edit){FLOW=STEPS;const dr=!edit&&!PROF&&LS.get("coach-draft",null);if(dr&&dr.A){A=dr.A;obI=Math.min(dr.obI||0,STEPS.length-1);view="ob";return render()}A=edit&&PROF?JSON.parse(JSON.stringify(PROF)):{name:"",sex:"",h:178,w:72,age:25,goal:"",level:"",tw:null,months:6,gym:"",equip:"",days:[1,2,4,5],split:"auto",prio:[],aims:[],hasProg:"",progTxt:"",likes:[],freq:4,dur:60,pain:[],act:"",diet:"",meals:4,mealSel:[...MEALK],budget:45,styles:[],avail:[...WEEK],taste:{},allerg:[],cuis:[],ckt:30,batch:"non",spice:1,nope:[],refined:{},store:"carrefour",pdjT:"both"};obI=0;view="ob";render()}
 const ADJ=[
  {t:"Quels jours tu t'entraînes ?",s:()=>{const R=recN(A),g=goalPlan(A),who=A.tw!=null&&Math.abs(g.diff)>=.5?`Pour ${g.diff>0?"+":"−"}${fr(Math.abs(g.diff),1)} kg, ton coach`:"Ton coach";return R.n===A.rec?`${who} recommande ${A.rec} séances de ${A.recDur||60} min parce que ${R.why}. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`:`Ton coach recommande ${A.rec||4} séances de ${A.recDur||60} min. Adapte à ton emploi du temps : les séances sont replacées pour que chaque muscle récupère.`},h:()=>`<div class="week">${WEEK.map(d=>`<button data-wd="${d}" aria-pressed="${A.days.includes(d)}">${DN[d]}<small>${A.days.includes(d)?"Séance":"Repos"}</small></button>`).join("")}</div>
    <div class="hintbox"><span style="font-size:26px">🗓️</span><span><b>${A.days.length} séance${A.days.length>1?"s":""} par semaine</b><br><small class="muted">${A.days.length<2?"Choisis au moins 2 jours.":A.days.length>6?"Garde au moins un jour de repos complet.":A.days.length<(A.rec||0)?`En dessous de la recommandation : ta progression sera plus lente que prévu.`:A.days.length>(A.rec||9)?"Au-dessus de la recommandation : veille à bien dormir et à manger tout ton plan.":"C'est ce que ton coach recommande."}</small></span></div>
@@ -344,10 +351,10 @@ function vFood(){if(PROF.refined&&PROF.refined.nut===0)return `<div class="card 
   <p class="small muted" style="margin:0">Formule de Mifflin-St Jeor. Ton coach réajuste à chaque pesée selon ta vitesse de progression. Ce sont des repères, pas un avis médical.</p></div>`;
  const M=dayMeals(d),St=supTot(),tot=M.reduce((a,m)=>({k:a.k+m.k,P:a.P+m.P,C:a.C+m.C,F:a.F+m.F}),{k:St.k,P:St.P,C:St.C,F:St.F});
  return head+`<div class="week">${WEEK.map(x=>`<button data-nday="${x}" aria-pressed="${x===d}">${DN[x]}<small>${fr(dayMeals(x).reduce((a,m)=>a+m.k,St.k))}</small></button>`).join("")}</div>
- <div class="card stack"><div class="lab">${DLONG[d]}</div>${macroBlock(T,tot)}${M.map(m=>mealRow(m,d,false)).join("")}${typeof supRows==="function"?supRows():""}</div>
+ <div class="card stack"><div class="row"><div class="lab sp">${DLONG[d]}</div><button class="lnk small" id="meal-edit">Modifier</button></div>${macroBlock(T,tot)}${M.map(m=>mealRow(m,d,false)).join("")}${typeof supRows==="function"?supRows():""}</div>
  ${typeof pickCard==="function"?pickCard():""}<button class="btn ghost" id="regen">↻ Nouvelle semaine de repas</button>`}
 function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b>${v}</b></li>`;
- return `${acCard()}${typeof admCard==="function"?admCard():""}<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Goûts",(t=>`${t.filter(v=>v>0).length} ❤️ · ${t.filter(v=>v<0).length} 🚫${(p.allerg||[]).length?" · sans "+p.allerg.map(a=>ALLERG.find(x=>x.v===a).l.toLowerCase()).join(", "):""}`)(Object.values(p.taste||{})))}${row("Courses",`${myStores().map(stLab).join(", ")} · ${p.budget} € / semaine`)}</ul></div>
+ return `${acCard()}${typeof admCard==="function"?admCard():""}<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${mealsOf(p).length} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Goûts",(t=>`${t.filter(v=>v>0).length} ❤️ · ${t.filter(v=>v<0).length} 🚫${(p.allerg||[]).length?" · sans "+p.allerg.map(a=>ALLERG.find(x=>x.v===a).l.toLowerCase()).join(", "):""}`)(Object.values(p.taste||{})))}${row("Courses",`${myStores().map(stLab).join(", ")} · ${p.budget} € / semaine`)}</ul></div>
  <button class="btn" id="plan-see">Voir mon plan et pourquoi</button><button class="btn ghost" id="tastes">Mes goûts</button><button class="btn ghost" id="adj">Adapter à mon emploi du temps</button><button class="btn ghost" id="redo">Refaire le questionnaire</button>
  <button class="btn" data-tab="jeu">🎮 Mon personnage et mes potes</button>
  <button class="btn ghost" data-tab="set">⚙️ Paramètres : notifications, sauvegarde, unités</button>
@@ -478,6 +485,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  /* questionnaire */
  if(view==="ob"&&t.id!=="bk-i"){
   if(D.o){A[D.o]=isNaN(+D.v)?D.v:+D.v;if(D.o==="split")return renderOb();if(D.o==="hasProg"){renderOb();if(D.v==="oui")setTimeout(()=>{const x=$("#i-prog");if(x)x.focus()},50);return}$$(`[data-o="${D.o}"]`).forEach(b=>b.setAttribute("aria-pressed",b===t));obRefresh();return}
+  if(D.ms){const s=mealsOf(A);if(s.includes(D.ms)&&s.length===1)return toast("Garde au moins un repas.");A.mealSel=s.includes(D.ms)?s.filter(x=>x!==D.ms):MEALK.filter(k=>s.includes(k)||k===D.ms);A.meals=A.mealSel.length;renderOb();return}
   if(D.m){let a=A[D.m]||[];if(D.v==="none")a=[];else a=a.includes(D.v)?a.filter(x=>x!==D.v):[...a,D.v];A[D.m]=a;renderOb();return}
   if(D.c){A[D.c]=+D.v;renderOb();return}
   if(D.t){A.taste=A.taste||{};const v=A.taste[D.t]||0,n=v===0?1:v===1?-1:0;if(n)A.taste[D.t]=n;else delete A.taste[D.t];renderOb();return}

@@ -230,3 +230,4 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 .bbar{height:10px;border-radius:99px;background:var(--line);overflow:hidden}.bbar i{display:block;height:100%;border-radius:99px}
 
 .meal .ph{position:relative;overflow:hidden}.ph .pic,#sheet .hero .pic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#meal-edit{color:var(--acc);text-decoration:none;font-weight:700;padding:4px 10px;border:1px solid var(--line);border-radius:999px}
