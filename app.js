@@ -90,14 +90,14 @@ function allergIng(txt){const out=new Set(),syn={arachide:["cacah"],cacahuete:["
   for(const [id,d] of Object.entries(ING))if(nrm(d[0]).split(/[^a-z]+/).some(x=>x.length>=4&&(x.replace(/s$/,"")===w||(w.length>=5&&x.startsWith(w)))))out.add(id)}return [...out]}
 const allergHint=t=>{const ids=allergIng(t);return !nrm(t).trim()?"Écris tout aliment précis à éviter : ton coach l'exclut de toutes tes recettes.":ids.length?`Exclus de tes recettes : <b>${ids.map(i=>esc(ING[i][0])).join(", ")}</b>.`:"Aucune de nos recettes n'en contient. Vérifie quand même toujours les étiquettes."};
 /* Recettes compatibles (régime + allergies), et plats choisis par l'utilisateur (liste ou swipe) : PROF.pick, PROF.pickOnly. */
-function safeRec(m){const p=PROF,al=[...(p.allerg||[]).flatMap(a=>AF[a]||[]),...allergIng(p.allergTxt)];return REC.filter(r=>r.m===m&&dietOk(r)&&!has(r,al))}
+/* Aliments refusés (« je n'aime pas » dans les goûts) : exclus d'office, comme une allergie, de toutes les recettes (semaine, remplacements, choix des plats). */
+function safeRec(m){const p=PROF,al=[...(p.allerg||[]).flatMap(a=>AF[a]||[]),...allergIng(p.allergTxt),...hateIng()];return REC.filter(r=>r.m===m&&dietOk(r)&&!has(r,al))}
 const isPick=r=>(PROF.pick||[]).includes(r.id);
-/* Aliments refusés (« je n'aime pas » dans les goûts) : ils passent avant tout le reste, on ne les ressort qu'en tout dernier recours. */
 const hateIng=()=>{const t=PROF.taste||{};return Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[])};
 function pool(m){const p=PROF,hate=hateIng(),ok=r=>!has(r,hate),no=p.nope||[];
  const base=REC.filter(r=>r.m===m&&dietOk(r)),safe=safeRec(m);
- let c=safe.filter(r=>!no.includes(r.id)&&ok(r)&&!(p.spice===0&&r.hot>1));
- if(c.length<2)c=safe.filter(r=>!no.includes(r.id)&&ok(r));if(c.length<2)c=safe.filter(ok);if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;if(!c.length)c=base;
+ let c=safe.filter(r=>!no.includes(r.id)&&!(p.spice===0&&r.hot>1));
+ if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;if(!c.length)c=base.filter(ok);if(!c.length)c=base;
  const mine=safe.filter(r=>isPick(r)&&!no.includes(r.id)&&ok(r));if(!mine.length)return c;
  return p.pickOnly?mine:[...mine,...c.filter(r=>!mine.includes(r))]}
 function tasteScore(r){const p=PROF,t=p.taste||{};let s=0;for(const k in t)if(t[k]>0&&has(r,TF[k]||[]))s+=.5;
@@ -119,9 +119,9 @@ function dislike(rid){const r=RECI[rid];PROF.nope=[...new Set([...(PROF.nope||[]
  const c=pool(r.m).filter(x=>x.id!==rid).map(x=>({x,s:R()*.5+tasteScore(x)-(used.has(x.id)?2:0)})).sort((a,b)=>b.s-a.s),nw=c.length?c[0].x:null;
  if(nw)for(const d of W.days)for(const k of ["pdj","dej","din","snack"])if(d[k]===rid)d[k]=nw.id;LS.set("coach-week",W);return nw}
 const hateN=W=>{const h=hateIng();return h.length?W.days.reduce((a,d)=>a+["pdj","dej","din","snack"].filter(k=>RECI[d[k]]&&has(RECI[d[k]],h)).length,0):0};
-function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2,hc:1};LS.set("coach-week",W)}
+function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2,hc:2};LS.set("coach-week",W)}
  /* Semaines déjà enregistrées : si un plat contient un aliment refusé, on recompose une fois (si ça fait mieux). */
- else if(!W.hc){const n=hateN(W);if(n){const N={...genWeek(Date.now()%1e9),v:2};if(hateN(N)<n){W=N;LS.set("coach-shop",{})}}W.hc=1;LS.set("coach-week",W)}return W}
+ else if(W.hc!==2){const n=hateN(W);if(n){const N={...genWeek(Date.now()%1e9),v:2};if(hateN(N)<n){W=N;LS.set("coach-shop",{})}}W.hc=2;LS.set("coach-week",W)}return W}
 const wIdx=d=>(d+6)%7;
 function dayMeals(d){const D=week().days[wIdx(d)];return mealSlots().map(([k,l])=>({slot:k,l,...portion(D[k],k),left:k==="dej"&&D.left,bt:k!=="pdj"&&k!=="snack"&&D.bt}))}
 function weekCost(){let t=supTot().e*7;for(const d of WEEK)for(const m of dayMeals(d))t+=m.e;return t}
