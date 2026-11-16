@@ -53,8 +53,8 @@ const nutTagsH=t=>t.length?`<div class="ntags">${t.map(x=>`<span>${x}</span>`).j
 
 /* Fiche aliment. q = quantité de la recette (sinon portion type) ; back = [rid,slot,day] pour revenir à la recette. */
 function openFood(i,q,back){const d=ING[i];if(!d)return;$("#sheet")?.remove();const g=q>0?q:(NUT[i]||[])[11]||100,p=nutOf(i,g),h=nutOf(i,100);
- const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="${esc(d[0])}"><div class="hero" style="height:120px;font-size:64px">${RAYE[d[6]]||"🍽️"}<button class="x" data-close aria-label="Fermer">✕</button></div>
- <div class="stack" data-fiche="food"><div class="lab">${esc(d[6])} · ${q>0?"quantité de ta recette":"portion type"} : ${i==="oeuf"?`${Math.max(1,Math.round(g/60))} œuf(s), `:""}${fr(g)} g</div><h2 style="text-transform:none;font-family:var(--body);font-weight:600;font-size:24px">${esc(d[0])}</h2>
+ const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="${esc(ingName(i))}"><div class="hero" style="height:120px;font-size:64px">${RAYE[ingRay(i)]||"🍽️"}<button class="x" data-close aria-label="Fermer">✕</button></div>
+ <div class="stack" data-fiche="food"><div class="lab">${esc(ingRay(i))} · ${q>0?"quantité de ta recette":"portion type"} : ${i==="oeuf"?`${Math.max(1,Math.round(g/60))} œuf(s), `:""}${fr(g)} g</div><h2 style="text-transform:none;font-family:var(--body);font-weight:600;font-size:24px">${esc(ingName(i))}</h2>
  ${nutTagsH(nutTags(p,g,true))}
  <div class="kpis"><div><strong>${fr(p.k)}</strong><small>kcal</small></div><div><strong>${fr(p.P,p.P<10?1:0)} g</strong><small>protéines</small></div><div><strong>${fr(p.C)} / ${fr(p.F)}</strong><small>glucides / lipides</small></div></div>
  ${nutTable([["Pour 100 g",h],[`Portion ${fr(g)} g`,p]])}${nutMicro(p)}${nutGoal(p)}
@@ -67,5 +67,5 @@ function recipeNutri(m){const r=m.r,parts=r.i.map(([i,g])=>{const q=g*m.fi(i);re
  return `${nutTagsH(nutTags(v,W,false))}${nutGoal(v)}
  <div class="lab">Valeurs nutritionnelles</div>${nutTable([[`Ta portion (${fr(W)} g)`,v],["Pour 100 g",c]])}${nutMicro(v)}
  <div class="lab">Apport de chaque ingrédient · touche pour le détail</div>
- <table class="ntab ning"><thead><tr><th></th><th>kcal</th><th>Prot.</th><th>Gluc.</th><th>Lip.</th></tr></thead><tbody>${parts.map(x=>`<tr><td><button class="lnk" data-food="${x.i}" data-g="${Math.round(x.q)}" data-back="${r.id}">${esc(ING[x.i][0])}</button><small class="muted"> ${fr(x.q)} g · ${fr(x.v.k/Math.max(v.k,1)*100)} %</small></td><td class="mono">${fr(x.v.k)}</td><td class="mono">${fr(x.v.P)}</td><td class="mono">${fr(x.v.C)}</td><td class="mono">${fr(x.v.F)}</td></tr>`).join("")}
+ <table class="ntab ning"><thead><tr><th></th><th>kcal</th><th>Prot.</th><th>Gluc.</th><th>Lip.</th></tr></thead><tbody>${parts.map(x=>`<tr><td><button class="lnk" data-food="${x.i}" data-g="${Math.round(x.q)}" data-back="${r.id}">${esc(ingName(x.i))}</button><small class="muted"> ${fr(x.q)} g · ${fr(x.v.k/Math.max(v.k,1)*100)} %</small></td><td class="mono">${fr(x.v.k)}</td><td class="mono">${fr(x.v.P)}</td><td class="mono">${fr(x.v.C)}</td><td class="mono">${fr(x.v.F)}</td></tr>`).join("")}
  <tr class="tot"><td>Total</td><td class="mono">${fr(v.k)}</td><td class="mono">${fr(v.P)}</td><td class="mono">${fr(v.C)}</td><td class="mono">${fr(v.F)}</td></tr></tbody></table>`}
