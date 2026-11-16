@@ -207,7 +207,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
  if(t.id==="bk-exp"){bkExport();return}
  if(t.id==="vd-go"){vidDownload();return}
  if(t.id==="vd-del"){vidDel();return}
- if(D.ref){startRefine(D.ref);return}
+ if(D.ref){$("#sheet")?.remove();startRefine(D.ref);return}
  const setN=f=>{const N=notifCfg();f(N);LS.set("coach-notif",N);notifPublish();notifCheck();render()},setC=f=>{const C=SET();f(C);LS.set("coach-set",C);notifPublish();render()};
  if(D.nty){setN(N=>{N.types={...N.types,[D.nty]:N.types[D.nty]?0:1}});return}
  if(D.nsh){setN(N=>{N.shour=+D.nsh});return}
