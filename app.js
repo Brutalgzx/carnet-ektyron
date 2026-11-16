@@ -38,7 +38,10 @@ function buildTraining(p){if(p.mode==="own"&&p.ownDays&&p.ownDays.length)return 
   else{ids=pickSlots(k,p,nMax);if(!zoneList(p).length)ids.sort((a,b)=>isPrio(b,p)-isPrio(a,p))}
   days[d]={k,t:T.t,f:T.f,x:ids.map(i=>mkEx(i,p)),own}}
  return days}
-function migrate(p){if(!p)return p;regOwn(p);if(!p.mode)p.mode="coach";const old={full:"mcshldbxp",small:"dbxpc",home:"db",bw:""};
+function migrate(p){if(!p)return p;
+ /* Romy : son profil refait le 16/11 avait perdu son poids visé (50 kg en 4 mois, dernière sauvegarde du 15/11). Remis une seule fois. */
+ if(!p.fx1&&p.sex==="f"&&p.h===154&&p.age===25&&/^rom/i.test(p.name||"")&&p.tw==null){p.tw=50;p.twg="recompo";p.months=4;p.fx1=1}
+regOwn(p);if(!p.mode)p.mode="coach";const old={full:"mcshldbxp",small:"dbxpc",home:"db",bw:""};
  if(p.equip==null){p.equip=old[p.gym]??"mcdbxp";if(p.gym==="full"||p.gym==="small")p.gym="autre"}
  if(!p.days)p.days=SPLIT[p.freq].map(x=>x[0]);if(!p.split)p.split="auto";if(!p.prio)p.prio=[];p.prio=p.prio.filter(k=>k!=="none");if(!p.aims)p.aims=[];if(!p.likes)p.likes=[];if(p.hasProg==null)p.hasProg="non";p.freq=p.days.length;if(!p.rec){p.rec=p.days.length;p.recDur=p.dur}if(!p.months)p.months=6;if(!p.stores&&p.store)p.stores=[p.store];if(p.refined==null)p.refined=p.store?{equip:1,food:1,taste:1}:{};if(p.refined.nut==null){const e=LS.get("coach-eaten",{}),sh=LS.get("coach-shop",{}),kj=LS.get("coach-kadj",null);p.refined.nut=p.refined.food||p.refined.taste||(e&&Object.keys(e).length)||(sh&&Object.keys(sh).length)||kj?1:0}for(const k in QDEF)if(p[k]==null||p[k]==="")p[k]=QDEF[k];
  /* v2 : programme collé relu avec le nouveau lecteur (noms sans poids, nouveaux exercices animés). L'historique suit l'exercice. */
@@ -536,7 +539,9 @@ PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PRO
 render();suiviInit();reglagesInit();jeuInit();
 if(PROF&&G){if(G.ph!=="done"&&!gToday(G.start))gDrop();else if(!G.away)gOpen()}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-if("serviceWorker"in navigator)addEventListener("load",()=>{const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload()})});
+if("serviceWorker"in navigator)addEventListener("load",()=>{const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)location.reload()});
+ /* Sur iPhone, l'appli rouverte depuis l'icône reprend sans redémarrer : on cherche la nouvelle version à chaque retour à l'écran. */
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})})});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 
 /* Renommer un exercice : nom perso gardé dans le profil, vide = nom d'origine. */
