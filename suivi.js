@@ -22,7 +22,7 @@ const e1rm=s=>s.k*(1+s.r/30);
 const mondayOf=t=>{const d=new Date(t);return new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7)).getTime()};
 
 /* ---------- Rappels ---------- */
-const notifCfg=()=>{const N={on:false,wday:1,hour:8,shour:18,mf:14,cf:7,last:{},...LS.get("coach-notif",{})};N.types={seance:1,pesee:1,mesures:1,bilan:1,save:1,...(N.types||{})};return N};
+const notifCfg=()=>{const N={on:false,wday:1,hour:8,shour:18,mf:14,cf:7,last:{},...LS.get("coach-notif",{})};N.wi=N.wi||2;N.types={seance:1,pesee:1,mesures:1,bilan:1,save:1,eau:0,...(N.types||{})};return N};
 const canNotif=()=>"Notification"in window&&"serviceWorker"in navigator;
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
 /* Textes des rappels, partagés par les notifications push (reglages.js), les rappels locaux et la fenêtre à l'ouverture. */

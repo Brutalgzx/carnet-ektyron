@@ -103,6 +103,8 @@ function pushSched(){const N=notifCfg(),T=N.types,items=[],done={},lm=lastT("coa
  if(T.mesures)items.push({id:"mesures",k:"mesures",...(lm?{from:from(lm+N.mf*DAY)}:{days:[N.wday]}),h:N.hour,...tx("mesures"),go:"prog"});
  if(T.bilan&&!both)items.push(lc&&N.cf!==7?{id:"bilan",k:"bilan",from:from(lc+N.cf*DAY),h:N.hour,...tx("bilan"),go:"prog"}:{id:"bilan",k:"bilan",days:[N.wday],h:N.hour,...tx("bilan"),go:"prog"});
  const f=SET().bk;if(T.save&&f&&!(syncCfg().auto&&syncOk()))items.push({id:"save",k:"save",from:from((bkLast()||Date.now())+f*DAY),h:N.hour,...tx("save"),go:"set"});
+ /* Eau : rappels de 9 h à 21 h ; le serveur reçoit ce qui a été bu aujourd'hui et l'objectif de chaque jour pour écrire « 1,2 L sur 2,5 L » et se taire une fois l'objectif atteint. */
+ if(T.eau&&PROF){const q={};for(const d of WEEK)q[d]=waterQuota(!!(TRAIN&&TRAIN[d]));items.push({id:"eau",k:"eau",hs:[...Array(Math.floor(12/N.wi)+1)].map((_,i)=>9+i*N.wi),h:9,w:{d:lk(),v:LS.get(WK,{})[todayKey()]||0,q},go:"today"})}
  if(xpProf().games.some(g=>sameDay(g.t)))done.seance=lk();if(sameDay(lastT("coach-weights")))done.pesee=lk();if(sameDay(lm))done.mesures=lk();if(sameDay(lc))done.bilan=lk();if(sameDay(lastT("coach-weights"))&&sameDay(lc))done.pb=lk();if(sameDay(bkLast()))done.save=lk();
  return{tz:Intl.DateTimeFormat().resolvedOptions().timeZone||"Europe/Paris",items,done}}
 /* L'abonnement du téléphone peut changer ou expirer (réinstallation, mise à jour d'iOS…) : à chaque ouverture on renvoie l'abonnement actuel,
@@ -146,11 +148,12 @@ function refineCard(one){const L=refineList();if(!L.length)return"";const it=one
 function vSet(){const N=notifCfg(),T=N.types,S=syncCfg(),C=SET(),last=bkLast(),pushOK="PushManager"in window;
  const chips=(attr,list,cur,fmt)=>`<div class="row" style="flex-wrap:wrap">${list.map(v=>`<button class="chip" data-${attr}="${v}" aria-pressed="${cur===v}" style="flex:1">${fmt(v)}</button>`).join("")}</div>`;
  const card=(lab,body,id="")=>`<div class="card stack"${id?` id="${id}"`:""}><div class="lab">${lab}</div>${body}</div>`;
- const TY=[["seance","🏋️ Séance"],["pesee","⚖️ Pesée"],["mesures","📏 Mesures"],["bilan","📝 Bilan"],["save","💾 Sauvegarde"]];
+ const TY=[["seance","🏋️ Séance"],["pesee","⚖️ Pesée"],["mesures","📏 Mesures"],["bilan","📝 Bilan"],["save","💾 Sauvegarde"],["eau","💧 Eau"]];
  const notif=card("Notifications",`<div class="row"><span class="sp small"><b>Rappels de l'appli</b><br><span class="muted">${N.on?"Activés.":"Coupés."} ${IOS?"Sur iPhone, ils arrivent quand tu ouvres l'appli.":"Sur Android, Chrome peut les envoyer appli fermée."}</span></span><button class="chip" id="nt-tog" aria-pressed="${N.on}">${N.on?"Activés":"Activer"}</button></div>
   <div class="row"><span class="sp small"><b>Vrai push, appli fermée</b><br><span class="muted">${S.push?"Actif : le serveur t'envoie tes rappels à l'heure.":!syncOk()?"Demande ton serveur gratuit (Synchro en ligne, plus bas).":IOS&&!STANDALONE?"Installe d'abord l'appli sur l'écran d'accueil (iOS 16.4+).":"Prêt à activer."}</span></span>${S.push?`<button class="chip" id="ps-off">Couper</button>`:`<button class="chip" id="ps-on"${!pushOK||!syncOk()?" disabled":""}>Activer</button>`}</div>
   <button class="btn ghost" id="ps-test">🔔 Tester une notification</button>
   <div class="lab">Me rappeler</div><div class="row" style="flex-wrap:wrap">${TY.map(([k,l])=>`<button class="chip" data-nty="${k}" aria-pressed="${!!T[k]}">${l}</button>`).join("")}</div>
+  ${T.eau?`<div class="lab">Eau (push, de 9 h à 21 h, sauf objectif atteint)</div>${chips("nwi",[2,3],N.wi,v=>"Toutes les "+v+" h")}`:""}
   <div class="lab">Heure de la séance</div>${chips("nsh",[6,7,12,17,18,19,20],N.shour,h=>h+" h")}
   <div class="lab">Heure des autres rappels</div>${chips("nh",[7,8,9,12,18,20],N.hour,h=>h+" h")}
   <div class="lab">Jour de pesée et de bilan</div><div class="week">${WEEK.map(d=>`<button data-nw="${d}" aria-pressed="${N.wday===d}">${DN[d]}</button>`).join("")}</div>
@@ -212,6 +215,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
  if(D.nty){setN(N=>{N.types={...N.types,[D.nty]:N.types[D.nty]?0:1}});return}
  if(D.nsh){setN(N=>{N.shour=+D.nsh});return}
  if(D.nmf){setN(N=>{N.mf=+D.nmf});return}
+ if(D.nwi){setN(N=>{N.wi=+D.nwi});return}
  if(D.ncf){setN(N=>{N.cf=+D.ncf});return}
  if(D.bkf!==undefined){setC(C=>{C.bk=+D.bkf});return}
  if(D.dlw){setC(C=>{C.dlw=+D.dlw});return}

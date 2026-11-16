@@ -79,15 +79,23 @@ async function admin(req,env,id,p){const cur=await env.EK.get("admin");
 function local(tz){let f;try{f=new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",weekday:"short",hourCycle:"h23"}).formatToParts(new Date())}
  catch(e){return local("Europe/Paris")}const g=t=>f.find(x=>x.type===t).value;
  return{day:`${g("year")}-${g("month")}-${g("day")}`,min:+g("hour")*60+ +g("minute"),wd:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].indexOf(g("weekday"))}}
+/* Rappel d'eau : plusieurs heures dans la journée (it.hs). Le téléphone envoie ce qui a été bu (w.v, pour le jour w.d) et l'objectif de chaque jour (w.q) :
+   pas de rappel si l'objectif est atteint ; un autre jour que w.d, on part de 0. Une heure manquée n'est rattrapée que dans les 2 h. */
+const LF=x=>String(Math.round(x*10)/10).replace(".",",");
+export function waterMsg(it,n){const w=it.w||{},q=+(w.q||{})[n.wd]||0,v=w.d===n.day?+w.v||0:0,h=it.hs.filter(x=>n.min>=x*60&&n.min<x*60+120).pop();
+ if(h==null||!q||v>=q)return null;return{sid:it.id+h,t:"💧 Pense à boire de l'eau",b:`${LF(v)} L sur ${LF(q)} L aujourd'hui : encore ${LF(q-v)} L. Un grand verre maintenant ?`}}
 /* Toutes les 15 min : envoie chaque rappel dont l'heure est passée (fenêtre de 3 h), une fois par jour, sauf s'il est déjà fait. */
 async function tick(env){let cursor;
  do{const L=await env.EK.list({prefix:"s:",cursor});cursor=L.list_complete?null:L.cursor;
   for(const {name} of L.keys){const S=JSON.parse(await env.EK.get(name)||"null");if(!S||!S.sub||!S.sched)continue;
    const n=local(S.sched.tz||"Europe/Paris"),done=S.sched.done||{};S.sent=S.sent||{};let ch=false,gone=false;
-   for(const it of S.sched.items||[]){const at=(it.h||0)*60+(it.m||0);if(n.min<at||n.min>at+180)continue;
-    if(it.days?!it.days.includes(n.wd):!(it.from&&n.day>=it.from))continue;if(S.sent[it.id]===n.day||done[it.k]===n.day)continue;
-    let r;try{r=await sendPush(env,S.sub,{t:it.t,b:it.b,go:it.go||"today",tag:it.k})}catch(e){r={ok:false,status:0}}ch=true;
-    S.res={st:r.status,at:Date.now(),k:it.k};if(r.ok)S.sent[it.id]=n.day;if(r.status===404||r.status===410){gone=true;break}}
+   for(const it of S.sched.items||[]){let sid=it.id,msg;
+    if(it.hs){const m=waterMsg(it,n);if(!m)continue;sid=m.sid;msg=m}
+    else{const at=(it.h||0)*60+(it.m||0);if(n.min<at||n.min>at+180)continue;
+     if(it.days?!it.days.includes(n.wd):!(it.from&&n.day>=it.from))continue;msg={t:it.t,b:it.b}}
+    if(S.sent[sid]===n.day||done[it.k]===n.day)continue;
+    let r;try{r=await sendPush(env,S.sub,{t:msg.t,b:msg.b,go:it.go||"today",tag:it.k})}catch(e){r={ok:false,status:0}}ch=true;
+    S.res={st:r.status,at:Date.now(),k:it.k};if(r.ok)S.sent[sid]=n.day;if(r.status===404||r.status===410){gone=true;break}}
    if(gone){delete S.sub;S.dead=Date.now()}if(ch)try{await env.EK.put(name,JSON.stringify(S))}catch(e){}}}
  while(cursor)}
 

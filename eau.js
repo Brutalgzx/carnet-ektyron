@@ -12,6 +12,8 @@ function waterCard(){const H=LS.get(WK,{}),k=todayKey(),v=H[k]||0,q=wQ(Date.now(
  <div class="row" style="flex-wrap:wrap">${[[-.25,"− 25 cl"],[.25,"+ 25 cl"],[.5,"+ 50 cl"]].map(([d,l])=>`<button class="chip" data-wat="${d}" style="flex:1">${l}</button>`).join("")}</div>
  <div class="row"><label for="water-in" class="small muted sp">À peu près bu aujourd'hui</label><input class="txt" id="water-in" inputmode="decimal" placeholder="1,5" value="${v?fr(v,2).replace(/,?0+$/,""):""}" style="width:90px;font-size:17px;padding:8px"><span class="small muted">L</span></div>
  <div class="row" style="gap:4px">${bars}</div><small class="muted">${msg}</small></div>`}
-function waterSet(v){const H=LS.get(WK,{});H[todayKey()]=Math.max(0,Math.min(8,Math.round(v*100)/100));LS.set(WK,H);const c=$("#water");if(c)c.outerHTML=waterCard()}
+function waterSet(v){const H=LS.get(WK,{});H[todayKey()]=Math.max(0,Math.min(8,Math.round(v*100)/100));LS.set(WK,H);const c=$("#water");if(c)c.outerHTML=waterCard();
+ /* Le rappel push d'eau doit connaître la quantité bue : on la renvoie au serveur quelques secondes après la dernière saisie. */
+ clearTimeout(waterSet.t);waterSet.t=setTimeout(()=>{if(typeof pushPublish==="function")pushPublish()},4000)}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-wat]");if(b&&PROF)waterSet((LS.get(WK,{})[todayKey()]||0)+ +b.dataset.wat)});
 document.addEventListener("change",e=>{if(e.target.id!=="water-in")return;let v=parseFloat(String(e.target.value).replace(",","."));if(v>15)v/=1000;if(v>=0&&v<=8)waterSet(v)});
