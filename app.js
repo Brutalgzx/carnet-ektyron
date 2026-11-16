@@ -92,11 +92,13 @@ const allergHint=t=>{const ids=allergIng(t);return !nrm(t).trim()?"Écris tout a
 /* Recettes compatibles (régime + allergies), et plats choisis par l'utilisateur (liste ou swipe) : PROF.pick, PROF.pickOnly. */
 function safeRec(m){const p=PROF,al=[...(p.allerg||[]).flatMap(a=>AF[a]||[]),...allergIng(p.allergTxt)];return REC.filter(r=>r.m===m&&dietOk(r)&&!has(r,al))}
 const isPick=r=>(PROF.pick||[]).includes(r.id);
-function pool(m){const p=PROF,t=p.taste||{},hate=Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[]),no=p.nope||[];
+/* Aliments refusés (« je n'aime pas » dans les goûts) : ils passent avant tout le reste, on ne les ressort qu'en tout dernier recours. */
+const hateIng=()=>{const t=PROF.taste||{};return Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[])};
+function pool(m){const p=PROF,hate=hateIng(),ok=r=>!has(r,hate),no=p.nope||[];
  const base=REC.filter(r=>r.m===m&&dietOk(r)),safe=safeRec(m);
- let c=safe.filter(r=>!no.includes(r.id)&&!has(r,hate)&&!(p.spice===0&&r.hot>1));
- if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;if(!c.length)c=base;
- const mine=safe.filter(r=>isPick(r)&&!no.includes(r.id));if(!mine.length)return c;
+ let c=safe.filter(r=>!no.includes(r.id)&&ok(r)&&!(p.spice===0&&r.hot>1));
+ if(c.length<2)c=safe.filter(r=>!no.includes(r.id)&&ok(r));if(c.length<2)c=safe.filter(ok);if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;if(!c.length)c=base;
+ const mine=safe.filter(r=>isPick(r)&&!no.includes(r.id)&&ok(r));if(!mine.length)return c;
  return p.pickOnly?mine:[...mine,...c.filter(r=>!mine.includes(r))]}
 function tasteScore(r){const p=PROF,t=p.taste||{};let s=0;for(const k in t)if(t[k]>0&&has(r,TF[k]||[]))s+=.5;
  if((p.cuis||[]).includes(r.cu))s+=.6;if(r.m==="pdj"&&(p.pdjT==="sucre"||p.pdjT==="sale"))s+=r.sw===p.pdjT?1.2:-1.2;
@@ -116,7 +118,10 @@ function dislike(rid){const r=RECI[rid];PROF.nope=[...new Set([...(PROF.nope||[]
  const W=week(),used=new Set(W.days.flatMap(d=>[d.pdj,d.dej,d.din,d.snack])),R=rng(Date.now()%1e9);
  const c=pool(r.m).filter(x=>x.id!==rid).map(x=>({x,s:R()*.5+tasteScore(x)-(used.has(x.id)?2:0)})).sort((a,b)=>b.s-a.s),nw=c.length?c[0].x:null;
  if(nw)for(const d of W.days)for(const k of ["pdj","dej","din","snack"])if(d[k]===rid)d[k]=nw.id;LS.set("coach-week",W);return nw}
-function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2};LS.set("coach-week",W)}return W}
+const hateN=W=>{const h=hateIng();return h.length?W.days.reduce((a,d)=>a+["pdj","dej","din","snack"].filter(k=>RECI[d[k]]&&has(RECI[d[k]],h)).length,0):0};
+function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2,hc:1};LS.set("coach-week",W)}
+ /* Semaines déjà enregistrées : si un plat contient un aliment refusé, on recompose une fois (si ça fait mieux). */
+ else if(!W.hc){const n=hateN(W);if(n){const N={...genWeek(Date.now()%1e9),v:2};if(hateN(N)<n){W=N;LS.set("coach-shop",{})}}W.hc=1;LS.set("coach-week",W)}return W}
 const wIdx=d=>(d+6)%7;
 function dayMeals(d){const D=week().days[wIdx(d)];return mealSlots().map(([k,l])=>({slot:k,l,...portion(D[k],k),left:k==="dej"&&D.left,bt:k!=="pdj"&&k!=="snack"&&D.bt}))}
 function weekCost(){let t=supTot().e*7;for(const d of WEEK)for(const m of dayMeals(d))t+=m.e;return t}
@@ -382,6 +387,13 @@ function gCancel(){if(!G)return;const ids=new Set(gList().map(x=>x.id));let ch=f
  if(ch)persist();gClose();toast("Séance annulée : rien n'a été enregistré.")}
 function gClose(){clearInterval(gInt);G=null;LS.del(GK);$("#game").hidden=true;document.body.classList.remove("g-on");lockOff();render()}
 function gTop(){const n=gList().length;return `<div class="g-top"><button id="g-quit" aria-label="Quitter la partie">✕</button><div class="g-segs">${gList().map((x,i)=>`<i class="${i<G.ei?"ok":i===G.ei&&G.ph!=="done"?"now":""}"></i>`).join("")}</div><span>${Math.min(G.ei+1,n)}/${n}</span></div>`}
+/* Poids à vide des machines (presse, hack squat, Smith) : valeur retenue par exercice (coach-mach, en kg), sinon celle de la salle.
+   On saisit les disques ajoutés (k) ; la série garde le poids à vide (m). Progression et records restent sur les disques (comparables avec l'historique),
+   le volume compte la charge totale. */
+const machKg=id=>{const d=machDef(PROF&&PROF.gym,id);if(!d)return null;const v=LS.get("coach-mach",{})[id];return v!=null?v:d.kg};
+const machTot=(kU,m)=>{const k=fromU(gNum(kU)||0);return `Charge totale : <b>${kgS(k+m)}</b> <span class="muted">(disques ${kgS(k)} + machine ${kgS(m)})</span>`};
+function machBox(ex,kU){const m=machKg(ex.id);if(m==null)return"";const d=machDef(PROF.gym,ex.id),mine=LS.get("coach-mach",{})[ex.id]!=null;
+ return `<div class="row small" style="gap:8px;align-items:center"><label for="g-mv" class="muted">Machine à vide :</label><input id="g-mv" class="txt" inputmode="decimal" value="${fr(kIn(m),1).replace(/,0$/,"")}" style="width:76px;padding:6px 8px;text-align:center" aria-label="Poids à vide de la machine"><span>${wU()}</span>${!mine&&!d.ok?`<small class="muted">valeur moyenne, vérifie sur la machine</small>`:""}</div><div class="small" id="g-tot">${machTot(kU,m)}</div>`}
 function gSuggest(ex){const last=lastLog(ex.id),ls=last?.sets||[],prev=ls[G.si]||ls[ls.length-1],before=(G.sets[ex.id]||[])[G.si-1];
  const up=!!last&&ls.length>=ex.s&&ls.every(s=>s.r>=ex.r[1]);
  let k=before?before.k:prev?(up?prev.k+2.5:prev.k):(ex.kg??""),r=before?before.r:prev?(up?ex.r[0]:Math.min(prev.r+1,ex.r[1])):ex.r[0];
@@ -391,10 +403,10 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
  if(G.ph==="set"){const ex=gEx(),s=gSuggest(ex);
   box.innerHTML=gTop()+`<div class="lab">Exercice ${G.ei+1} · Série ${G.si+1}/${ex.s}</div><h2 class="g-name">${ex.n}</h2>
   ${animTag(ex.id,ex.a,esc(ex.n),"g-anim")}<div class="small">${ex.c}</div>
-  <div class="g-goal"><span>Objectif <b>${ex.r[0]}–${ex.r[1]} reps</b></span><span>${s.prev?`Dernière fois : ${kgS(s.prev.k)} × ${s.prev.r}`:ex.kg?`Ta charge de départ : ${kgS(ex.kg)}`:"Première fois : reste léger et propre"}</span></div>
+  <div class="g-goal"><span>Objectif <b>${ex.r[0]}–${ex.r[1]} reps</b></span><span>${s.prev?`Dernière fois : ${kgS(s.prev.k)}${s.prev.m?` + ${kgS(s.prev.m)} machine`:""} × ${s.prev.r}`:ex.kg?`Ta charge de départ : ${kgS(ex.kg)}`:"Première fois : reste léger et propre"}</span></div>
   ${s.up&&G.si===0?`<div class="g-up">Tu as tout validé la dernière fois : on monte d'un cran.</div>`:""}${deloadOn()&&G.si===0?`<div class="g-up">Semaine de décharge : charges −15 %, garde 2-3 reps en réserve.</div>`:""}
-  <div class="g-step"><label for="g-k">${wU()==="lb"?"Livres":"Kilos"}</label><button data-gs="k" data-v="-${wU()==="lb"?5:2.5}" aria-label="Moins ${wU()==="lb"?"5 lb":"2,5 kg"}">−</button><input id="g-k" inputmode="decimal" value="${s.k}" placeholder="0"><button data-gs="k" data-v="${wU()==="lb"?5:2.5}" aria-label="Plus ${wU()==="lb"?"5 lb":"2,5 kg"}">+</button></div>
-  <div class="g-step"><label for="g-r">Reps</label><button data-gs="r" data-v="-1" aria-label="Moins une rep">−</button><input id="g-r" inputmode="numeric" value="${s.r}"><button data-gs="r" data-v="1" aria-label="Plus une rep">+</button></div>
+  <div class="g-step"><label for="g-k">${machKg(ex.id)!=null?"Disques":wU()==="lb"?"Livres":"Kilos"}</label><button data-gs="k" data-v="-${wU()==="lb"?5:2.5}" aria-label="Moins ${wU()==="lb"?"5 lb":"2,5 kg"}">−</button><input id="g-k" inputmode="decimal" value="${s.k}" placeholder="0"><button data-gs="k" data-v="${wU()==="lb"?5:2.5}" aria-label="Plus ${wU()==="lb"?"5 lb":"2,5 kg"}">+</button></div>
+  ${machBox(ex,s.k)}<div class="g-step"><label for="g-r">Reps</label><button data-gs="r" data-v="-1" aria-label="Moins une rep">−</button><input id="g-r" inputmode="numeric" value="${s.r}"><button data-gs="r" data-v="1" aria-label="Plus une rep">+</button></div>
   <div class="g-msg" id="g-msg"></div><button class="btn" id="g-done">Série terminée</button><button class="link" id="g-skip">${G.ei<gList().length-1?"↪ Revenir dessus à la fin":"Terminer sans cet exercice"}</button><button class="link" id="g-cancel" style="color:var(--bad)">Annuler la séance</button>`;return}
  if(G.ph==="rest"){const nx=gEx();
   box.innerHTML=gTop()+`<div class="g-fb">${G.fb}</div><div class="lab" style="text-align:center">Repos</div>
@@ -428,7 +440,7 @@ function gNext(rest){const ex=gEx();G.dk=G.dr=undefined;
  if(G.ei>=gList().length){G.ph="done";gSave();gShow();return}
  if(rest){G.ph="rest";G.restTotal=restOf(ex);G.restEnd=Date.now()+G.restTotal*1000}else G.ph="set";
  gSave();gShow();$("#game").scrollTop=0}
-function gStats(){let vol=0,n=0;for(const id in G.sets)for(const s of G.sets[id])if(s){vol+=s.k*s.r;n++}vol=Math.round(vol);return{vol,n,min:Math.max(1,Math.round((Date.now()-G.start)/60000)),xp:Math.round(vol/10)+50}}
+function gStats(){let vol=0,n=0;for(const id in G.sets)for(const s of G.sets[id])if(s){vol+=(s.k+(s.m||0))*s.r;n++}vol=Math.round(vol);return{vol,n,min:Math.max(1,Math.round((Date.now()-G.start)/60000)),xp:Math.round(vol/10)+50}}
 function gFeedback(ex,k,r){const ls=lastLog(ex.id)?.sets||[],p=ls[G.si]||ls[ls.length-1],xp=Math.round(k*r/10);let t;
  if(!p)t="Première marque posée";else if(k>p.k)t=`+${kgS(k-p.k)} ! Ça monte`;else if(k===p.k&&r>p.r)t=`+${r-p.r} rep ! Ça progresse`;else if(k===p.k&&r===p.r)t="Score égalé. Tiens bon";else t="Bien joué, garde la forme propre";
  if(r>=ex.r[1])t+=" · haut de fourchette";return `${t}<small>+${xp} XP</small>`}
@@ -442,7 +454,8 @@ document.addEventListener("input",e=>{const t=e.target;
  if(view==="ob"){if(t.id==="i-name"){A.name=t.value;if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.id==="i-prog"){A.progTxt=t.value;const h=$("#prog-hit");if(h)h.innerHTML=progHint(t.value);if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.id==="i-allerg"){A.allergTxt=t.value;$("#allerg-hit").innerHTML=allergHint(t.value);if(!PROF)LS.set("coach-draft",{A,obI})}else if(t.dataset.s){const k=t.dataset.s,v=+t.value;A[k]=v;
    if(k==="budget"){$("#v-budget").textContent=v;const pm=v/(7*A.meals);$("#v-pm").textContent=eur(pm)+" / repas";$("#v-lvl").textContent=pm<1.6?"Serré":pm<3?"Confortable":"Large"}else $("#v-"+k).textContent=`${fr(v,k==="w"||k==="tw"?1:0)} ${t.dataset.u}`;if(k==="tw"||k==="w"){const g=$("#gp");if(g)g.innerHTML=gpBox(A);obRefresh()}}
   obRefresh();return}
- if(G&&t.id==="g-k"){G.dk=t.value;gSave()}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
+ if(G&&(t.id==="g-k"||t.id==="g-mv")){const ex=gEx();if(t.id==="g-k"){G.dk=t.value;gSave()}else{const v=gNum(t.value);if(!isNaN(v)&&v>=0){const M=LS.get("coach-mach",{});M[ex.id]=+fromU(v).toFixed(2);LS.set("coach-mach",M)}}
+  const m=machKg(ex.id),o=$("#g-tot");if(o&&m!=null)o.innerHTML=machTot($("#g-k").value,m)}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&view==="ob"&&e.target.id==="i-name"&&FLOW[obI].ok())$("#ob-next").click()});
 document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove();return}const t=e.target.closest("button,[data-close]");if(!t)return;const D=t.dataset;
  if(t.id==="sheet"||D.close!==undefined){$("#sheet")?.remove();return}
@@ -473,7 +486,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(G&&t.closest("#game")){auUnlock();
   if(D.gs){const inp=$("#g-"+D.gs),v=Math.max(0,(gNum(inp.value)||0)+ +D.v);inp.value=D.gs==="k"?+v.toFixed(2):Math.round(v);inp.dispatchEvent(new Event("input",{bubbles:true}));return}
   if(t.id==="g-done"){const ex=gEx(),k=+fromU(gNum($("#g-k").value)).toFixed(2),r=parseInt($("#g-r").value);if(isNaN(k)||isNaN(r)||r<1){$("#g-msg").textContent="Indique les kilos et les reps de ta série (0 kg pour le poids du corps).";return}
-   (G.sets[ex.id]=G.sets[ex.id]||[])[G.si]={k,r};G.fb=gFeedback(ex,k,r);G.si++;if(G.si>=ex.s)G.fb=`Exercice terminé !<small>${G.fb.split("<small>")[1].replace("</small>","")}</small>`;gNext(true);return}
+   const m=machKg(ex.id);(G.sets[ex.id]=G.sets[ex.id]||[])[G.si]=m!=null?{k,r,m}:{k,r};G.fb=gFeedback(ex,k,r);G.si++;if(G.si>=ex.s)G.fb=`Exercice terminé !<small>${G.fb.split("<small>")[1].replace("</small>","")}</small>`;gNext(true);return}
   if(t.id==="g-skip"){gSkip();return}
   if(t.id==="g-cancel"){if(confirm("Annuler cette séance ? Rien ne sera enregistré."))gCancel();return}
   if(t.id==="g-m"||t.id==="g-p"){G.restEnd=Math.max(Date.now()+1000,G.restEnd+(t.id==="g-p"?15000:-15000));G.restTotal=Math.max(G.restTotal,Math.ceil((G.restEnd-Date.now())/1000));gSave();gTick();return}

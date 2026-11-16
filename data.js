@@ -123,6 +123,24 @@ const GYMS = [
  {v:"autre",e:"🏋️",l:"Une autre salle",s:"Salle indépendante, club, salle d'entreprise : tu coches ce qu'elle a",eq:"mcdbxp"},
  {v:"home",e:"🏠",l:"À la maison",s:"Avec ce que tu as : haltères, banc, barre…",eq:"db"},
  {v:"bw",e:"🤸",l:"Sans matériel",s:"Programme au poids du corps",eq:""}];
+/* Poids à vide des machines à disques (chariot, barre guidée) : impossible à retirer, il s'ajoute aux disques.
+   Par salle et par exercice, en kg. ok:0 = valeur incertaine (modèle de la salle non confirmé), à vérifier sur la machine.
+   Sources :
+   - Basic-Fit : salles équipées en Matrix (basic-fit.com, pages « pourquoi Basic-Fit »). Presse 45° Matrix Magnum MG-PL70 : 75,7 kg de résistance de départ
+     (fiche Matrix « Magnum 45 degree leg press »). Hack squat Matrix Magnum MG-PL71 : 47,6 kg (fiche Matrix, johnsonfitness.com P36137).
+     Smith Matrix Magnum MG-PL62 : barre contrebalancée, 6,8 kg (manuel Matrix MG-PL62) ; le modèle installé peut varier → incertain.
+   - Fitness Park : machines Hammer Strength et Technogym (fitnesspark.fr/activites/musculation). Presse linéaire Hammer Strength : 53 kg,
+     hack squat Hammer Strength : 57 kg (lifefitness.com, fiches « plate loaded linear leg press » et « hack squat ») ; modèle exact non confirmé → incertain.
+   - Autres salles : aucune source sur leurs machines. Valeurs moyennes du marché (presse 45° : 45 à 75 kg, hack squat : 40 à 57 kg,
+     barre de Smith : 7 à 15 kg) → incertaines, à corriger dans l'appli. */
+const MACH_EX = ["press","hack","smsq","incl"];
+const MACH_AVG = {press:{kg:60,ok:0},hack:{kg:45,ok:0},smsq:{kg:10,ok:0},incl:{kg:10,ok:0}};
+const MACH = {
+ basicfit:{press:{kg:75.7,ok:1,src:"Matrix Magnum MG-PL70"},hack:{kg:47.6,ok:1,src:"Matrix Magnum MG-PL71"},smsq:{kg:6.8,ok:0,src:"Matrix Magnum MG-PL62"},incl:{kg:6.8,ok:0,src:"Matrix Magnum MG-PL62"}},
+ fitnesspark:{press:{kg:53,ok:0,src:"Hammer Strength"},hack:{kg:57,ok:0,src:"Hammer Strength"},smsq:{kg:10,ok:0},incl:{kg:10,ok:0}}
+};
+/* Valeur proposée pour la salle de l'utilisateur (ou moyenne si la salle n'est pas renseignée). */
+const machDef = (gym,id) => MACH_EX.includes(id) ? ((MACH[gym]||{})[id] || MACH_AVG[id]) : null;
 const EQUIP = [["m","Machines guidées","Pec fly, leg curl, leg extension, rowing…"],["c","Poulies","Vis-à-vis, tirage, poulie basse"],["s","Smith machine","Barre guidée"],["h","Hack squat",""],["l","Presse à cuisses",""],["d","Haltères",""],["b","Banc réglable",""],["x","Barres et disques","Barre libre"],["p","Barre de traction",""]];
 const SPLITS = [{v:"auto",e:"🤖",l:"Laisse le coach choisir",s:"Recommandé : adapté à ton nombre de jours"},{v:"full",e:"🔄",l:"Full body",s:"Tout le corps à chaque séance. Idéal sur 2 ou 3 jours"},{v:"ul",e:"↕️",l:"Haut / Bas du corps",s:"Idéal sur 4 jours"},{v:"ppl",e:"🔁",l:"Push / Pull / Jambes",s:"Idéal sur 3 ou 6 jours"},{v:"pplul",e:"🧩",l:"Push / Pull / Jambes + Haut / Bas",s:"Idéal sur 5 jours"},{v:"bas",e:"🍑",l:"Bas du corps en priorité",s:"2 séances jambes et fessiers pour 1 de haut du corps, de 3 à 6 jours"}];
 const AUTO = {2:"full",3:"full",4:"ul",5:"pplul",6:"ppl"};
