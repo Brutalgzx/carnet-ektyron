@@ -86,17 +86,22 @@ function allergIng(txt){const out=new Set(),syn={arachide:["cacah"],cacahuete:["
  for(const w of nrm(txt).split(/[^a-z]+/).filter(w=>w.length>=3).map(w=>w.replace(/s$/,""))){if(syn[w]){syn[w].forEach(i=>out.add(i));continue}
   for(const [id,d] of Object.entries(ING))if(nrm(d[0]).split(/[^a-z]+/).some(x=>x.length>=4&&(x.replace(/s$/,"")===w||(w.length>=5&&x.startsWith(w)))))out.add(id)}return [...out]}
 const allergHint=t=>{const ids=allergIng(t);return !nrm(t).trim()?"Écris tout aliment précis à éviter : ton coach l'exclut de toutes tes recettes.":ids.length?`Exclus de tes recettes : <b>${ids.map(i=>esc(ING[i][0])).join(", ")}</b>.`:"Aucune de nos recettes n'en contient. Vérifie quand même toujours les étiquettes."};
-function pool(m){const p=PROF,t=p.taste||{},al=[...(p.allerg||[]).flatMap(a=>AF[a]||[]),...allergIng(p.allergTxt)],hate=Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[]),no=p.nope||[];
- const base=REC.filter(r=>r.m===m&&dietOk(r)),safe=base.filter(r=>!has(r,al));
+/* Recettes compatibles (régime + allergies), et plats choisis par l'utilisateur (liste ou swipe) : PROF.pick, PROF.pickOnly. */
+function safeRec(m){const p=PROF,al=[...(p.allerg||[]).flatMap(a=>AF[a]||[]),...allergIng(p.allergTxt)];return REC.filter(r=>r.m===m&&dietOk(r)&&!has(r,al))}
+const isPick=r=>(PROF.pick||[]).includes(r.id);
+function pool(m){const p=PROF,t=p.taste||{},hate=Object.keys(t).filter(k=>t[k]<0).flatMap(k=>TF[k]||[]),no=p.nope||[];
+ const base=REC.filter(r=>r.m===m&&dietOk(r)),safe=safeRec(m);
  let c=safe.filter(r=>!no.includes(r.id)&&!has(r,hate)&&!(p.spice===0&&r.hot>1));
- if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;return c.length?c:base}
+ if(c.length<2)c=safe.filter(r=>!no.includes(r.id));if(c.length<2)c=safe;if(!c.length)c=base;
+ const mine=safe.filter(r=>isPick(r)&&!no.includes(r.id));if(!mine.length)return c;
+ return p.pickOnly?mine:[...mine,...c.filter(r=>!mine.includes(r))]}
 function tasteScore(r){const p=PROF,t=p.taste||{};let s=0;for(const k in t)if(t[k]>0&&has(r,TF[k]||[]))s+=.5;
  if((p.cuis||[]).includes(r.cu))s+=.6;if(r.m==="pdj"&&(p.pdjT==="sucre"||p.pdjT==="sale"))s+=r.sw===p.pdjT?1.2:-1.2;
  if(r.m==="main"&&p.ckt&&p.batch!=="oui"&&r.min>p.ckt)s-=(r.min-p.ckt)/10;if(r.hot)s+=p.spice===2?.4*r.hot:p.spice===0?-.8:0;return s}
 function genWeek(seed){const g0=GL;GL=gAuto();for(const k in RM)delete RM[k];try{return genWeek0(seed)}finally{GL=g0;for(const k in RM)delete RM[k]}}
 function genWeek0(seed){const R=rng(seed),T=targets(),slots=mealSlots(),B=PROF.budget/(7*slots.length);
- const pick=(m,n,styled)=>{let c=pool(m);if(styled&&PROF.styles.length){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
-  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)}}).sort((a,b)=>b.s-a.s);
+ const pick=(m,n,styled)=>{let c=pool(m);if(styled&&PROF.styles.length&&!c.some(isPick)){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
+  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)+(isPick(r)?2.5+mm.P*4/mm.k*3:0)}}).sort((a,b)=>b.s-a.s);
   const out=[];for(let i=0;out.length<n;i++)out.push(sc[i%sc.length].r.id);return out};
  const pdj=pick("pdj",2),snk=pick("snack",2),days=[];
  if(PROF.batch==="oui"){const M=pick("main",4,true);/* 2 plats cuisinés le dimanche pour lun–mer, 2 le mercredi soir pour jeu–dim */
@@ -328,7 +333,7 @@ function vFood(){if(PROF.refined&&PROF.refined.nut===0)return `<div class="card 
  const M=dayMeals(d),tot=M.reduce((a,m)=>({k:a.k+m.k,P:a.P+m.P,C:a.C+m.C,F:a.F+m.F}),{k:0,P:0,C:0,F:0});
  return head+`<div class="week">${WEEK.map(x=>`<button data-nday="${x}" aria-pressed="${x===d}">${DN[x]}<small>${fr(dayMeals(x).reduce((a,m)=>a+m.k,0))}</small></button>`).join("")}</div>
  <div class="card stack"><div class="lab">${DLONG[d]}</div>${macroBlock(T,tot)}${M.map(m=>mealRow(m,d,false)).join("")}</div>
- <button class="btn ghost" id="regen">↻ Nouvelle semaine de repas</button>`}
+ ${typeof pickCard==="function"?pickCard():""}<button class="btn ghost" id="regen">↻ Nouvelle semaine de repas</button>`}
 function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b>${v}</b></li>`;
  return `${acCard()}${typeof admCard==="function"?admCard():""}<div class="card"><ul class="list">${row("Prénom",esc(p.name))}${row("Mensurations",`${p.h} cm · ${fr(curWeight(),1)} kg · ${p.age} ans`)}${row("Objectif",GOALS.find(g=>g.v===p.goal).l+(p.tw?` · ${fr(p.tw,1)} kg en ${p.months} mois`:""))}${row("Niveau",LEVELS.find(g=>g.v===p.level).l)}${row("Salle",GYMS.find(g=>g.v===p.gym).l)}${row("Séances",`${p.days.map(d=>DN[d]).join(", ")} · ${p.dur} min`)}${row("Organisation",splitName(p))}${row("Priorités",(p.prio||[]).length?p.prio.map(z=>PRIOS.find(x=>x.v===z).l).join(", "):"Équilibré")}${row("À ménager",(p.pain||[]).length?p.pain.map(z=>PAINS.find(x=>x.v===z).l).join(", "):"Rien")}${row("Repas",`${p.meals} par jour · ${DIETS.find(x=>x.v===p.diet).l.toLowerCase()}`)}${row("Goûts",(t=>`${t.filter(v=>v>0).length} ❤️ · ${t.filter(v=>v<0).length} 🚫${(p.allerg||[]).length?" · sans "+p.allerg.map(a=>ALLERG.find(x=>x.v===a).l.toLowerCase()).join(", "):""}`)(Object.values(p.taste||{})))}${row("Courses",`${myStores().map(stLab).join(", ")} · ${p.budget} € / semaine`)}</ul></div>
  <button class="btn" id="plan-see">Voir mon plan et pourquoi</button><button class="btn ghost" id="tastes">Mes goûts</button><button class="btn ghost" id="adj">Adapter à mon emploi du temps</button><button class="btn ghost" id="redo">Refaire le questionnaire</button>

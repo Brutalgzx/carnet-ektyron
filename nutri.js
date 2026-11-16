@@ -69,3 +69,39 @@ function recipeNutri(m){const r=m.r,parts=r.i.map(([i,g])=>{const q=g*m.fi(i);re
  <div class="lab">Apport de chaque ingrédient · touche pour le détail</div>
  <table class="ntab ning"><thead><tr><th></th><th>kcal</th><th>Prot.</th><th>Gluc.</th><th>Lip.</th></tr></thead><tbody>${parts.map(x=>`<tr><td><button class="lnk" data-food="${x.i}" data-g="${Math.round(x.q)}" data-back="${r.id}">${esc(ingName(x.i))}</button><small class="muted"> ${fr(x.q)} g · ${fr(x.v.k/Math.max(v.k,1)*100)} %</small></td><td class="mono">${fr(x.v.k)}</td><td class="mono">${fr(x.v.P)}</td><td class="mono">${fr(x.v.C)}</td><td class="mono">${fr(x.v.F)}</td></tr>`).join("")}
  <tr class="tot"><td>Total</td><td class="mono">${fr(v.k)}</td><td class="mono">${fr(v.P)}</td><td class="mono">${fr(v.C)}</td><td class="mono">${fr(v.F)}</td></tr></tbody></table>`}
+
+/* Choisir ses plats : en liste (cases à cocher) ou en swipe (droite = je garde, gauche = non → PROF.nope).
+   PROF.pick = plats choisis ; PROF.pickOnly = le coach n'utilise que ceux-là (sinon il les met en priorité). */
+const PK_G=[["pdj","Petits-déjeuners"],["main","Plats"],["snack","Collations"]];
+function pickCard(){const n=(PROF.pick||[]).length;
+ return `<div class="card stack"><div class="lab">Choisir mes plats</div><p class="small muted" style="margin:0">${n?`<b>${n} plat${n>1?"s":""} choisi${n>1?"s":""}</b> · ${PROF.pickOnly?"le coach compose ta semaine uniquement avec eux":"le coach les met en priorité dans ta semaine"}, portions ajustées à tes calories et tes protéines, dans ton budget.`:"Choisis toi-même tes plats parmi toutes les recettes. Le coach compose ta semaine avec, en ajustant les portions à tes calories et tes protéines, dans ton budget."}</p>
+ <div class="row"><button class="btn ghost sp" id="pk-list">📋 En liste</button><button class="btn ghost sp" id="pk-swipe">👆 En swipe</button></div></div>`}
+let PKS=null,PKD=null,PKI=0;
+function pkSave(sel,only){PROF.pick=[...sel];PROF.pickOnly=!!only&&sel.size>0;PROF.nope=(PROF.nope||[]).filter(id=>!sel.has(id));LS.set("coach-profile",PROF);
+ LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{});$("#sheet")?.remove();nutTab="week";render();
+ toast(sel.size?`Semaine recomposée avec tes ${sel.size} plat${sel.size>1?"s":""}.`:"Sélection effacée : le coach choisit à nouveau.")}
+function pkSheet(html,label){$("#sheet")?.remove();const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in stack" role="dialog" aria-label="${label}">${html}</div>`;document.body.appendChild(el);return el}
+function pkList(){PKS=PKS||new Set(PROF.pick||[]);const only=!!PROF.pickOnly,no=PROF.nope||[];
+ pkSheet(`<h2 style="margin:18px 0 0">Choisir mes plats</h2><p class="small muted" style="margin:0">Coche les plats que tu veux manger cette semaine.</p>
+ <div class="seg"><button data-pkm="0" aria-pressed="${!only}">Les mettre en priorité</button><button data-pkm="1" aria-pressed="${only}">Seulement eux</button></div>
+ ${PK_G.map(([m,l])=>`<div><div class="lab" style="margin-top:6px">${l}</div><ul class="list">${safeRec(m).map(r=>`<li><button class="chk ${PKS.has(r.id)?"on":""}" data-pk="${r.id}" aria-label="${esc(r.n)}">${PKS.has(r.id)?"✓":""}</button><span style="font-size:24px">${r.e}</span><span class="sp">${esc(r.n)}${no.includes(r.id)?`<br><small class="muted">Exclu pour l'instant</small>`:""}</span></li>`).join("")}</ul></div>`).join("")}
+ <button class="btn" id="pk-ok">Composer ma semaine</button><button class="btn ghost" id="pk-clr">Effacer ma sélection</button><button class="btn ghost" data-close>Annuler</button>`,"Choisir mes plats en liste")}
+function pkCardHtml(r){return `<div id="pk-card" style="touch-action:none;user-select:none;border-radius:28px;padding:18px;background:rgba(255,255,255,.07);border:1px solid var(--line);text-align:center;transition:transform .25s"><div style="font-size:110px;line-height:1.2">${r.e}</div><h2 style="margin:6px 0">${esc(r.n)}</h2><div class="small muted">${({pdj:"Petit-déjeuner",main:"Plat",snack:"Collation"})[r.m]} · ${r.min} min</div><ul class="small" style="text-align:left;margin:12px 0 0;padding-left:18px">${r.i.map(([i])=>`<li>${esc(typeof ingName==="function"?ingName(i):ING[i][0])}</li>`).join("")}</ul></div>`}
+function pkSwipe(){if(!PKD){const all=PK_G.flatMap(([m])=>safeRec(m)),seen=new Set([...(PROF.pick||[]),...(PROF.nope||[])]),fresh=all.filter(r=>!seen.has(r.id));PKD=fresh.length?fresh:all;PKI=0;PKS=new Set(PROF.pick||[])}
+ if(PKI>=PKD.length){pkSheet(`<h2 style="margin:18px 0 0">C'est tout !</h2><p class="small muted" style="margin:0">Tu as gardé ${PKS.size} plat${PKS.size>1?"s":""}.</p><button class="btn" id="pk-ok">Composer ma semaine</button><button class="btn ghost" data-close>Annuler</button>`,"Swipe terminé");return}
+ const r=PKD[PKI];pkSheet(`<div class="row" style="margin-top:14px"><b class="sp">Choisir mes plats</b><small class="muted mono">${PKI+1} / ${PKD.length}</small></div><p class="small muted" style="margin:0">Glisse à droite pour le garder, à gauche s'il ne te tente pas.</p>${pkCardHtml(r)}
+ <div class="row"><button class="btn ghost sp" data-pkv="0" aria-label="Non">✕ Non</button><button class="btn sp" data-pkv="1" aria-label="Je le garde">♥ Je garde</button></div><button class="btn ghost" id="pk-ok">Terminer et composer ma semaine</button>`,"Choisir mes plats en swipe");
+ const c=$("#pk-card");let x0=null,dx=0;
+ c.addEventListener("pointerdown",e=>{x0=e.clientX;dx=0;c.style.transition="none";c.setPointerCapture(e.pointerId)});
+ c.addEventListener("pointermove",e=>{if(x0==null)return;dx=e.clientX-x0;c.style.transform=`translateX(${dx}px) rotate(${dx/20}deg)`;c.style.borderColor=dx>40?"var(--good)":dx<-40?"var(--warn)":""});
+ c.addEventListener("pointerup",()=>{if(x0==null)return;x0=null;c.style.transition="transform .25s";if(Math.abs(dx)>90)pkVote(dx>0);else c.style.transform=""})}
+function pkVote(keep){const r=PKD[PKI],c=$("#pk-card");if(keep)PKS.add(r.id);else{PKS.delete(r.id);PROF.nope=[...new Set([...(PROF.nope||[]),r.id])];LS.set("coach-profile",PROF)}
+ if(c)c.style.transform=`translateX(${keep?120:-120}%) rotate(${keep?15:-15}deg)`;PKI++;setTimeout(pkSwipe,c?220:0)}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(t.id==="pk-list"){PKS=null;pkList();return}
+ if(t.id==="pk-swipe"){PKD=null;pkSwipe();return}
+ if(D.pk){PKS.has(D.pk)?PKS.delete(D.pk):PKS.add(D.pk);t.classList.toggle("on");t.textContent=PKS.has(D.pk)?"✓":"";return}
+ if(D.pkm){$("#sheet").querySelectorAll("[data-pkm]").forEach(b=>b.setAttribute("aria-pressed",b===t));return}
+ if(D.pkv){pkVote(D.pkv==="1");return}
+ if(t.id==="pk-clr"){PKS=new Set();pkSave(PKS,false);return}
+ if(t.id==="pk-ok"){const m=$("#sheet [data-pkm='1']"),only=m?m.getAttribute("aria-pressed")==="true":!!PROF.pickOnly;pkSave(PKS||new Set(),only);return}});
