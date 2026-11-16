@@ -105,3 +105,24 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
  if(D.pkv){pkVote(D.pkv==="1");return}
  if(t.id==="pk-clr"){PKS=new Set();pkSave(PKS,false);return}
  if(t.id==="pk-ok"){const m=$("#sheet [data-pkm='1']"),only=m?m.getAttribute("aria-pressed")==="true":!!PROF.pickOnly;pkSave(PKS||new Set(),only);return}});
+
+/* Compléments : 4e case du jour (whey, créatine, boissons, barres, yaourts protéinés…). PROF.supp = {id: portions/jour}, PROF.suppX = produits perso. */
+function supRows(){const L=supList(),T=supTot();
+ return `<div class="row" style="margin-top:4px"><div class="lab sp">Compléments</div>${L.length?`<small class="muted mono">${fr(T.k)} kcal · ${fr(T.P)} g prot.</small>`:""}</div>
+ ${L.map(x=>`<button class="meal" data-supe="1"><span class="ph">${x.e||"🧴"}</span><span class="sp"><small>${x.q>1?x.q+" × ":""}${esc(x.u||"portion")}</small><b>${esc(x.n)}</b><small>${eur((x.eur||0)*x.q)}</small></span><span class="k">${fr(x.k*x.q)} kcal</span></button>`).join("")}
+ <button class="btn ghost" id="sup-edit">${L.length?"Modifier mes compléments":"＋ Ajouter mes compléments (whey, créatine, barres…)"}</button>`}
+let SUPQ=null;
+function supSheet(){SUPQ=SUPQ||{...(PROF.supp||{})};const all=[...SUP,...(PROF.suppX||[]).map(x=>({...x,g:"Mes produits"}))],G=[...new Set(all.map(x=>x.g))];
+ $("#sheet")?.remove();const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in stack" role="dialog" aria-label="Mes compléments"><h2 style="margin:18px 0 0">Mes compléments</h2><p class="small muted" style="margin:0">Indique combien tu en prends par jour. Ils comptent dans tes calories et tes protéines : tes repas s'ajustent pour laisser la place, et ils s'ajoutent à ta liste de courses.</p>
+ ${G.map(g=>`<div><div class="lab" style="margin-top:6px">${g}</div><ul class="list">${all.filter(x=>x.g===g).map(x=>`<li><span style="font-size:24px">${x.e||"🧴"}</span><span class="sp">${esc(x.n)}<br><small class="muted">${esc(x.u||"portion")} · ${fr(x.k)} kcal · ${fr(x.P)} g prot.</small></span><button class="chk" data-supm="${x.id}" aria-label="Moins">−</button><b class="mono" style="min-width:18px;text-align:center" id="supq-${x.id}">${SUPQ[x.id]||0}</b><button class="chk" data-supp="${x.id}" aria-label="Plus">+</button></li>`).join("")}</ul></div>`).join("")}
+ <div class="lab" style="margin-top:6px">Ajouter un autre produit</div>
+ <input class="txt" id="sx-n" maxlength="40" placeholder="Nom (ex. : Barre Myprotein cookie)">
+ <div class="row"><input class="txt sp" id="sx-k" type="number" inputmode="decimal" placeholder="kcal / portion"><input class="txt sp" id="sx-p" type="number" inputmode="decimal" placeholder="Protéines (g)"><input class="txt sp" id="sx-e" type="number" inputmode="decimal" placeholder="Prix (€)"></div>
+ <button class="btn ghost" id="sx-add">Ajouter ce produit</button>
+ <button class="btn" id="sup-ok">Enregistrer</button><button class="btn ghost" data-close>Annuler</button></div>`;document.body.appendChild(el)}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(t.id==="sup-edit"||D.supe){SUPQ=null;supSheet();return}
+ if(D.supp||D.supm){const id=D.supp||D.supm;SUPQ[id]=Math.max(0,Math.min(9,(SUPQ[id]||0)+(D.supp?1:-1)));$("#supq-"+id).textContent=SUPQ[id];return}
+ if(t.id==="sx-add"){const n=$("#sx-n").value.trim(),k=+$("#sx-k").value||0,P=+$("#sx-p").value||0,eu=+$("#sx-e").value||0;if(!n){toast("Donne un nom au produit.");return}
+  const id="x"+Date.now().toString(36);PROF.suppX=[...(PROF.suppX||[]),{id,n,e:"🧴",u:"portion",k,P,C:0,F:0,eur:eu}];SUPQ[id]=1;LS.set("coach-profile",PROF);supSheet();return}
+ if(t.id==="sup-ok"){const S={};for(const k in SUPQ)if(SUPQ[k]>0)S[k]=SUPQ[k];PROF.supp=S;LS.set("coach-profile",PROF);$("#sheet")?.remove();render();toast(Object.keys(S).length?"Compléments enregistrés : tes repas sont ajustés.":"Aucun complément.");return}});

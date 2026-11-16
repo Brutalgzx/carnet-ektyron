@@ -214,6 +214,34 @@ const TASTE={
  P:[{v:"poulet",e:"🍗",l:"Poulet, dinde",i:["poulet","dinde"]},{v:"boeuf",e:"🥩",l:"Bœuf",i:["boeuf"]},{v:"porc",e:"🐖",l:"Porc, jambon",i:["porc","jambon"]},{v:"poisson",e:"🐟",l:"Poisson",i:["saumon","cabil"]},{v:"thon",e:"🥫",l:"Thon",i:["thon"]},{v:"oeuf",e:"🥚",l:"Œufs",i:["oeuf"]},{v:"laitage",e:"🥛",l:"Fromage blanc, skyr",i:["fblanc","skyr"]},{v:"tofu",e:"🧊",l:"Tofu",i:["tofu"]},{v:"legsec",e:"🫘",l:"Lentilles, pois chiches",i:["lentilles","poischi","harico"]}],
  C:[{v:"riz",e:"🍚",l:"Riz",i:["riz"]},{v:"pates",e:"🍝",l:"Pâtes",i:["pates"]},{v:"patd",e:"🍠",l:"Patate douce",i:["patd"]},{v:"pdt",e:"🥔",l:"Pommes de terre",i:["pdt"]},{v:"semoule",e:"🫕",l:"Semoule",i:["semoule"]},{v:"pain",e:"🥖",l:"Pain, wraps",i:["painc","wrap","painb"]},{v:"avoine",e:"🥣",l:"Flocons d'avoine",i:["avoine"]},{v:"quinoa",e:"🌾",l:"Quinoa",i:["quinoa"]},{v:"nouilles",e:"🍜",l:"Nouilles de riz",i:["nouilles"]}],
  L:[{v:"brocoli",e:"🥦",l:"Brocoli",i:["brocoli"]},{v:"courgette",e:"🥒",l:"Courgette",i:["courgette"]},{v:"poivron",e:"🫑",l:"Poivron",i:["poivron"]},{v:"epinard",e:"🍃",l:"Épinards",i:["epinard"]},{v:"hverts",e:"🫛",l:"Haricots verts",i:["hverts"]},{v:"carotte",e:"🥕",l:"Carotte",i:["carotte"]},{v:"champi",e:"🍄",l:"Champignons",i:["champi"]},{v:"oignon",e:"🧅",l:"Oignon",i:["oignon"]},{v:"tomate",e:"🍅",l:"Tomate",i:["tomate"]},{v:"avocat",e:"🥑",l:"Avocat",i:["avocat"]}]};
+/* Compléments et produits protéinés : par portion (u), kcal, protéines, glucides, lipides, prix indicatif €/portion, groupe. */
+const SUP=[
+ {id:"whey",n:"Whey",e:"🥛",u:"dose de 30 g",k:115,P:24,C:2,F:1.5,eur:.75,g:"Poudres"},
+ {id:"iso",n:"Whey isolat",e:"🥛",u:"dose de 30 g",k:110,P:26,C:1,F:.5,eur:1,g:"Poudres"},
+ {id:"caseine",n:"Caséine",e:"🌙",u:"dose de 30 g",k:110,P:24,C:2,F:1,eur:.9,g:"Poudres"},
+ {id:"vegprot",n:"Protéine végétale (pois, riz)",e:"🌱",u:"dose de 30 g",k:115,P:22,C:2,F:2,eur:.85,g:"Poudres"},
+ {id:"gainer",n:"Gainer",e:"💪",u:"dose de 100 g",k:380,P:20,C:68,F:3,eur:1.5,g:"Poudres"},
+ {id:"crea",n:"Créatine monohydrate",e:"⚡",u:"dose de 5 g",k:0,P:0,C:0,F:0,eur:.15,g:"Poudres"},
+ {id:"collag",n:"Collagène",e:"🦴",u:"dose de 10 g",k:36,P:9,C:0,F:0,eur:.6,g:"Poudres"},
+ {id:"bcaa",n:"BCAA / EAA",e:"💧",u:"dose de 10 g",k:40,P:8,C:1,F:0,eur:.5,g:"Poudres"},
+ {id:"prewo",n:"Pré-workout",e:"🔥",u:"dose",k:5,P:0,C:1,F:0,eur:.7,g:"Poudres"},
+ {id:"pdrink",n:"Boisson protéinée (bouteille)",e:"🧃",u:"bouteille de 33 cl",k:150,P:25,C:9,F:1.5,eur:1.8,g:"Boissons et laitages"},
+ {id:"plait",n:"Lait protéiné / milkshake",e:"🥤",u:"bouteille de 33 cl",k:200,P:30,C:15,F:2,eur:1.6,g:"Boissons et laitages"},
+ {id:"ydrink",n:"Yaourt à boire protéiné",e:"🍶",u:"bouteille de 30 cl",k:160,P:25,C:12,F:1.5,eur:1.3,g:"Boissons et laitages"},
+ {id:"yprot",n:"Yaourt protéiné",e:"🥄",u:"pot de 160 g",k:90,P:15,C:6,F:.3,eur:.8,g:"Boissons et laitages"},
+ {id:"pudding",n:"Pudding / crème protéinée",e:"🍮",u:"pot de 200 g",k:150,P:20,C:14,F:2,eur:1.1,g:"Boissons et laitages"},
+ {id:"fbprot",n:"Fromage blanc protéiné",e:"🥣",u:"pot de 200 g",k:130,P:20,C:9,F:1,eur:1,g:"Boissons et laitages"},
+ {id:"bar",n:"Barre protéinée",e:"🍫",u:"barre de 60 g",k:220,P:20,C:18,F:8,eur:1.6,g:"Barres et snacks"},
+ {id:"cookie",n:"Cookie protéiné",e:"🍪",u:"cookie de 75 g",k:330,P:16,C:40,F:12,eur:2,g:"Barres et snacks"},
+ {id:"chips",n:"Chips protéinées",e:"🥨",u:"sachet de 30 g",k:130,P:15,C:9,F:3.5,eur:1.5,g:"Barres et snacks"},
+ {id:"pancake",n:"Pancakes protéinés",e:"🥞",u:"portion de 50 g (poudre)",k:180,P:20,C:20,F:2,eur:1,g:"Barres et snacks"},
+ {id:"pbutter",n:"Beurre de cacahuète protéiné",e:"🥜",u:"cuillère de 20 g",k:115,P:7,C:3,F:8,eur:.3,g:"Barres et snacks"},
+ {id:"omega",n:"Oméga-3",e:"🐟",u:"2 gélules",k:18,P:0,C:0,F:2,eur:.2,g:"Santé"},
+ {id:"multi",n:"Multivitamines",e:"💊",u:"1 comprimé",k:0,P:0,C:0,F:0,eur:.1,g:"Santé"},
+ {id:"vitd",n:"Vitamine D",e:"☀️",u:"1 prise",k:0,P:0,C:0,F:0,eur:.05,g:"Santé"},
+ {id:"magne",n:"Magnésium",e:"🌿",u:"1 prise",k:0,P:0,C:0,F:0,eur:.1,g:"Santé"},
+ {id:"zinc",n:"Zinc",e:"🛡️",u:"1 prise",k:0,P:0,C:0,F:0,eur:.05,g:"Santé"},
+ {id:"electro",n:"Électrolytes",e:"🧂",u:"1 dose",k:10,P:0,C:2,F:0,eur:.4,g:"Santé"}];
 const ALLERG=[{v:"none",e:"✅",l:"Aucune"},{v:"lactose",e:"🥛",l:"Lactose",s:"Lait, fromage blanc, skyr, fromage, whey",i:["lait","fblanc","skyr","fromr","mozza","whey"]},{v:"gluten",e:"🌾",l:"Gluten",s:"Pâtes, pain, semoule, avoine, sauce soja",i:["pates","semoule","avoine","painc","wrap","painb","soja"]},
  {v:"coque",e:"🥜",l:"Fruits à coque et arachide",s:"Amandes, cacahuète",i:["amandes","cacah"]},{v:"oeufs",e:"🥚",l:"Œufs",i:["oeuf"]},{v:"poisson",e:"🐟",l:"Poisson",i:["saumon","thon","cabil"]},{v:"soja",e:"🫘",l:"Soja",s:"Tofu, sauce soja",i:["tofu","soja"]}];
 /* Muscle ciblé précis : « Changer » remplace un exercice par un autre du même muscle. */
