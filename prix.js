@@ -22,7 +22,8 @@ const PRIX=
   "parmesan": 20.00, "bacon": 15.00, "chevre": 13.00, "butternut": 2.20, "cottage": 7.50, "ffrais": 9.00, "farine": 1.10, "farriz": 4.00,
   "sarrasin": 4.50, "crevette": 22.00, "truite": 24.00, "feuilriz": 12.00, "cornfl": 5.00, "cacao": 16.00, "chocnoir": 12.00, "chocblanc": 11.00,
   "dattes": 8.00, "chia": 14.00, "mangue": 4.50, "ananas": 3.00, "cocorap": 9.00, "noisettes": 18.00, "cajou": 16.00, "peche": 3.50,
-  "concombre": 2.00, "tomfr": 3.20, "chou": 1.80, "betterave": 3.00, "biscuit": 7.00
+  "concombre": 2.00, "tomfr": 3.20, "chou": 1.80, "betterave": 3.00, "biscuit": 7.00,
+  "creme": 4.50, "cancoillotte": 9.00, "raclette": 14.00, "gnocchi": 4.00, "pinsa": 9.00, "udon": 5.00, "saumfume": 30.00, "panko": 8.00, "sardine": 14.00, "chorizo": 15.00, "maizena": 4.00, "cremriz": 6.00
  },
 
  "gammes": {
