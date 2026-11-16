@@ -391,9 +391,10 @@ function gTop(){const n=gList().length;return `<div class="g-top"><button id="g-
    On saisit les disques ajoutés (k) ; la série garde le poids à vide (m). Progression et records restent sur les disques (comparables avec l'historique),
    le volume compte la charge totale. */
 const machKg=id=>{const d=machDef(PROF&&PROF.gym,id);if(!d)return null;const v=LS.get("coach-mach",{})[id];return v!=null?v:d.kg};
-const machTot=(kU,m)=>{const k=fromU(gNum(kU)||0);return `Charge totale : <b>${kgS(k+m)}</b> <span class="muted">(disques ${kgS(k)} + machine ${kgS(m)})</span>`};
+const machW=id=>(machDef(PROF&&PROF.gym,id)||{}).bar?"barre":"machine";
+const machTot=(kU,m,id)=>{const k=fromU(gNum(kU)||0);return `Charge totale : <b>${kgS(k+m)}</b> <span class="muted">(disques ${kgS(k)} + ${machW(id)} ${kgS(m)})</span>`};
 function machBox(ex,kU){const m=machKg(ex.id);if(m==null)return"";const d=machDef(PROF.gym,ex.id),mine=LS.get("coach-mach",{})[ex.id]!=null;
- return `<div class="row small" style="gap:8px;align-items:center"><label for="g-mv" class="muted">Machine à vide :</label><input id="g-mv" class="txt" inputmode="decimal" value="${fr(kIn(m),1).replace(/,0$/,"")}" style="width:76px;padding:6px 8px;text-align:center" aria-label="Poids à vide de la machine"><span>${wU()}</span>${!mine&&!d.ok?`<small class="muted">valeur moyenne, vérifie sur la machine</small>`:""}</div><div class="small" id="g-tot">${machTot(kU,m)}</div>`}
+ return `<div class="row small" style="gap:8px;align-items:center"><label for="g-mv" class="muted">${d.bar?"Barre":"Machine"} à vide :</label><input id="g-mv" class="txt" inputmode="decimal" value="${fr(kIn(m),1).replace(/,0$/,"")}" style="width:76px;padding:6px 8px;text-align:center" aria-label="Poids à vide de la ${machW(ex.id)}"><span>${wU()}</span>${!mine&&!d.ok?`<small class="muted">valeur indicative, vérifie sur ta machine</small>`:""}</div><div class="small" id="g-tot">${machTot(kU,m,ex.id)}</div>`}
 function gSuggest(ex){const last=lastLog(ex.id),ls=last?.sets||[],prev=ls[G.si]||ls[ls.length-1],before=(G.sets[ex.id]||[])[G.si-1];
  const up=!!last&&ls.length>=ex.s&&ls.every(s=>s.r>=ex.r[1]);
  let k=before?before.k:prev?(up?prev.k+2.5:prev.k):(ex.kg??""),r=before?before.r:prev?(up?ex.r[0]:Math.min(prev.r+1,ex.r[1])):ex.r[0];
@@ -403,7 +404,7 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
  if(G.ph==="set"){const ex=gEx(),s=gSuggest(ex);
   box.innerHTML=gTop()+`<div class="lab">Exercice ${G.ei+1} · Série ${G.si+1}/${ex.s}</div><h2 class="g-name">${ex.n}</h2>
   ${animTag(ex.id,ex.a,esc(ex.n),"g-anim")}<div class="small">${ex.c}</div>
-  <div class="g-goal"><span>Objectif <b>${ex.r[0]}–${ex.r[1]} reps</b></span><span>${s.prev?`Dernière fois : ${kgS(s.prev.k)}${s.prev.m?` + ${kgS(s.prev.m)} machine`:""} × ${s.prev.r}`:ex.kg?`Ta charge de départ : ${kgS(ex.kg)}`:"Première fois : reste léger et propre"}</span></div>
+  <div class="g-goal"><span>Objectif <b>${ex.r[0]}–${ex.r[1]} reps</b></span><span>${s.prev?`Dernière fois : ${kgS(s.prev.k)}${s.prev.m?` + ${kgS(s.prev.m)} ${machW(ex.id)}`:""} × ${s.prev.r}`:ex.kg?`Ta charge de départ : ${kgS(ex.kg)}`:"Première fois : reste léger et propre"}</span></div>
   ${s.up&&G.si===0?`<div class="g-up">Tu as tout validé la dernière fois : on monte d'un cran.</div>`:""}${deloadOn()&&G.si===0?`<div class="g-up">Semaine de décharge : charges −15 %, garde 2-3 reps en réserve.</div>`:""}
   <div class="g-step"><label for="g-k">${machKg(ex.id)!=null?"Disques":wU()==="lb"?"Livres":"Kilos"}</label><button data-gs="k" data-v="-${wU()==="lb"?5:2.5}" aria-label="Moins ${wU()==="lb"?"5 lb":"2,5 kg"}">−</button><input id="g-k" inputmode="decimal" value="${s.k}" placeholder="0"><button data-gs="k" data-v="${wU()==="lb"?5:2.5}" aria-label="Plus ${wU()==="lb"?"5 lb":"2,5 kg"}">+</button></div>
   ${machBox(ex,s.k)}<div class="g-step"><label for="g-r">Reps</label><button data-gs="r" data-v="-1" aria-label="Moins une rep">−</button><input id="g-r" inputmode="numeric" value="${s.r}"><button data-gs="r" data-v="1" aria-label="Plus une rep">+</button></div>
@@ -455,7 +456,7 @@ document.addEventListener("input",e=>{const t=e.target;
    if(k==="budget"){$("#v-budget").textContent=v;const pm=v/(7*A.meals);$("#v-pm").textContent=eur(pm)+" / repas";$("#v-lvl").textContent=pm<1.6?"Serré":pm<3?"Confortable":"Large"}else $("#v-"+k).textContent=`${fr(v,k==="w"||k==="tw"?1:0)} ${t.dataset.u}`;if(k==="tw"||k==="w"){const g=$("#gp");if(g)g.innerHTML=gpBox(A);obRefresh()}}
   obRefresh();return}
  if(G&&(t.id==="g-k"||t.id==="g-mv")){const ex=gEx();if(t.id==="g-k"){G.dk=t.value;gSave()}else{const v=gNum(t.value);if(!isNaN(v)&&v>=0){const M=LS.get("coach-mach",{});M[ex.id]=+fromU(v).toFixed(2);LS.set("coach-mach",M)}}
-  const m=machKg(ex.id),o=$("#g-tot");if(o&&m!=null)o.innerHTML=machTot($("#g-k").value,m)}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
+  const m=machKg(ex.id),o=$("#g-tot");if(o&&m!=null)o.innerHTML=machTot($("#g-k").value,m,ex.id)}else if(G&&t.id==="g-r"){G.dr=t.value;gSave()}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&view==="ob"&&e.target.id==="i-name"&&FLOW[obI].ok())$("#ob-next").click()});
 document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove();return}const t=e.target.closest("button,[data-close]");if(!t)return;const D=t.dataset;
  if(t.id==="sheet"||D.close!==undefined){$("#sheet")?.remove();return}
