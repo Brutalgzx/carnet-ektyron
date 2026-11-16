@@ -349,7 +349,11 @@ function openRecipe(rid,slot,day){const m=dayMeals(+day).find(x=>x.slot===slot&&
 /* ================= Mode partie ================= */
 const GK="carnet-game";let G=LS.get(GK,null),gInt=null,gArm=0,gLastS=null,auCtx=null,wake=null;
 function auUnlock(){try{auCtx=auCtx||new (window.AudioContext||window.webkitAudioContext)();if(auCtx.state==="suspended")auCtx.resume();if(navigator.audioSession)navigator.audioSession.type="transient"}catch(e){}}
-function beep(f,d,w=0){if(!auCtx)return;try{const o=auCtx.createOscillator(),g=auCtx.createGain(),t=auCtx.currentTime+w;o.type="square";o.frequency.value=f;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.5,t+.01);g.gain.setValueAtTime(.5,t+d-.03);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(auCtx.destination);o.start(t);o.stop(t+d)}catch(e){}}
+/* Son doux façon cloche : sinus + harmoniques légères, attaque courte et longue extinction (plus de signal carré qui agresse les oreilles). */
+function beep(f,d,w=0,v=.28){if(!auCtx)return;try{const t=auCtx.currentTime+w,len=Math.max(d,.25)*2.2,g=auCtx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+len);g.connect(auCtx.destination);
+ for(const [m,a] of [[1,1],[2,.22],[3.01,.07]]){const o=auCtx.createOscillator(),h=auCtx.createGain();o.type="sine";o.frequency.value=f*m;h.gain.value=a;o.connect(h);h.connect(g);o.start(t);o.stop(t+len)}}catch(e){}}
+/* Fin du repos : petit carillon montant (do, mi, sol, do), clair mais pas strident. */
+function chime(w=0){[[523,0],[659,.16],[784,.32],[1047,.5]].forEach(([f,d],i)=>beep(f,i<3?.3:.9,w+d,i<3?.22:.26))}
 async function lockOn(){try{if(navigator.wakeLock&&!wake&&document.visibilityState==="visible"){wake=await navigator.wakeLock.request("screen");wake.addEventListener("release",()=>{wake=null})}}catch(e){}}
 function lockOff(){try{wake&&wake.release()}catch(e){}wake=null}
 const gSave=()=>LS.set(GK,G), gList=()=>TRAIN[G.day].x, gEx=()=>gList()[G.ord?G.ord[G.ei]:G.ei], gNum=v=>parseFloat(String(v).replace(",","."));
@@ -399,10 +403,10 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
  <button class="btn" id="g-end">Terminer</button>`}
 function gTick(){if(!G||G.ph!=="rest")return;const ms=G.restEnd-Date.now(),left=Math.ceil(ms/1000),arc=$("#g-arc");
  if(ms<=0){clearInterval(gInt);const late=ms<-5000;G.ph="set";G.fb="";gSave();
-  if(!late){beep(1175,.5);beep(1175,.5,.65);try{navigator.vibrate&&navigator.vibrate([400,150,400])}catch(e){}const f=document.createElement("div");f.className="g-flash";f.textContent="C'est reparti !";document.body.appendChild(f);setTimeout(()=>f.remove(),1300)}
+  if(!late){chime();try{navigator.vibrate&&navigator.vibrate([400,150,400])}catch(e){}const f=document.createElement("div");f.className="g-flash";f.textContent="C'est reparti !";document.body.appendChild(f);setTimeout(()=>f.remove(),1300)}
   gShow();$("#game").scrollTop=0;return}
  if(arc)arc.setAttribute("stroke-dashoffset",(326.7*(1-ms/(G.restTotal*1000))).toFixed(1));
- if(left!==gLastS){gLastS=left;const t=$("#g-t");if(t)t.textContent=fmtT(left);if(left<=3)beep(880,.12)}}
+ if(left!==gLastS){gLastS=left;const t=$("#g-t");if(t)t.textContent=fmtT(left);if(left<=3)beep(660,.08,0,.14)}}
 function gFinishEx(ex){const sets=(G.sets[ex.id]||[]).filter(Boolean);if(!sets.length)return;const h=store[ex.id]||[];
  const pk=h.length?Math.max(...h.flatMap(x=>x.sets.map(s=>s.k))):null,mk=Math.max(...sets.map(s=>s.k));if(pk!==null&&mk>pk)G.prs.push(ex.n);
  (store[ex.id]=h).push({d:new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"}),t:Date.now(),sets,...(deloadOn()?{dl:1}:{})});persist()}

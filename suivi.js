@@ -34,6 +34,15 @@ function dueList(){const N=notifCfg(),T=N.types,d=new Date(),wd=d.getDay(),now=D
  return out}
 function dueBanner(){const L=dueList().filter(x=>x.k!=="seance");if(!L.length)return"";
  return `<div class="card stack" style="border-color:var(--warn)"><div class="lab">À faire aujourd'hui</div>${L.map(x=>`<button class="hintbox" data-go="${x.k}" style="text-align:left;width:100%;color:inherit"><span style="font-size:26px">${x.e}</span><span><b>${x.t}</b><br><small class="muted">${x.b}</small></span></button>`).join("")}</div>`}
+/* Filet de sécurité : si une notification n'est pas arrivée, l'appli le rattrape. À l'ouverture, le jour de la pesée, du bilan ou des mesures pas encore faits,
+   une fenêtre bien visible s'affiche (une fois par jour et par rappel, « Plus tard » la ferme jusqu'au lendemain). */
+function dueAlert(){if(!PROF||view==="ob"||document.hidden||$("#sheet"))return;const tk=todayKey(),seen=LS.get("coach-dueseen",{}),L=dueList().filter(x=>["pesee","bilan","mesures"].includes(x.k)&&seen[x.k]!==tk);if(!L.length)return;
+ const pz=L.find(x=>x.k==="pesee"),h=new Date().getHours(),warn=pz&&h<11?"Avant de manger ou de boire : c'est ce qui rend la pesée fiable.":pz?"Déjà mangé ? Pèse-toi quand même, ou demain matin à jeun.":"";
+ const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="À faire aujourd'hui" style="padding:22px 18px 18px"><button class="x" data-close aria-label="Fermer">✕</button>
+  <div style="font-size:46px;line-height:1">${L[0].e}</div><h2 style="margin:10px 0 4px">${L.length>1?"Aujourd'hui, ton bilan t'attend":L[0].t}</h2>${warn?`<p style="color:var(--acc);font-weight:600;margin:0 0 10px">${warn}</p>`:""}
+  <div class="stack">${L.map(x=>`<button class="hintbox" data-go="${x.k}" style="text-align:left;width:100%;color:inherit"><span style="font-size:26px">${x.e}</span><span><b>${x.t}</b><br><small class="muted">${x.b}</small></span></button>`).join("")}</div>
+  <button class="btn ghost" data-close style="margin-top:12px;width:100%">Plus tard</button></div>`;
+ el.addEventListener("click",e=>{if(e.target===el||e.target.closest("[data-close],[data-go]")){for(const x of L)seen[x.k]=tk;LS.set("coach-dueseen",seen)}},true);document.body.appendChild(el)}
 /* Le service worker ne lit pas le localStorage : on lui recopie l'essentiel dans un cache dédié. */
 async function notifPublish(){try{if(!("caches"in window))return;const c=await caches.open("ektyron-data"),old=await c.match("reminders").then(r=>r?r.json():{}).catch(()=>({})),N=notifCfg();
  const tk=todayKey(),last={...N.last};for(const k in old.last||{})if(old.last[k]===tk)last[k]=tk;
@@ -122,9 +131,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
  if(t.id==="nt-tog")return notifToggle();
  if(D.nw!==undefined||D.nh!==undefined){const N=notifCfg();if(D.nw!==undefined)N.wday=+D.nw;else N.hour=+D.nh;LS.set("coach-notif",N);notifPublish();notifCheck();render();return}
  if(D.go==="save"){view="set";render();const el=document.getElementById("sec-save");if(el)el.scrollIntoView();return}
- if(D.go){const sec={pesee:"sec-pesee",mesures:"sec-mesures",bilan:"sec-bilan"}[D.go];if(view!=="prog"){view="prog";render()}const el=sec&&document.getElementById(sec);if(el){el.scrollIntoView({behavior:"smooth"});const d=el.querySelector("details");if(d)d.open=true}}});
+ if(D.go){$("#sheet")?.remove();const sec={pesee:"sec-pesee",mesures:"sec-mesures",bilan:"sec-bilan"}[D.go];if(view!=="prog"){view="prog";render()}const el=sec&&document.getElementById(sec);if(el){el.scrollIntoView({behavior:"smooth"});const d=el.querySelector("details");if(d)d.open=true}}});
 /* Lancé à la fin d'app.js. */
 function suiviInit(){const h=location.hash.slice(1);if(PROF&&(h==="prog"||h==="today"||h==="jeu")){view=h;render();history.replaceState(null,"",location.pathname+location.search)}
  if("serviceWorker"in navigator)navigator.serviceWorker.addEventListener("message",e=>{if(e.data&&e.data.go&&PROF&&view!=="ob"){view=e.data.go;render()}});
- document.addEventListener("visibilitychange",()=>{if(document.hidden)notifPublish();else notifCheck()});
- notifCheck();notifPublish()}
+ document.addEventListener("visibilitychange",()=>{if(document.hidden)notifPublish();else{notifCheck();dueAlert()}});
+ notifCheck();notifPublish();setTimeout(dueAlert,600)}

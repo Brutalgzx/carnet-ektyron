@@ -60,11 +60,11 @@ function pShow(){clearInterval(gInt);clearInterval(pInt);const L=pList(),i=G.pi|
  if(run){pInt=setInterval(pTick,200);pTick()}}
 function pTick(){if(!G||(G.ph!=="warm"&&G.ph!=="str")||!G.pEnd)return;const L=pList(),it=L[G.pi];
  const ms=G.pz?G.pz:G.pEnd-Date.now(),left=Math.ceil(ms/1000),t=$("#p-t"),arc=$("#p-arc"),sd=$("#p-side");
- if(ms<=0){clearInterval(pInt);beep(1175,.35);try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}
+ if(ms<=0){clearInterval(pInt);chime();try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}
   if(G.pi+1<L.length){pStartItem(G.pi+1);pShow()}else pLeave();return}
  if(t)t.textContent=fmtT(left)+(G.pz?" ⏸":"");if(arc)arc.setAttribute("stroke-dashoffset",(326.7*(1-ms/(G.pTot*1000))).toFixed(1));
  if(it.side){const half=ms<=it.d*1000;if(sd)sd.textContent=half?"Côté droit":"Côté gauche";if(half&&!G.pHalf&&!G.pz){G.pHalf=1;gSave();beep(988,.25);beep(988,.25,.3);try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}}
- if(!G.pz&&left<=3&&left!==pTick.l){pTick.l=left;beep(880,.1)}}
+ if(!G.pz&&left<=3&&left!==pTick.l){pTick.l=left;beep(660,.08,0,.14)}}
 
 {const start=gStart,show=gShow,close=gClose;
  gStart=function(day){start(day);if(!G)return;G.ph="warm";G.pi=0;G.pEnd=0;gSave();gShow()};

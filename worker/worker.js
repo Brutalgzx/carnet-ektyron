@@ -24,10 +24,12 @@ export default{
    if(p==="/push"){const k="s:"+id;
     if(req.method==="DELETE"){await env.EK.delete(k);return json({ok:true})}
     if(req.method==="PUT"){const b=await req.json(),cur=JSON.parse(await env.EK.get(k)||"{}");if(b.sub)cur.sub=b.sub;if(b.sched)cur.sched=b.sched;cur.sent=cur.sent||{};
-     if(!cur.sub)return json({error:"abonnement push manquant"},400);await env.EK.put(k,JSON.stringify(cur));return json({ok:true})}}
+     if(b.sub)delete cur.dead;if(!cur.sub)return json({error:"abonnement push perdu, réabonne-toi",resub:true},410);await env.EK.put(k,JSON.stringify(cur));return json({ok:true})}
+    if(req.method==="GET"){const cur=JSON.parse(await env.EK.get(k)||"null");return json({sub:!!(cur&&cur.sub),dead:cur&&cur.dead||null,res:cur&&cur.res||null})}}
    if(p==="/push/test"&&req.method==="POST"){const cur=JSON.parse(await env.EK.get("s:"+id)||"null");if(!cur||!cur.sub)return json({error:"aucun abonnement push"},404);
-    const r=await sendPush(env,cur.sub,{t:"Test réussi ✅",b:"Les notifications push d'Ektyron Coach fonctionnent.",go:"today",tag:"test"});
-    return json({ok:r.ok,status:r.status,detail:r.ok?"":await r.text()},r.ok?200:502)}
+    const r=await sendPush(env,cur.sub,{t:"Test réussi ✅",b:"Les notifications push d'Ektyron Coach fonctionnent.",go:"today",tag:"test"}),detail=r.ok?"":(await r.text()).slice(0,200);
+    cur.res={st:r.status,at:Date.now(),k:"test",d:detail};if(r.status===404||r.status===410){delete cur.sub;cur.dead=Date.now()}await env.EK.put("s:"+id,JSON.stringify(cur));
+    return json({ok:r.ok,status:r.status,detail,resub:!cur.sub},r.ok?200:cur.sub?502:410)}
    if(p==="/group"&&req.method==="POST"){let code,n=0;do{code=gCode();n++}while(n<5&&await env.EK.get("g:"+code));
     await env.EK.put("g:"+code,JSON.stringify({t:Date.now(),m:{}}));return json({code})}
    if(p==="/admin"||p.startsWith("/admin/"))return admin(req,env,id,p);
@@ -84,8 +86,9 @@ async function tick(env){let cursor;
    const n=local(S.sched.tz||"Europe/Paris"),done=S.sched.done||{};S.sent=S.sent||{};let ch=false,gone=false;
    for(const it of S.sched.items||[]){const at=(it.h||0)*60+(it.m||0);if(n.min<at||n.min>at+180)continue;
     if(it.days?!it.days.includes(n.wd):!(it.from&&n.day>=it.from))continue;if(S.sent[it.id]===n.day||done[it.k]===n.day)continue;
-    const r=await sendPush(env,S.sub,{t:it.t,b:it.b,go:it.go||"today",tag:it.k});S.sent[it.id]=n.day;ch=true;if(r.status===404||r.status===410){gone=true;break}}
-   if(gone)await env.EK.delete(name);else if(ch)await env.EK.put(name,JSON.stringify(S))}}
+    let r;try{r=await sendPush(env,S.sub,{t:it.t,b:it.b,go:it.go||"today",tag:it.k})}catch(e){r={ok:false,status:0}}ch=true;
+    S.res={st:r.status,at:Date.now(),k:it.k};if(r.ok)S.sent[it.id]=n.day;if(r.status===404||r.status===410){gone=true;break}}
+   if(gone){delete S.sub;S.dead=Date.now()}if(ch)try{await env.EK.put(name,JSON.stringify(S))}catch(e){}}}
  while(cursor)}
 
 /* ---------- Web Push (RFC 8291 aes128gcm + VAPID RFC 8292), WebCrypto seul ---------- */

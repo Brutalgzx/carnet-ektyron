@@ -50,7 +50,7 @@ const syncCfg=()=>{const c={url:"",code:"",auto:true,last:0,h:0,push:false,ps:""
 const syncOk=()=>{const S=syncCfg();return !!(S.url&&S.code)};
 async function api(path,opt={}){const S=syncCfg();if(!S.url||!S.code)throw new Error("serveur non configuré");
  const r=await fetch(S.url.replace(/\/+$/,"")+path,{...opt,headers:{"Content-Type":"application/json","X-Code":S.code}});
- if(r.status===404&&path==="/backup")return null;if(!r.ok)throw new Error(`le serveur répond ${r.status}`);return r.json()}
+ if(r.status===404&&path==="/backup")return null;if(!r.ok){const e=new Error(`le serveur répond ${r.status}`);e.status=r.status;throw e}return r.json()}
 let syncT,syncBusy=false;
 async function syncUp(force){const S=syncCfg();if(!S.url||!S.code||syncBusy)return;const h=hsh(JSON.stringify(bkData()));if(!force&&h===S.h)return;syncBusy=true;
  try{await api("/backup",{method:"PUT",body:bkJSON()});const N=syncCfg();N.last=Date.now();N.h=h;LS.set("coach-sync",N)}finally{syncBusy=false}}
@@ -103,8 +103,22 @@ function pushSched(){const N=notifCfg(),T=N.types,items=[],done={},lm=lastT("coa
  const f=SET().bk;if(T.save&&f&&!(syncCfg().auto&&syncOk()))items.push({id:"save",k:"save",from:from((bkLast()||Date.now())+f*DAY),h:N.hour,t:"Sauvegarde tes données 💾",b:"Exporte-les vers Fichiers ou Obsidian : 10 secondes, et rien n'est perdu.",go:"set"});
  if(xpProf().games.some(g=>sameDay(g.t)))done.seance=lk();if(sameDay(lastT("coach-weights")))done.pesee=lk();if(sameDay(lm))done.mesures=lk();if(sameDay(lc))done.bilan=lk();if(sameDay(bkLast()))done.save=lk();
  return{tz:Intl.DateTimeFormat().resolvedOptions().timeZone||"Europe/Paris",items,done}}
-async function pushPublish(){const S=syncCfg();if(!S.push||!S.url||!S.code||!PROF)return;const s=JSON.stringify(pushSched());if(s===S.ps)return;
- try{await api("/push",{method:"PUT",body:JSON.stringify({sched:JSON.parse(s)})});const N=syncCfg();N.ps=s;LS.set("coach-sync",N)}catch(e){}}
+/* L'abonnement du téléphone peut changer ou expirer (réinstallation, mise à jour d'iOS…) : à chaque ouverture on renvoie l'abonnement actuel,
+   et si le serveur l'a perdu (410) on en recrée un. Avant, l'erreur était avalée et les rappels s'arrêtaient sans bruit. */
+async function pushSub(fresh){const r=await navigator.serviceWorker.ready;let sub=await r.pushManager.getSubscription();if(sub&&!fresh)return sub;
+ if(sub)try{await sub.unsubscribe()}catch(e){}const {key}=await api("/vapid");return r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:ub64(key)})}
+async function pushPublish(again){const S=syncCfg();if(!S.push||!S.url||!S.code||!PROF||!("PushManager"in window)||Notification.permission!=="granted")return;
+ try{const sub=await pushSub(again),sched=pushSched(),s=JSON.stringify({e:sub.endpoint,sched});if(s===S.ps&&!again)return;
+  await api("/push",{method:"PUT",body:JSON.stringify({sub:sub.toJSON(),sched})});const N=syncCfg();N.ps=s;LS.set("coach-sync",N)}
+ catch(e){if(e.status===410&&!again)return pushPublish(true)}}
+/* Bouton « Tester une notification » : d'abord une notification locale (le téléphone sait-il en afficher ?), puis un vrai push via le serveur. */
+async function pushTest(){if(!canNotif())return toast(IOS&&!STANDALONE?"Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (iOS 16.4 ou plus).":"Ce navigateur ne gère pas les notifications.");
+ if(Notification.permission!=="granted"&&await Notification.requestPermission()!=="granted")return toast("Notifications refusées : autorise-les dans Réglages → Notifications → Ektyron.");
+ const S=syncCfg();if(!S.push){const r=await navigator.serviceWorker.ready;await r.showNotification("Test réussi ✅",{body:"Ton téléphone affiche bien les notifications. Active « Vrai push » pour les recevoir appli fermée.",tag:"test",icon:"icons/icon-192.png"});return}
+ toast("Envoi en cours… ferme l'appli pour voir la notification arriver.");
+ const go=async again=>{try{await api("/push/test",{method:"POST"});toast("Le serveur d'Apple/Google a accepté : la notification arrive dans quelques secondes.")}
+  catch(e){if(e.status===410&&!again){S.ps="";LS.set("coach-sync",S);await pushPublish(true);return go(true)}
+   toast(e.status===502?"Envoi refusé par le service push : coupe puis réactive le push.":"Test raté : "+e.message)}};await go()}
 async function pushOn(){if(!("PushManager"in window)||!canNotif())return toast(IOS&&!STANDALONE?"Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (iOS 16.4 ou plus).":"Ce navigateur ne gère pas le push.");
  if(!syncOk())return toast("Renseigne d'abord l'adresse de ton serveur et ton code (Synchro en ligne).");
  const p=await Notification.requestPermission();if(p!=="granted")return toast("Notifications refusées : autorise-les dans Réglages → Notifications → Ektyron.");
@@ -132,7 +146,8 @@ function vSet(){const N=notifCfg(),T=N.types,S=syncCfg(),C=SET(),last=bkLast(),p
  const card=(lab,body,id="")=>`<div class="card stack"${id?` id="${id}"`:""}><div class="lab">${lab}</div>${body}</div>`;
  const TY=[["seance","🏋️ Séance"],["pesee","⚖️ Pesée"],["mesures","📏 Mesures"],["bilan","📝 Bilan"],["save","💾 Sauvegarde"]];
  const notif=card("Notifications",`<div class="row"><span class="sp small"><b>Rappels de l'appli</b><br><span class="muted">${N.on?"Activés.":"Coupés."} ${IOS?"Sur iPhone, ils arrivent quand tu ouvres l'appli.":"Sur Android, Chrome peut les envoyer appli fermée."}</span></span><button class="chip" id="nt-tog" aria-pressed="${N.on}">${N.on?"Activés":"Activer"}</button></div>
-  <div class="row"><span class="sp small"><b>Vrai push, appli fermée</b><br><span class="muted">${S.push?"Actif : le serveur t'envoie tes rappels à l'heure.":!syncOk()?"Demande ton serveur gratuit (Synchro en ligne, plus bas).":IOS&&!STANDALONE?"Installe d'abord l'appli sur l'écran d'accueil (iOS 16.4+).":"Prêt à activer."}</span></span>${S.push?`<button class="chip" id="ps-test">Tester</button><button class="chip" id="ps-off">Couper</button>`:`<button class="chip" id="ps-on"${!pushOK||!syncOk()?" disabled":""}>Activer</button>`}</div>
+  <div class="row"><span class="sp small"><b>Vrai push, appli fermée</b><br><span class="muted">${S.push?"Actif : le serveur t'envoie tes rappels à l'heure.":!syncOk()?"Demande ton serveur gratuit (Synchro en ligne, plus bas).":IOS&&!STANDALONE?"Installe d'abord l'appli sur l'écran d'accueil (iOS 16.4+).":"Prêt à activer."}</span></span>${S.push?`<button class="chip" id="ps-off">Couper</button>`:`<button class="chip" id="ps-on"${!pushOK||!syncOk()?" disabled":""}>Activer</button>`}</div>
+  <button class="btn ghost" id="ps-test">🔔 Tester une notification</button>
   <div class="lab">Me rappeler</div><div class="row" style="flex-wrap:wrap">${TY.map(([k,l])=>`<button class="chip" data-nty="${k}" aria-pressed="${!!T[k]}">${l}</button>`).join("")}</div>
   <div class="lab">Heure de la séance</div>${chips("nsh",[6,7,12,17,18,19,20],N.shour,h=>h+" h")}
   <div class="lab">Heure des autres rappels</div>${chips("nh",[7,8,9,12,18,20],N.hour,h=>h+" h")}
@@ -202,7 +217,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
  if(D.lu){setC(C=>{C.lu=D.lu});return}
  if(t.id==="ps-on"){pushOn();return}
  if(t.id==="ps-off"){pushOff();return}
- if(t.id==="ps-test"){api("/push/test",{method:"POST"}).then(()=>toast("Notification de test envoyée."),err=>toast("Test raté : "+err.message));return}
+ if(t.id==="ps-test"){pushTest();return}
  if(t.id==="sy-gen"){$("#sy-code").value=newCode();return}
  if(t.id==="sy-auto"){const S=syncCfg();S.auto=!S.auto;LS.set("coach-sync",S);render();return}
  const readSync=()=>{const S=syncCfg(),u=$("#sy-url").value.trim(),c=$("#sy-code").value.trim();if(!/^https:\/\/\S+$/.test(u)){$("#sy-m").textContent="L'adresse doit commencer par https://";return null}if(c.length<8){$("#sy-m").textContent="Ton code doit faire au moins 8 caractères.";return null}
