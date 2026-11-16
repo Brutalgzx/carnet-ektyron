@@ -541,6 +541,12 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&G){lockOn();if(G.ph==="rest")gTick()}});
 
 /* ================= Démarrage ================= */
+/* Alexis : séances notées avant le poids à vide (disques seuls). Presse 75,6 kg et hack squat 45 kg ajoutés une seule fois ; volumes et XP recalculés. */
+function fixMach1(p){if(!p||p.fx2||!/^alexis$/i.test(p.name||"")||p.h==null)return;const M={press:75.6,hack:45},C=LS.get("carnet",{}),X=LS.get("carnet-xp",null),dy=t=>new Date(t).toDateString(),add={};
+ for(const id in M)for(const e of C[id]||[])for(const s of e.sets||[])if(s&&s.m==null){s.m=M[id];add[dy(e.t)]=(add[dy(e.t)]||0)+M[id]*(s.r||0)}
+ if(X&&X.games)for(const g of X.games){const a=add[dy(g.t)];if(a){g.vol=Math.round((g.vol||0)+a);X.xp=(X.xp||0)+Math.round(a/10);delete add[dy(g.t)]}}
+ if(X)LS.set("carnet-xp",X);LS.set("carnet",C);store=C;const CM=LS.get("coach-mach",{});for(const id in M)if(CM[id]==null)CM[id]=M[id];LS.set("coach-mach",CM);p.fx2=1}
+fixMach1(PROF);
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
 render();suiviInit();reglagesInit();jeuInit();
 if(PROF&&G){if(G.ph!=="done"&&!gToday(G.start))gDrop();else if(!G.away)gOpen()}
