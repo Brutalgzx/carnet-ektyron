@@ -127,6 +127,11 @@ function dislike(rid){const r=RECI[rid];PROF.nope=[...new Set([...(PROF.nope||[]
  const W=week(),used=new Set(W.days.flatMap(d=>[d.pdj,d.dej,d.din,d.snack])),R=rng(Date.now()%1e9);
  const c=pool(r.m).filter(x=>x.id!==rid).map(x=>({x,s:R()*.5+tasteScore(x)-(used.has(x.id)?2:0)})).sort((a,b)=>b.s-a.s),nw=c.length?c[0].x:null;
  if(nw)for(const d of W.days)for(const k of ["pdj","dej","din","snack"])if(d[k]===rid)d[k]=nw.id;LS.set("coach-week",W);return nw}
+/* « Remplacer » : change ce plat ce jour-là et à ce repas-là seulement, sans l'exclure. */
+function swapMeal(rid,slot,day){const r=RECI[rid],W=week(),D=W.days[wIdx(+day)];if(!r||!D||D[slot]!==rid)return null;
+ const used=new Set(W.days.flatMap(d=>[d.pdj,d.dej,d.din,d.snack])),R=rng(Date.now()%1e9);
+ const c=pool(r.m).filter(x=>x.id!==rid).map(x=>({x,s:R()*.5+tasteScore(x)-(used.has(x.id)?2:0)})).sort((a,b)=>b.s-a.s),nw=c.length?c[0].x:null;
+ if(nw){D[slot]=nw.id;LS.set("coach-week",W);LS.set("coach-shop",{})}return nw}
 const hateN=W=>{const h=hateIng();return h.length?W.days.reduce((a,d)=>a+["pdj","dej","din","snack"].filter(k=>RECI[d[k]]&&has(RECI[d[k]],h)).length,0):0};
 function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2,hc:2};LS.set("coach-week",W)}
  /* Semaines déjà enregistrées : si un plat contient un aliment refusé, on recompose une fois (si ça fait mieux). */
@@ -371,7 +376,7 @@ function openRecipe(rid,slot,day){const m=dayMeals(+day).find(x=>x.slot===slot&&
  <div class="kpis"><div><strong>${fr(m.k)}</strong><small>kcal</small></div><div><strong>${fr(m.P)} g</strong><small>protéines</small></div><div><strong>${fr(m.C)} / ${fr(m.F)}</strong><small>glucides / lipides</small></div></div>
  ${recipeNutri(m)}
  <div class="lab">Ce qu'il te faut · portion calculée pour toi · ≈ ${eur(m.e)}</div><ul class="list">${r.i.map(([i,g])=>`<li><button class="lnk sp" data-food="${i}" data-g="${Math.round(g*m.fi(i))}" data-back="1">${ingName(i)}<br><small class="muted">≈ ${eur(ppk(i).e*g*m.fi(i)/1000)}${myStores().length>1?" · "+stLab(ppk(i).v):""}</small></button><b class="mono">${i==="oeuf"?`${Math.max(1,Math.round(g*m.fi(i)/60))} œuf(s)`:`${Math.round(g*m.fi(i)/5)*5} g`}</b></li>`).join("")}</ul>
- <div class="lab">Préparation</div><p style="margin:0">${r.p}</p>${m.bt?`<p class="small muted">Batch cooking : cuisine 3 à 4 portions d'un coup (dimanche, puis mercredi soir). Elles se gardent 3 jours au frigo.</p>`:m.left?`<p class="small muted">Prépare une double portion la veille au dîner : c'est ton déjeuner du lendemain.</p>`:""}<button class="btn ghost" data-nope="${r.id}">👎 Je n'aime pas, remplace-la</button></div></div>`;
+ <div class="lab">Préparation</div><p style="margin:0">${r.p}</p>${m.bt?`<p class="small muted">Batch cooking : cuisine 3 à 4 portions d'un coup (dimanche, puis mercredi soir). Elles se gardent 3 jours au frigo.</p>`:m.left?`<p class="small muted">Prépare une double portion la veille au dîner : c'est ton déjeuner du lendemain.</p>`:""}${recBack&&recBack[2]!=null&&recBack[2]!==""?`<button class="btn ghost" data-swap="${r.id}" data-slot="${slot}" data-day="${day}">↻ Remplacer (ce jour seulement)</button>`:""}<button class="btn ghost" data-nope="${r.id}">👎 Je n'aime pas, remplace-la</button></div></div>`;
  document.body.appendChild(el);const vb=el.querySelector("[data-vid]");if(vb)vb.onclick=()=>{const [u,id]=vb.dataset.vid.split("/"),h=vb.parentNode;h.classList.add("on");h.innerHTML=`<iframe src="https://www.tiktok.com/player/v1/${id}?embed_from=oembed&music_info=1&description=1&autoplay=1&muted=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen title="Vidéo de la recette par @${u}"></iframe><button class="x" data-close aria-label="Fermer">✕</button><small class="cr">Vidéo de @${u} sur TikTok</small>`}}
 
 /* ================= Mode partie ================= */
@@ -518,6 +523,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.nt){nutTab=D.nt;render();return}
  if(D.food){openFood(D.food,+D.g||0,D.back?recBack:null);return}
  if(D.rec){openRecipe(D.rec,D.slot,D.day);return}
+ if(D.swap){const old=RECI[D.swap],nw=swapMeal(D.swap,D.slot,D.day);if(nw){openRecipe(nw.id,D.slot,D.day);render();toast(`${old.n} : remplacé par ${nw.n} pour ce jour.`)}else toast("Pas d'autre plat de ce type.");return}
  if(D.nope){const old=RECI[D.nope],nw=dislike(D.nope);$("#sheet")?.remove();render();toast(nw?`${old.n} : remplacé par ${nw.n}. Il ne reviendra plus.`:"Recette écartée.");return}
  if(t.id==="tastes"){startTastes();return}
  if(D.eat){const E=LS.get("coach-eaten",{}),k=todayKey();E[k]=E[k]||{};E[k][D.eat]=!E[k][D.eat];for(const d in E)if(d<new Date(Date.now()-14*DAY).toISOString().slice(0,10))delete E[d];LS.set("coach-eaten",E);render();return}
