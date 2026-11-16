@@ -231,7 +231,7 @@ const STYLES = [
 const STORES = [
  {v:"lidl",l:"Lidl",f:.85},{v:"aldi",l:"Aldi",f:.85},{v:"leclerc",l:"E.Leclerc",f:.93},{v:"carrefour",l:"Carrefour",f:1},
  {v:"inter",l:"Intermarché",f:.97},{v:"auchan",l:"Auchan",f:.95},{v:"superu",l:"Super U",f:.97},{v:"monop",l:"Monoprix",f:1.25},
- {v:"franprix",l:"Franprix",f:1.25},{v:"casino",l:"Casino",f:1.12}
+ {v:"franprix",l:"Franprix",f:1.25},{v:"casino",l:"Casino",f:1.12},{v:"picard",l:"Picard",f:1.35}
 ];
 
 const TIPS = [

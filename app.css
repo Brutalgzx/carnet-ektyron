@@ -222,3 +222,5 @@ body.g-on{overflow:hidden}
 .hc.sel{outline:2px solid #fff;outline-offset:1px}
 .hc i{position:absolute;top:-4px;right:-4px;font:700 10px var(--mono);background:#fff;color:#000;border-radius:8px;padding:1px 4px;font-style:normal}
 nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shadow(0 0 6px var(--acc))}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.bbar{height:10px;border-radius:99px;background:var(--line);overflow:hidden}.bbar i{display:block;height:100%;border-radius:99px}
