@@ -25,12 +25,19 @@ const mondayOf=t=>{const d=new Date(t);return new Date(d.getFullYear(),d.getMont
 const notifCfg=()=>{const N={on:false,wday:1,hour:8,shour:18,mf:14,cf:7,last:{},...LS.get("coach-notif",{})};N.types={seance:1,pesee:1,mesures:1,bilan:1,save:1,...(N.types||{})};return N};
 const canNotif=()=>"Notification"in window&&"serviceWorker"in navigator;
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+/* Textes des rappels, partagés par les notifications push (reglages.js), les rappels locaux et la fenêtre à l'ouverture. */
+const NT={pesee:{e:"⚖️",t:"Pesée ce matin",b:"Avant de manger ou boire, après les toilettes, toujours sur la même balance."},
+ pb:{e:"📝",t:"Jour de bilan",b:"Pèse-toi d'abord : à jeun, avant de manger ou boire, après les toilettes. Puis 20 s de questions pour que ton coach t'ajuste."},
+ mesures:{e:"📏",t:"Jour de mensurations",b:"Taille, bras, cuisse : 2 minutes avec un mètre ruban. Et la balance à impédance de ta salle si elle en a une."},
+ bilan:{e:"📝",t:"Ton bilan de la semaine",b:"Sommeil, énergie, faim : 20 secondes pour que ton coach t'ajuste."},
+ save:{e:"💾",t:"Sauvegarde tes données",b:"Exporte-les vers Fichiers ou Obsidian : 10 secondes, et rien n'est perdu."},
+ seance:S=>({e:"💪",t:`Séance ${S.t} aujourd'hui`,b:`${S.x.length} exercices, environ ${sessMin(S)} min.`})};
 function dueList(){const N=notifCfg(),T=N.types,d=new Date(),wd=d.getDay(),now=Date.now(),out=[],lw=lastT("coach-weights"),lm=lastT("coach-meas"),lc=lastT("coach-check");
- if(T.pesee&&!sameDay(lw)&&(wd===N.wday||lw&&now-lw>8*DAY))out.push({k:"pesee",e:"⚖️",t:"C'est le jour de ta pesée",b:"Le matin à jeun, après être passé aux toilettes, toujours sur la même balance."});
- if(T.mesures&&!sameDay(lm)&&now-lm>=(N.mf-1)*DAY&&(wd===N.wday||lm&&now-lm>(N.mf+2)*DAY))out.push({k:"mesures",e:"📏",t:"Jour de mensurations",b:"Taille, bras, cuisse… 2 minutes avec un mètre ruban. Et la balance à impédance de ta salle si elle en a une."});
- if(T.bilan&&!sameDay(lc)&&now-lc>=(N.cf-1)*DAY&&(wd===N.wday||lc&&now-lc>(N.cf+2)*DAY))out.push({k:"bilan",e:"📝",t:"Ton bilan de la semaine",b:"Sommeil, énergie, faim : 20 secondes pour que ton coach t'ajuste."});
- if(T.save&&bkDue())out.push({k:"save",e:"💾",t:"Sauvegarde tes données",b:"Exporte-les vers Fichiers ou Obsidian (ou active la synchro en ligne) : rien n'est perdu si tu changes de téléphone."});
- const S=TRAIN&&TRAIN[wd];if(T.seance&&S&&!xpProf().games.some(g=>sameDay(g.t)))out.push({k:"seance",e:"🏋️",t:`Séance du jour : ${S.t}`,b:`${S.x.length} exercices, environ ${sessMin(S)} min.`});
+ if(T.pesee&&!sameDay(lw)&&(wd===N.wday||lw&&now-lw>8*DAY))out.push({k:"pesee",...NT.pesee});
+ if(T.mesures&&!sameDay(lm)&&now-lm>=(N.mf-1)*DAY&&(wd===N.wday||lm&&now-lm>(N.mf+2)*DAY))out.push({k:"mesures",...NT.mesures});
+ if(T.bilan&&!sameDay(lc)&&now-lc>=(N.cf-1)*DAY&&(wd===N.wday||lc&&now-lc>(N.cf+2)*DAY))out.push({k:"bilan",...NT.bilan});
+ if(T.save&&bkDue())out.push({k:"save",...NT.save});
+ const S=TRAIN&&TRAIN[wd];if(T.seance&&S&&!xpProf().games.some(g=>sameDay(g.t)))out.push({k:"seance",...NT.seance(S)});
  return out}
 function dueBanner(){const L=dueList().filter(x=>x.k!=="seance");if(!L.length)return"";
  return `<div class="card stack" style="border-color:var(--warn)"><div class="lab">À faire aujourd'hui</div>${L.map(x=>`<button class="hintbox" data-go="${x.k}" style="text-align:left;width:100%;color:inherit"><span style="font-size:26px">${x.e}</span><span><b>${x.t}</b><br><small class="muted">${x.b}</small></span></button>`).join("")}</div>`}
@@ -52,7 +59,7 @@ async function notifPublish(){try{if(!("caches"in window))return;const c=await c
 let notifTimer;
 async function notifCheck(){clearTimeout(notifTimer);const N=notifCfg();if(!PROF||!N.on||!canNotif()||Notification.permission!=="granted"||syncCfg().push)return;const now=new Date(),hOf=k=>k==="seance"?N.shour:N.hour,L=dueList(),wait=L.filter(it=>now.getHours()<hOf(it.k));
  if(wait.length){const at=new Date(now.getFullYear(),now.getMonth(),now.getDate(),Math.min(...wait.map(it=>hOf(it.k)))).getTime();notifTimer=setTimeout(notifCheck,at-now.getTime()+1000)}
- try{const r=await navigator.serviceWorker.ready,tk=todayKey();for(const it of L){if(N.last[it.k]===tk||now.getHours()<hOf(it.k))continue;N.last[it.k]=tk;await r.showNotification(it.t,{body:it.b,tag:it.k,icon:"icons/icon-192.png",badge:"icons/icon-192.png",data:{go:it.k==="seance"?"today":it.k==="save"?"set":"prog"}})}}catch(e){}
+ try{const r=await navigator.serviceWorker.ready,tk=todayKey();for(const it of L){if(N.last[it.k]===tk||now.getHours()<hOf(it.k))continue;N.last[it.k]=tk;await r.showNotification(`${it.e} ${it.t}`,{body:it.b,tag:it.k,icon:"icons/icon-192.png",badge:"icons/icon-192.png",data:{go:it.k==="seance"?"today":it.k==="save"?"set":"prog"}})}}catch(e){}
  LS.set("coach-notif",N);notifPublish()}
 async function notifToggle(){const N=notifCfg();if(N.on){N.on=false;LS.set("coach-notif",N);notifPublish();toast("Rappels coupés");return render()}
  if(!canNotif()){toast(IOS&&!STANDALONE?"Sur iPhone : installe d'abord l'appli sur l'écran d'accueil (iOS 16.4 ou plus), puis active les rappels.":"Ce navigateur ne gère pas les notifications.");return}

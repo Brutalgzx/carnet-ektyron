@@ -96,12 +96,14 @@ function newCode(){const a="abcdefghjkmnpqrstuvwxyz23456789",b=crypto.getRandomV
 const ub64=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((s.length+3)%4)),c=>c.charCodeAt(0));
 /* Programme des rappels envoyé au serveur : jours fixes (séances, pesée) ou « à partir du » (mensurations, bilan, sauvegarde), une fois par jour jusqu'à ce que ce soit fait. */
 function pushSched(){const N=notifCfg(),T=N.types,items=[],done={},lm=lastT("coach-meas"),lc=lastT("coach-check"),from=t=>t?lk(Math.max(t,Date.now())):lk();
- if(T.seance&&TRAIN)for(const d of WEEK)if(TRAIN[d])items.push({id:"seance"+d,k:"seance",days:[d],h:N.shour,t:"C'est l'heure de ta séance 💪",b:`${TRAIN[d].t} : ${TRAIN[d].x.length} exercices, environ ${sessMin(TRAIN[d])} min.`,go:"today"});
- if(T.pesee)items.push({id:"pesee",k:"pesee",days:[N.wday],h:N.hour,t:"C'est le jour de ta pesée ⚖️",b:"Le matin à jeun, toujours sur la même balance.",go:"prog"});
- if(T.mesures)items.push({id:"mesures",k:"mesures",...(lm?{from:from(lm+N.mf*DAY)}:{days:[N.wday]}),h:N.hour,t:"Prends tes mesures pour le bilan 📏",b:"Taille, bras, cuisse : 2 minutes avec un mètre ruban.",go:"prog"});
- if(T.bilan)items.push(N.cf===7||!lc?{id:"bilan",k:"bilan",days:[N.wday],h:N.hour,t:"Ton bilan de la semaine 📝",b:"Sommeil, énergie, faim : 20 secondes pour que ton coach t'ajuste.",go:"prog"}:{id:"bilan",k:"bilan",from:from(lc+N.cf*DAY),h:N.hour,t:"Ton bilan 📝",b:"Sommeil, énergie, faim : 20 secondes pour que ton coach t'ajuste.",go:"prog"});
- const f=SET().bk;if(T.save&&f&&!(syncCfg().auto&&syncOk()))items.push({id:"save",k:"save",from:from((bkLast()||Date.now())+f*DAY),h:N.hour,t:"Sauvegarde tes données 💾",b:"Exporte-les vers Fichiers ou Obsidian : 10 secondes, et rien n'est perdu.",go:"set"});
- if(xpProf().games.some(g=>sameDay(g.t)))done.seance=lk();if(sameDay(lastT("coach-weights")))done.pesee=lk();if(sameDay(lm))done.mesures=lk();if(sameDay(lc))done.bilan=lk();if(sameDay(bkLast()))done.save=lk();
+ if(T.seance&&TRAIN)for(const d of WEEK)if(TRAIN[d]){const x=NT.seance(TRAIN[d]);items.push({id:"seance"+d,k:"seance",days:[d],h:N.shour,t:`${x.e} ${x.t}`,b:x.b,go:"today"})}
+ const tx=k=>({t:`${NT[k].e} ${NT[k].t}`,b:NT[k].b}),both=T.pesee&&T.bilan&&(N.cf===7||!lc),hp=Math.min(N.hour,7);
+ /* Pesée envoyée tôt (7 h au plus tard) ; le jour où pesée et bilan tombent ensemble, une seule notification pour les deux. */
+ if(both)items.push({id:"pesee",k:"pb",days:[N.wday],h:hp,...tx("pb"),go:"prog"});else if(T.pesee)items.push({id:"pesee",k:"pesee",days:[N.wday],h:hp,...tx("pesee"),go:"prog"});
+ if(T.mesures)items.push({id:"mesures",k:"mesures",...(lm?{from:from(lm+N.mf*DAY)}:{days:[N.wday]}),h:N.hour,...tx("mesures"),go:"prog"});
+ if(T.bilan&&!both)items.push(lc&&N.cf!==7?{id:"bilan",k:"bilan",from:from(lc+N.cf*DAY),h:N.hour,...tx("bilan"),go:"prog"}:{id:"bilan",k:"bilan",days:[N.wday],h:N.hour,...tx("bilan"),go:"prog"});
+ const f=SET().bk;if(T.save&&f&&!(syncCfg().auto&&syncOk()))items.push({id:"save",k:"save",from:from((bkLast()||Date.now())+f*DAY),h:N.hour,...tx("save"),go:"set"});
+ if(xpProf().games.some(g=>sameDay(g.t)))done.seance=lk();if(sameDay(lastT("coach-weights")))done.pesee=lk();if(sameDay(lm))done.mesures=lk();if(sameDay(lc))done.bilan=lk();if(sameDay(lastT("coach-weights"))&&sameDay(lc))done.pb=lk();if(sameDay(bkLast()))done.save=lk();
  return{tz:Intl.DateTimeFormat().resolvedOptions().timeZone||"Europe/Paris",items,done}}
 /* L'abonnement du téléphone peut changer ou expirer (réinstallation, mise à jour d'iOS…) : à chaque ouverture on renvoie l'abonnement actuel,
    et si le serveur l'a perdu (410) on en recrée un. Avant, l'erreur était avalée et les rappels s'arrêtaient sans bruit. */
