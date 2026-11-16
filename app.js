@@ -65,6 +65,9 @@ const mealSlots=()=>PROF.meals===4?MEALS4:MEALS3;
 const RECI=Object.fromEntries(REC.map(r=>[r.id,r]));
 const RM={};
 function rmac(r){if(RM[r.id])return RM[r.id];let k=0,P=0,C=0,F=0,e=0;for(const [i,g] of r.i){const d=ING[i];k+=d[1]*g/100;P+=d[2]*g/100;C+=d[3]*g/100;F+=d[4]*g/100;e+=ppk(i).e*g/1000}return RM[r.id]={k,P,C,F,e}}
+/* Choix des plats selon l'objectif : part de protéines (pd) et calories par gramme (ed). Sèche → plats protéinés et rassasiants ; masse → plats plus denses, plus faciles à finir. */
+function goalScore(r){const m=rmac(r),g=r.i.reduce((t,x)=>t+x[1],0)||1,pd=m.P*4/(m.k||1),ed=m.k/g,G=PROF.goal;
+ return G==="seche"?(pd-.25)*9-Math.max(0,ed-1.6)*1.2:G==="recompo"?(pd-.25)*6-Math.max(0,ed-2)*.6:G==="masse"?(ed-1.5)*.8+(pd-.2)*3:G==="force"?(ed-1.5)*.5+(pd-.2)*3:0}
 const dietOk=r=>PROF.diet==="vege"?r.v==="vege":PROF.diet==="pesco"?r.v!=="omni":true;
 const PG=new Set(["poulet","dinde","boeuf","thon","saumon","oeuf","tofu","fblanc","skyr","whey","porc","jambon","cabil","cottage","crevette","truite","saumfume","sardine"]),CG=new Set(["riz","pates","semoule","avoine","painc","wrap","painb","pdt","patd","banane","pomme","miel","lentilles","poischi","harico","mais","frouges","lait","galriz","quinoa","nouilles","bveg","farine","farriz","sarrasin","feuilriz","cornfl","butternut","dattes","mangue","ananas","peche","gnocchi","pinsa","udon","panko","maizena","cremriz"]);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
@@ -106,7 +109,7 @@ function tasteScore(r){const p=PROF,t=p.taste||{};let s=0;for(const k in t)if(t[
 function genWeek(seed){const g0=GL;GL=gAuto();for(const k in RM)delete RM[k];try{return genWeek0(seed)}finally{GL=g0;for(const k in RM)delete RM[k]}}
 function genWeek0(seed){const R=rng(seed),T=targets(),slots=mealSlots(),B=PROF.budget/(7*slots.length);
  const pick=(m,n,styled)=>{let c=pool(m);if(styled&&PROF.styles.length&&!c.some(isPick)){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
-  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)+(isPick(r)?2.5+mm.P*4/mm.k*3:0)}}).sort((a,b)=>b.s-a.s);
+  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)+goalScore(r)+(isPick(r)?2.5+mm.P*4/mm.k*3:0)}}).sort((a,b)=>b.s-a.s);
   const out=[];for(let i=0;out.length<n;i++)out.push(sc[i%sc.length].r.id);return out};
  const pdj=pick("pdj",2),snk=pick("snack",2),days=[];
  if(PROF.batch==="oui"){const M=pick("main",4,true);/* 2 plats cuisinés le dimanche pour lun–mer, 2 le mercredi soir pour jeu–dim */
@@ -290,7 +293,7 @@ function macroBlock(T,got){const r=52,C=2*Math.PI*r,k=Math.min(1,got.k/T.kcal);c
  return `<div class="row" style="gap:16px"><div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="gp"><stop offset="0" stop-color="#FFAA66"/><stop offset="1" stop-color="#E85D00"/></linearGradient></defs><circle class="b" cx="60" cy="60" r="${r}"/><circle class="f" cx="60" cy="60" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-k)}"/></svg><div><b>${fr(got.k)}</b><small>/ ${fr(T.kcal)} kcal</small></div></div>
  <div class="mac">${b("Protéines",got.P,T.p,"#FF7A1A")}${b("Glucides",got.C,T.c,"#FFB547")}${b("Lipides",got.F,T.f,"#FF8A3D")}</div></div>`}
 function mealRow(m,d,check){const ek=LS.get("coach-eaten",{})[todayKey()]||{},on=!!ek[m.slot];
- return `<div class="row">${check?`<button class="chk ${on?"on":""}" data-eat="${m.slot}" aria-label="Repas mangé : ${esc(m.r.n)}" aria-pressed="${on}">${on?"✓":""}</button>`:""}<button class="meal" data-rec="${m.r.id}" data-slot="${m.slot}" data-day="${d}"><span class="ph">${m.r.e}</span><span class="sp"><small>${m.l}${m.left?" · restes d'hier":""}</small><b>${esc(m.r.n)}</b><small>${m.r.min} min · ${eur(m.e)}</small></span><span class="k">${fr(m.k)} kcal</span></button></div>`}
+ return `<div class="row">${check?`<button class="chk ${on?"on":""}" data-eat="${m.slot}" aria-label="Repas mangé : ${esc(m.r.n)}" aria-pressed="${on}">${on?"✓":""}</button>`:""}<button class="meal" data-rec="${m.r.id}" data-slot="${m.slot}" data-day="${d}"><span class="ph">${m.r.e}<img class="pic" src="img/rec/${m.r.id}.webp" alt="" loading="lazy" onerror="this.remove()"></span><span class="sp"><small>${m.l}${m.left?" · restes d'hier":""}</small><b>${esc(m.r.n)}</b><small>${m.r.min} min · ${eur(m.e)}</small></span><span class="k">${fr(m.k)} kcal</span></button></div>`}
 function vToday(){const d=new Date().getDay(),S=TRAIN[d],T=targets(),M=PROF.refined&&PROF.refined.nut===0?[]:dayMeals(d),ek=LS.get("coach-eaten",{})[todayKey()]||{};
  const got=M.filter(m=>ek[m.slot]).reduce((a,m)=>({k:a.k+m.k,P:a.P+m.P,C:a.C+m.C,F:a.F+m.F}),{k:0,P:0,C:0,F:0});
  const W=LS.get("coach-weights",[]),needW=!W.length||Date.now()-W[W.length-1].t>6*DAY,tip=TIPS[Math.floor(Date.now()/DAY)%TIPS.length];
@@ -353,7 +356,7 @@ function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b
 /* ================= Fiche recette ================= */
 let recBack=null;
 function openRecipe(rid,slot,day){const m=dayMeals(+day).find(x=>x.slot===slot&&x.r.id===rid)||{...portion(rid,slot),l:""},r=m.r;$("#sheet")?.remove();recBack=[rid,slot,day];
- const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="${esc(r.n)}"><div class="hero">${r.e}${RVID[r.id]?`<button class="vid" data-vid="${RVID[r.id]}">▶ Voir le plat en vidéo</button>`:""}<button class="x" data-close aria-label="Fermer">✕</button></div>
+ const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="${esc(r.n)}"><div class="hero">${r.e}<img class="pic" src="img/rec/${r.id}.webp" alt="" loading="lazy" onerror="this.remove()">${RVID[r.id]?`<button class="vid" data-vid="${RVID[r.id]}">▶ Voir le plat en vidéo</button>`:""}<button class="x" data-close aria-label="Fermer">✕</button></div>
  <div class="stack"><div class="lab">${m.l||""} · ${r.min} min · ${eur(m.e)}</div><h2 style="text-transform:none;font-family:var(--body);font-weight:600;font-size:24px">${esc(r.n)}</h2>
  <div class="kpis"><div><strong>${fr(m.k)}</strong><small>kcal</small></div><div><strong>${fr(m.P)} g</strong><small>protéines</small></div><div><strong>${fr(m.C)} / ${fr(m.F)}</strong><small>glucides / lipides</small></div></div>
  ${recipeNutri(m)}
