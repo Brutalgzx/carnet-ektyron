@@ -353,13 +353,13 @@ function vMe(){const p=PROF,row=(l,v)=>`<li><span class="sp muted">${l}</span><b
 /* ================= Fiche recette ================= */
 let recBack=null;
 function openRecipe(rid,slot,day){const m=dayMeals(+day).find(x=>x.slot===slot&&x.r.id===rid)||{...portion(rid,slot),l:""},r=m.r;$("#sheet")?.remove();recBack=[rid,slot,day];
- const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="${esc(r.n)}"><div class="hero">${r.e}<button class="x" data-close aria-label="Fermer">✕</button></div>
+ const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="${esc(r.n)}"><div class="hero">${r.e}${RVID[r.id]?`<button class="vid" data-vid="${RVID[r.id]}">▶ Voir le plat en vidéo</button>`:""}<button class="x" data-close aria-label="Fermer">✕</button></div>
  <div class="stack"><div class="lab">${m.l||""} · ${r.min} min · ${eur(m.e)}</div><h2 style="text-transform:none;font-family:var(--body);font-weight:600;font-size:24px">${esc(r.n)}</h2>
  <div class="kpis"><div><strong>${fr(m.k)}</strong><small>kcal</small></div><div><strong>${fr(m.P)} g</strong><small>protéines</small></div><div><strong>${fr(m.C)} / ${fr(m.F)}</strong><small>glucides / lipides</small></div></div>
  ${recipeNutri(m)}
  <div class="lab">Ce qu'il te faut · portion calculée pour toi · ≈ ${eur(m.e)}</div><ul class="list">${r.i.map(([i,g])=>`<li><button class="lnk sp" data-food="${i}" data-g="${Math.round(g*m.fi(i))}" data-back="1">${ingName(i)}<br><small class="muted">≈ ${eur(ppk(i).e*g*m.fi(i)/1000)}${myStores().length>1?" · "+stLab(ppk(i).v):""}</small></button><b class="mono">${i==="oeuf"?`${Math.max(1,Math.round(g*m.fi(i)/60))} œuf(s)`:`${Math.round(g*m.fi(i)/5)*5} g`}</b></li>`).join("")}</ul>
  <div class="lab">Préparation</div><p style="margin:0">${r.p}</p>${m.bt?`<p class="small muted">Batch cooking : cuisine 3 à 4 portions d'un coup (dimanche, puis mercredi soir). Elles se gardent 3 jours au frigo.</p>`:m.left?`<p class="small muted">Prépare une double portion la veille au dîner : c'est ton déjeuner du lendemain.</p>`:""}<button class="btn ghost" data-nope="${r.id}">👎 Je n'aime pas, remplace-la</button></div></div>`;
- document.body.appendChild(el)}
+ document.body.appendChild(el);const vb=el.querySelector("[data-vid]");if(vb)vb.onclick=()=>{const [u,id]=vb.dataset.vid.split("/"),h=vb.parentNode;h.classList.add("on");h.innerHTML=`<iframe src="https://www.tiktok.com/player/v1/${id}?embed_from=oembed&music_info=1&description=1&autoplay=1&muted=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen title="Vidéo de la recette par @${u}"></iframe><button class="x" data-close aria-label="Fermer">✕</button><small class="cr">Vidéo de @${u} sur TikTok</small>`}}
 
 /* ================= Mode partie ================= */
 const GK="carnet-game";let G=LS.get(GK,null),gInt=null,gArm=0,gLastS=null,auCtx=null,wake=null;
