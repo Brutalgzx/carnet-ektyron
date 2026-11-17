@@ -217,7 +217,7 @@ EXOS["tvert"] = dict(
 EXOS["rowu"] = dict(
     A=dict(pel=(-0.05, 0.93), t=8, hd=10, thL=-90, shL=180, aR=(0.0, 0.33, 0.085), kpR=(1, 0, 0),
            hL=(0.50, 0.20, 0.47), uaR=-90, faR=-90, uab=4),
-    B=dict(uaR=168, faR=-95),
+    B=dict(uaR=-192, faR=-95),  # -192 (= 168) : le coude recule vers la hanche, sans passer par-dessus la tête
     bad=dict(B=dict(tw=35, t2=22)),
     zgood=["latR", "drearR"], zbad=["lowback"],
     tgood="dos plat, tire le coude vers la hanche", tbad="le buste pivote pour arracher la charge",

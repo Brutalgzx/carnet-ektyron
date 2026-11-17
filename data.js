@@ -508,5 +508,5 @@ const TEMPO={hipt:"1 s montée · 2 s serré en haut · 2 s descente",pont:"1 s 
 function tempoOf(v){return TEMPO[v]||(v.startsWith("s_")?TEMPO_T.etir:v.startsWith("w_")?TEMPO_T.echa:POLY.has(v)?TEMPO_T.poly:TEMPO_T.iso)}
 function vidOf(id,a){return VIDS.has(id)?id:VALIAS[id]||(VIDS.has(a)?a:VALIAS[a]||null)}
 function animTag(id,a,name,cls){const v=vidOf(id,a);cls=cls?" "+cls:"";
- if(v)return `<video class="anim anim-v${cls}" data-src="renders/${v}.mp4?v=1" data-id="${a||""}" muted loop playsinline preload="none" aria-label="Animation : ${name}"></video><div class="anim-cap">${VMUS[v]?`<span class="anim-mus">${VMUS[v]}</span>`:""}<span class="anim-tmp">⏱ ${tempoOf(v)}</span></div>`;
+ if(v)return `<video class="anim anim-v${cls}" data-src="renders/${v}.mp4?v=${v==="rowu"?2:1}" data-id="${a||""}" muted loop playsinline preload="none" aria-label="Animation : ${name}"></video><div class="anim-cap">${VMUS[v]?`<span class="anim-mus">${VMUS[v]}</span>`:""}<span class="anim-tmp">⏱ ${tempoOf(v)}</span></div>`;
  return ""}

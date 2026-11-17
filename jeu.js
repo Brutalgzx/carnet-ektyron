@@ -117,7 +117,9 @@ function jeuHome(){if(!PROF)return"";const acc=acUser()?"":`<button class="hintb
 /* ---------- Admin : un seul compte (le premier qui le réclame). Voit tous les groupes, retire un membre ou supprime un groupe. ---------- */
 let admData=null,admBusy=0;
 const admDate=t=>t?new Date(t).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"?";
-function admCard(){if(!acUser())return"";
+/* Admin réservé au profil de Raphaël (créateur de l'app) : personne d'autre ne voit le bouton ni la carte. */
+const admMe=()=>/^rapha[eë]l\b/i.test((PROF&&PROF.name||"").trim());
+function admCard(){if(!acUser()||!admMe())return"";
  if(!LS.get("coach-admin",0))return `<div style="text-align:center"><button class="chip" id="adm-claim">🛠️ Admin</button></div>`;
  if(admData===null)setTimeout(admLoad,0);
  const G=admData,body=G===null?`<p class="small muted" style="margin:0">Chargement…</p>`:!G.length?`<p class="small muted" style="margin:0">Aucun groupe.</p>`:G.map(g=>`<div class="stack" style="gap:6px;border-top:1px solid var(--line);padding-top:8px">

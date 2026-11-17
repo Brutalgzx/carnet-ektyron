@@ -433,9 +433,9 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
   <div class="g-adj"><button id="g-m" aria-label="Moins 15 secondes">−15</button><button id="g-go">Je suis prêt</button><button id="g-p" aria-label="Plus 15 secondes">+15</button></div>
   <div class="g-next"><small>Ensuite</small><b>${nx.n}</b><span>Série ${G.si+1}/${nx.s} · objectif ${nx.r[0]}–${nx.r[1]} reps</span></div>`;
   gLastS=null;gInt=setInterval(gTick,200);gTick();return}
- const st=gStats(),X=xpProf();if(!G.saved){X.xp+=st.xp;X.games.push({t:Date.now(),day:G.day,vol:st.vol,sets:st.n});X.games=X.games.slice(-300);LS.set("carnet-xp",X);G.saved=1;G.xp=st.xp;gSave();beep(784,.15);beep(988,.15,.16);beep(1319,.35,.32)}
+ const st=gStats(),X=xpProf();if(!G.saved&&!st.n){G.saved=1;G.xp=0}if(!G.saved){X.xp+=st.xp;X.games.push({t:Date.now(),day:G.day,vol:st.vol,sets:st.n});X.games=X.games.slice(-300);LS.set("carnet-xp",X);G.saved=1;G.xp=st.xp;gSave();beep(784,.15);beep(988,.15,.16);beep(1319,.35,.32)}
  const L=level(X.xp);
- box.innerHTML=`<div class="g-win"><div class="lab">${TRAIN[G.day].t}</div><div class="big">Séance validée</div><div class="muted small">${weekGames()}/${PROF.freq} séances cette semaine</div></div>
+ box.innerHTML=`<div class="g-win"><div class="lab">${TRAIN[G.day].t}</div><div class="big">${st.n?"Séance validée":"Aucune série notée : séance non comptée"}</div><div class="muted small">${weekGames()}/${PROF.freq} séances cette semaine</div></div>
  <div class="g-stats"><div><strong>${fr(st.vol)}</strong><small>kg soulevés</small></div><div><strong>${st.n}</strong><small>séries</small></div><div><strong>${st.min}</strong><small>minutes</small></div><div><strong>+${G.xp}</strong><small>XP gagnés</small></div></div>
  ${G.prs.length?`<div class="g-pr">Record battu : ${G.prs.join(", ")}</div>`:""}
  <div class="card stack"><b>Niveau ${L.l}</b><div class="bar" style="height:10px"><i style="width:${L.pct}%;background:var(--warn)"></i></div><small class="muted">Encore ${L.left} XP pour le niveau ${L.l+1}</small></div>
@@ -547,6 +547,10 @@ function fixMach1(p){if(!p||p.fx2||!/^alexis$/i.test(p.name||"")||p.h==null)retu
  if(X&&X.games)for(const g of X.games){const a=add[dy(g.t)];if(a){g.vol=Math.round((g.vol||0)+a);X.xp=(X.xp||0)+Math.round(a/10);delete add[dy(g.t)]}}
  if(X)LS.set("carnet-xp",X);LS.set("carnet",C);store=C;const CM=LS.get("coach-mach",{});for(const id in M)if(CM[id]==null)CM[id]=M[id];LS.set("coach-mach",CM);p.fx2=1}
 fixMach1(PROF);
+/* Romy : une séance vide (0 série, 16/11 21 h 53) comptée en plus de sa vraie séance (16/11 23 h 21, 23 séries). On garde celle qui a des séries, la vide est supprimée pour de bon (notée dans « coach-del ») ; XP et bilan se recalculent. Une seule fois. */
+function fixRomy1(p){if(!p||p.fx3||!/^rom/i.test(p.name||""))return;const X=LS.get("carnet-xp",null),g=X&&X.games||[];
+ if(g.length===2){const k=[...g].sort((a,b)=>(b.sets||0)-(a.sets||0)||(b.vol||0)-(a.vol||0)||a.t-b.t)[0],o=g.find(x=>x!==k);X.games=[k];LS.set("carnet-xp",X);const D=LS.get("coach-del",{});D.g=[...(D.g||[]),o.t];LS.set("coach-del",D)}p.fx3=1}
+fixRomy1(PROF);
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
 render();suiviInit();reglagesInit();jeuInit();
 if(PROF&&G){if(G.ph!=="done"&&!gToday(G.start))gDrop();else if(!G.away)gOpen()}
