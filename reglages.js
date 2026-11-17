@@ -153,7 +153,7 @@ function vSet(){const N=notifCfg(),T=N.types,S=syncCfg(),C=SET(),last=bkLast(),p
   <div class="row"><span class="sp small"><b>Vrai push, appli fermée</b><br><span class="muted">${S.push?"Actif : le serveur t'envoie tes rappels à l'heure.":!syncOk()?"Demande ton serveur gratuit (Synchro en ligne, plus bas).":IOS&&!STANDALONE?"Installe d'abord l'appli sur l'écran d'accueil (iOS 16.4+).":"Prêt à activer."}</span></span>${S.push?`<button class="chip" id="ps-off">Couper</button>`:`<button class="chip" id="ps-on"${!pushOK||!syncOk()?" disabled":""}>Activer</button>`}</div>
   <button class="btn ghost" id="ps-test">🔔 Tester une notification</button>
   <div class="lab">Me rappeler</div><div class="row" style="flex-wrap:wrap">${TY.map(([k,l])=>`<button class="chip" data-nty="${k}" aria-pressed="${!!T[k]}">${l}</button>`).join("")}</div>
-  ${T.eau?`<div class="lab">Eau (push, de 9 h à 21 h, sauf objectif atteint)</div>${chips("nwi",[2,3],N.wi,v=>"Toutes les "+v+" h")}`:""}
+  ${T.eau?`<div class="lab">Eau (push, de 9 h à 21 h, sauf objectif atteint)</div>${chips("nwi",[2,3],N.wi,v=>"Toutes les "+v+" h")}${(()=>{const q=wQ(Date.now()),w=q/5<=.4?3:2,n=w===3?5:7;return `<p class="small muted" style="margin:0">💡 Avec ${fr(q,1)} L à boire aujourd'hui, choisis <b>toutes les ${w} h</b> : ${n} rappels, environ ${Math.round(q/n*100)} cl à chaque fois.</p>`})()}`:""}
   <div class="lab">Heure de la séance</div>${chips("nsh",[6,7,12,17,18,19,20],N.shour,h=>h+" h")}
   <div class="lab">Heure des autres rappels</div>${chips("nh",[7,8,9,12,18,20],N.hour,h=>h+" h")}
   <div class="lab">Jour de pesée et de bilan</div><div class="week">${WEEK.map(d=>`<button data-nw="${d}" aria-pressed="${N.wday===d}">${DN[d]}</button>`).join("")}</div>
