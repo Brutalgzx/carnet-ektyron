@@ -12,7 +12,7 @@ const DAY=864e5;
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 /* ================= État ================= */
-let PROF=LS.get("coach-profile",null), store=LS.get("carnet",{}), TRAIN=null, view="today", selDay=new Date().getDay(), nutDay=null, nutTab="week";
+let PROF=LS.get("coach-profile",null), store=LS.get("carnet",{}), TRAIN=null, view="today", MV=null, selDay=new Date().getDay(), nutDay=null, nutTab="week";
 const persist=()=>LS.set("carnet",store);
 /* XP toujours recalculée depuis les séances présentes (même formule que gStats) : une séance supprimée retire son XP. */
 const xpProf=()=>{const X=LS.get("carnet-xp",{xp:0,games:[]});X.games=X.games||[];X.xp=X.games.reduce((a,g)=>a+Math.round((g.vol||0)/10)+50,0);return X};
@@ -35,7 +35,13 @@ const HOLD=new Set(["gain"]),HOLD_MAX=60,holdR=p=>p.level==="deb"?[20,30]:p.leve
 const PRIOG={pecs:"Pecs",dos:"Dos",epaules:"Épaules",bras:"Bras",jambes:"Jambes",abdos:"Abdos",trapezes:"Trapèzes"},GLUTE=["hipt","pont","bulg","rdl","rdlx","fentes"];
 const isPrio=(id,p)=>(p.prio||[]).some(k=>k==="fessiers"?GLUTE.includes(id):EX[id][1]===PRIOG[k]);
 const splitOf=p=>p.split&&p.split!=="auto"&&CYC[p.split]?p.split:lowFocus(p)&&p.days.length>=3?"bas":AUTO[p.days.length]||"full";
-function seqFor(p){const ds=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7),c=CYC[splitOf(p)];return ds.map((d,i)=>[d,c[i%c.length]])}
+/* Ordre des séances dans la semaine : celui choisi avec « Modifier » (p.order), sinon lundi → dimanche. Ignoré si les jours ont changé depuis. */
+function dayOrd(p){const s=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7),o=p.order;return o&&o.length===s.length&&s.every(d=>o.includes(d))?o:s}
+/* Déplace la séance du jour a vers le jour b (échange si b a déjà une séance). La séance garde son type et l'ordre perso de ses exercices. */
+function moveDay(a,b){const p=PROF,o=[...dayOrd(p)],ia=o.indexOf(a),ib=o.indexOf(b);if(ia<0||a===b)return;
+ o[ia]=b;if(ib>=0)o[ib]=a;else p.days=p.days.map(d=>d===a?b:d);p.order=o;
+ const c=p.custom||{},ca=c[a],cb=c[b];delete c[a];delete c[b];if(ca)c[b]=ca;if(cb)c[a]=cb;p.custom=c;saveProg()}
+function seqFor(p){const ds=dayOrd(p),c=CYC[splitOf(p)];return ds.map((d,i)=>[d,c[i%c.length]])}
 const splitName=p=>p.mode==="own"?"Ton programme":SPLITS.find(x=>x.v===splitOf(p)).l;
 /* Séance proposée par le coach, ou séance modifiée par l'utilisateur (gardée tant que le type de séance ne change pas). */
 function buildTraining(p){if(p.mode==="own"&&p.ownDays&&p.ownDays.length)return buildOwn(p);const days={},nMax={45:5,60:6,75:7,90:8}[p.dur]||6;
@@ -371,7 +377,7 @@ function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok
  document.body.append(el)}
 function vTrain(){if(typeof cusOn!=="undefined"&&cusOn)return cusView();const S=TRAIN[selDay],td=new Date().getDay();
  return `<div class="row" style="margin-top:-8px"><div class="small muted sp">${splitName(PROF)} · ${GYMS.find(g=>g.v===PROF.gym).l} · ${GOALS.find(g=>g.v===PROF.goal).l.toLowerCase()}</div><button class="chip" id="adj">Adapter</button></div>
- ${typeof cusBtn==="function"?cusBtn():""}<div class="week">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${d===selDay}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
+ ${typeof cusBtn==="function"?cusBtn():""}<div class="row"><div class="small muted sp">${MV==null?"":MV==="pick"?"Touche la séance à déplacer":`Séance du ${DLONG[MV].toLowerCase()} : touche le jour d'arrivée`}</div><button class="chip" id="mv-tog">${MV==null?"Modifier":"Annuler"}</button></div><div class="week">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${MV==null?d===selDay:d===MV}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
  ${S?`<div class="card hot stack"><h2>${S.t}</h2><div class="small muted">${S.f} · environ ${sessMin(S)} min${S.own?" · modifiée par toi":""}</div>${gBtns(selDay,"▶ Jouer cette séance")}<button class="btn ghost" id="ed-tog">${edit?"✓ Terminer les modifications":"✏️ Modifier cette séance"}</button></div>
   ${S.x.map((e,i)=>{const l=lastLog(e.id);return `<article class="ex">${animTag(e.id,e.a,esc(e.n))}<div class="hd"><b>${e.n}</b><span class="sc">${e.s}×${e.r[0]}–${e.r[1]}${unitR(e.id)}</span></div><div class="small">${e.c}</div><div class="small muted mono">Repos ${fmtT(e.rest)} · ${l?`dernière fois ${l.sets.map(s=>`${s.k}×${s.r}`).join(" · ")}`:"pas encore de données"}</div>${edit?`<div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="chip" data-mv="${i},-1" aria-label="Monter">↑</button><button class="chip" data-mv="${i},1" aria-label="Descendre">↓</button><button class="chip" data-rn="${e.id}">✏️ Renommer</button><button class="chip" data-sw="${i}" style="flex:1">🔄 Changer</button><button class="chip" data-rm="${i}">🗑️ Retirer</button></div>`:""}</article>`}).join("")}${edit?`<button class="btn ghost" data-sw="-1">+ Ajouter un exercice</button>${S.own?`<button class="btn ghost" id="ed-reset">Revenir à la séance du coach</button>`:""}`:""}`
   :`<div class="card stack"><h2>Repos</h2><p class="small muted" style="margin:0">Pas de muscu aujourd'hui : de la marche ou 20 minutes de cardio léger si tu veux bouger.</p></div>`}`}
@@ -530,6 +536,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.gym){if(A.gym!==D.gym)A.equip=GYMS.find(g=>g.v===D.gym).eq;A.gym=D.gym;renderOb();return}
  if(D.eq){A.equip=A.equip.includes(D.eq)?A.equip.replace(D.eq,""):A.equip+D.eq;renderOb();return}
  if(D.wd!==undefined){const w=+D.wd;A.days=A.days.includes(w)?A.days.filter(x=>x!==w):[...A.days,w];renderOb();return}
+ if(t.id==="mv-tog"){MV=MV==null?"pick":null;render();return}
  if(t.id==="ed-tog"){edit=!edit;render();return}
  if(t.id==="ed-reset"){delete PROF.custom[selDay];saveProg();toast("Séance du coach remise");return}
  if(D.mv){const [i,dir]=D.mv.split(",").map(Number),ids=curIds(),j=i+dir;if(j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];setCustom(ids);return}
@@ -567,7 +574,9 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.play!==undefined){if(gResumable(+D.play))gOpen();else{gDrop();gStart(+D.play)}return}
  if(D.gcancel!==undefined){if(confirm("Annuler cette séance ? Rien ne sera enregistré."))gCancel();return}
  if(D.gnew!==undefined){if(!confirm("Démarrer une nouvelle séance ? Les séries déjà faites restent dans ton carnet."))return;gDrop();gStart(+D.gnew);return}
- if(D.sday!==undefined){selDay=+D.sday;render();return}
+ if(D.sday!==undefined){const d=+D.sday;if(MV==="pick"){if(!TRAIN[d]){toast("Pas de séance ce jour-là");return}MV=d;render();return}
+  if(MV!=null){const a=MV,sw=!!TRAIN[d];MV=null;selDay=d;if(a!==d){moveDay(a,d);toast(sw?`${DLONG[a]} et ${DLONG[d].toLowerCase()} échangés`:`Séance déplacée au ${DLONG[d].toLowerCase()}`)}else render();return}
+  selDay=d;render();return}
  if(D.nday!==undefined){nutDay=+D.nday;render();return}
  if(D.nt){nutTab=D.nt;render();return}
  if(D.food){openFood(D.food,+D.g||0,D.back?recBack:null);return}

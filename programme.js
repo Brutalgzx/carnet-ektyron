@@ -149,7 +149,7 @@ const regOwn=p=>{if(p&&p.ownEx)Object.assign(EX,p.ownEx)};
 const ownDaysFor=p=>{const w=(p.ownDays||[]).map(d=>d.dow);return w.length&&w.every(x=>x!=null)&&new Set(w).size===w.length?w:spreadDays(Math.min(6,Math.max(1,(p.ownDays||[]).length)),p.avail&&p.avail.length>=2?p.avail:WEEK)};
 /* Fourchette pour la double progression : un nombre fixe de reps devient « reps → reps + 2 ». */
 function mkOwn(o,p){const [n,g,,kind,a,c]=EX[o.id],S=SCHEME[p.goal][kind],r=o.r[0]===o.r[1]?[o.r[0],o.r[0]+2]:[o.r[0],o.r[1]];const rr=HOLD.has(o.id)?holdR(p):r;return{id:o.id,n:(p.names||{})[o.id]||o.n||n,g,a,c,s:o.s,r:rr,rest:S[3],kind,kg:o.kg}}
-function buildOwn(p){regOwn(p);const days={},L=p.ownDays,ds=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7);
+function buildOwn(p){regOwn(p);const days={},L=p.ownDays,ds=dayOrd(p);
  ds.forEach((d,i)=>{const k="own"+(i%L.length),O=L[i%L.length],cu=(p.custom||{})[d],own=!!(cu&&cu.k===k);
   const ok=id=>!(p.skip||[]).some(z=>inZone(id,z)),x=own?cu.ids.filter(id=>EX[id]&&(ok(id)||HANDOK.includes(id))).map(id=>{const o=O.x.find(y=>y.id===id);return o?mkOwn(o,p):mkEx(id,p)}):O.x.filter(o=>ok(o.id)).map(o=>mkOwn(o,p));
   days[d]={k,t:O.t,f:"Ton programme",x,own}});return days}
