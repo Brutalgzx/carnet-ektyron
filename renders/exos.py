@@ -1182,6 +1182,16 @@ EXOS["s_calf"] = dict(
     props=[dict(k="box", c=(0.68, 0, 1.1), s=(0.06, 1.2, 2.2), m="frame")], cam=dict(az=-80, el=10),
 )
 
+EXOS["shrug"] = dict(
+    A=dict(STAND, ua=-90, fa=-90, uab=12, fab=12),
+    B=dict(elv=0.095),
+    bad=dict(B=dict(elv=0.05, fa=-62, hd=30, t=86)),
+    zgood=["trap"], zbad=["neck", "bicL", "bicR"],
+    tgood="sangles, prise neutre : épaules droit vers les oreilles", tbad="les bras tirent, la tête avance",
+    props=DBS, cam=dict(az=-60, el=8),
+)
+LOT4 = ["shrug"]
+
 LOT3 = ["w_card", "w_cerc", "w_dislo", "w_band", "w_cat", "w_wrist", "w_pont", "w_thor", "w_swing", "w_lat",
         "s_child", "s_hands", "s_but", "s_cobra", "s_knee", "s_pec", "s_lat", "s_cross", "s_bic", "s_tri",
         "s_quad", "s_hip", "s_ham", "s_pig", "s_calf"]

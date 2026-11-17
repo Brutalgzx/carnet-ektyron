@@ -19,11 +19,11 @@ function duoCard(day){const S=TRAIN[day];return{...jeuSnap(),day,t:S?S.t:"",x:S?
 
 /* ---------- séance commune : même type, mêmes exercices, chacun ses charges ---------- */
 const DTYP={
- haut:{t:"Haut du corps",s:["chestInc","backVert","chestFlat","backRow","shPress","side","tri","bic","rear","chestIso"],g:["Pecs","Dos","Épaules","Bras"]},
+ haut:{t:"Haut du corps",s:["chestInc","backVert","chestFlat","backRow","shPress","side","tri","bic","rear","chestIso"],g:["Pecs","Dos","Épaules","Bras","Trapèzes"]},
  bas:{t:"Bas du corps",s:["quad","hinge","curl","glute","quad2","quadIso","calf","abs","add"],g:["Jambes","Abdos"]},
  push:{t:"Push",s:["chestInc","chestFlat","shPress","dips","side","tri","chestIso","triOvh"],g:["Pecs","Épaules"]},
- pull:{t:"Pull",s:["backVert","backRow","rear","bic","backUp","bic2","lowb"],g:["Dos"]},
- full:{t:"Full body",s:["quad","chestFlat","backVert","hinge","side","backRow","bic","tri","calf","abs"],g:["Pecs","Dos","Épaules","Bras","Jambes","Abdos"]}};
+ pull:{t:"Pull",s:["backVert","backRow","rear","bic","backUp","bic2","lowb"],g:["Dos","Trapèzes"]},
+ full:{t:"Full body",s:["quad","chestFlat","backVert","hinge","side","backRow","bic","tri","calf","abs"],g:["Pecs","Dos","Épaules","Bras","Jambes","Abdos","Trapèzes"]}};
 function duoTypOf(S){if(!S)return"full";const k=S.k||"",t=(S.t||"").toLowerCase();
  return /^up/.test(k)||/haut|upper/.test(t)?"haut":/^(low|legs|glute)/.test(k)||/bas du|jambe|leg|lower|fess/.test(t)?"bas":/push|pouss/.test(k+t)?"push":/pull|tirage|dos/.test(k+t)?"pull":"full"}
 /* Tous les exercices de mon programme (une fois chacun). */

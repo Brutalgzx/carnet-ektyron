@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:5,d:"17/11",t:"🧍 Trapèzes au programme et avatar de ton corps",x:[
+  "Dans « Les zones à travailler en priorité », tu peux maintenant choisir Trapèzes : shrugs aux haltères avec sangles et prise neutre (le poignet ne travaille pas), avec leur vidéo.",
+  "Choisir Abdos ajoute maintenant jusqu'à 2 exercices par séance, en fin de séance : abdos, obliques et gainage en alternance.",
+  "Profil → « Mon corps à l'objectif » : un avatar 3D montre ta silhouette au poids visé, et un curseur par muscle te laisse tout régler."]},
  {id:4,d:"17/11",t:"👯 Séance duo : la même séance pour les deux",x:[
   "Dans Séance duo, vous choisissez ensemble le type de séance : haut du corps, bas du corps, push, pull ou full body.",
   "L'appli prend les exercices que vous avez tous les deux dans vos programmes, et complète avec des exercices des mêmes muscles.",

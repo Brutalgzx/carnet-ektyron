@@ -9,13 +9,14 @@ const AIMS=[{v:"esth",e:"✨",l:"Esthétique",s:"Un physique dessiné, de belles
 const zoneL=v=>(ZONES.find(z=>z.v===v)||{l:v}).l;
 
 /* Zones visées par chaque emplacement de séance, et emplacements ajoutés quand une zone est prioritaire. */
-const SLOTZ={chestInc:["pecs"],chestFlat:["pecs"],chestIso:["pecs"],dips:["pecs"],backVert:["dos"],backRow:["dos","posture"],backUp:["dos","posture"],lowb:["dos","posture"],
+const SLOTZ={chestInc:["pecs"],chestFlat:["pecs"],chestIso:["pecs"],dips:["pecs"],backVert:["dos"],backRow:["dos","posture"],backUp:["dos","posture","trapezes"],lowb:["dos","posture"],
  rear:["epaules","posture"],shPress:["epaules"],side:["epaules"],bic:["bras"],bic2:["bras"],tri:["bras"],triOvh:["bras"],
  quad:["jambes","sport"],quad2:["jambes"],quadIso:["jambes"],curl:["jambes"],calf:["jambes"],add:["fessiers","jambes"],hinge:["fessiers","jambes","sport"],
- glute:["fessiers","jambes"],glute2:["fessiers","jambes"],glute3:["fessiers"],abs:["abdos","sport"]};
+ glute:["fessiers","jambes"],glute2:["fessiers","jambes"],glute3:["fessiers"],abs:["abdos","sport"],abs2:["abdos"],abs3:["abdos"],trap:["trapezes"]};
 const ZEXTRA={fessiers:["glute","glute2","glute3"],jambes:["quad2","curl","quadIso"],dos:["backRow","backVert","backUp"],pecs:["chestInc","chestIso"],
- epaules:["side","rear","shPress"],bras:["bic","tri","bic2"],abdos:["abs"],posture:["rear","backUp","lowb"],sport:["quad","hinge","abs"]};
-const ZW=[4,3,2,1.5,1,1,1,1,1];
+ epaules:["side","rear","shPress"],bras:["bic","tri","bic2"],abdos:["abs","abs2","abs3"],trapezes:["trap","backUp"],posture:["rear","backUp","lowb"],sport:["quad","hinge","abs"]};
+const ABS=["abs","abs2","abs3"],UPPER=["backRow","backVert","backUp","rear","shPress","side"];
+const ZW=[4,3,2,1.5,1,1,1,1,1,1];
 /* Liste ordonnée des zones à pousser : choix de la personne, puis posture et sport s'ils font partie de ses objectifs. */
 function zoneList(p){const z=(p.prio||[]).filter(k=>ZEXTRA[k]);for(const a of ["posture","sport"])if((p.aims||[]).includes(a)&&!z.includes(a))z.push(a);return z}
 const lowFocus=p=>["fessiers","jambes"].includes((p.prio||[])[0]);
@@ -29,16 +30,20 @@ function pickSlots(k,p,nMax){const T=TPL[k],zl=zoneList(p),likes=p.likes||[],use
  const cnt={},free=i=>!used.has(i)&&exOk(i,p)&&(!zl.length&&!likes.length||(cnt[MUSCOF[i]]||0)<2);
  const resolve=sl=>{const L=SLOT[sl]||[];return L.find(i=>likes.includes(i)&&MUSCOF[i]===MUSCOF[L[0]]&&free(i))||L.find(free)};
  if(!zl.length&&!likes.length){const ids=[];for(const sl of T.s){if(ids.length>=nMax)break;const id=resolve(sl);if(!id)continue;used.add(id);ids.push(id)}return ids}
- const full=/^full/.test(k),touch=z=>full||z==="abdos"||T.s.some(sl=>(SLOTZ[sl]||[]).includes(z));
+ const full=/^full/.test(k),touch=z=>full||z==="abdos"||z==="trapezes"&&T.s.some(sl=>UPPER.includes(sl))||T.s.some(sl=>(SLOTZ[sl]||[]).includes(z));
  const C=T.s.map((sl,i)=>({sl,i,r:slotRank(sl,zl),b:8-.4*i}));
- zl.forEach((z,ri)=>{if(!touch(z))return;const n=ri===0?2:ri<3?1:0;ZEXTRA[z].filter(sl=>!T.s.includes(sl)).slice(0,n).forEach((sl,j)=>C.push({sl,i:50+ri*5+j,r:slotRank(sl,zl),b:6-.4*j}))});
+ zl.forEach((z,ri)=>{if(!touch(z))return;let n=ri===0?2:ri<3?1:0,L=ZEXTRA[z].filter(sl=>!T.s.includes(sl));
+  /* Abdos : au plus 2 exercices de sangle abdominale par séance, en alternant obliques et gainage d'une séance à l'autre. */
+  if(z==="abdos"){n=Math.min(n,2-T.s.filter(sl=>ABS.includes(sl)).length);const o=k.charCodeAt(k.length-1)%L.length;L=[...L.slice(o),...L.slice(0,o)]}
+  L.slice(0,n).forEach((sl,j)=>C.push({sl,i:50+ri*5+j,r:slotRank(sl,zl),b:6-.4*j}))});
  C.forEach(c=>c.sc=c.b+(c.r<99?ZW[c.r]:0));
  const non=C.filter(c=>c.r===99),reserve=zl.length&&non.length?Math.min(non.length,Math.ceil(nMax*(full?.4:.34))):0,out=[];
  const take=c=>{if(out.length>=nMax||out.includes(c))return;const id=resolve(c.sl);if(!id)return;used.add(id);cnt[MUSCOF[id]]=(cnt[MUSCOF[id]]||0)+1;c.id=id;out.push(c)};
  non.sort((a,b)=>b.sc-a.sc).slice(0,reserve).forEach(take);
  [...C].sort((a,b)=>b.sc-a.sc).forEach(take);
  const KO={H:0,M:1,I:2};
- return out.sort((a,b)=>Math.min(a.r,9)-Math.min(b.r,9)||(a.r<99&&b.r<99?KO[EX[a.id][3]]-KO[EX[b.id][3]]:0)||a.i-b.i).map(c=>c.id)}
+ const rk=c=>ABS.includes(c.sl)?10:Math.min(c.r,9);
+ return out.sort((a,b)=>rk(a)-rk(b)||(a.r<99&&b.r<99?KO[EX[a.id][3]]-KO[EX[b.id][3]]:0)||a.i-b.i).map(c=>c.id)}
 
 /* ================= Questions du questionnaire ================= */
 const rankTiles=(key,list)=>{const sel=A[key]||[];return `<div class="grid2">${list.map(o=>{const r=sel.indexOf(o.v);return `<button class="tile" data-m="${key}" data-v="${o.v}" aria-pressed="${r>=0}" style="position:relative"><span class="e">${o.e}</span><b>${o.l}</b>${r>=0?`<small>Priorité n°${r+1}</small>`:"<small>&nbsp;</small>"}</button>`}).join("")}</div>`};

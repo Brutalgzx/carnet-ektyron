@@ -13,6 +13,7 @@ Tout est construit par nos scripts (aucun modèle ni vidéo tiers). L'ancien mot
 | `build_all.sh` | Rendu vidéo des exercices passés en argument |
 | `vids.py` | Met à jour la liste `VIDS` / `VALIAS` de `data.js` d'après les .mp4 présents |
 | `hipt.py`, `build.sh` | Premier essai validé (hip thrust), gardé tel quel |
+| `avatar.py` | Avatar « Mon corps » : corps en métaballes + une déformation par muscle → `avatar/avatar_m.bin`, `avatar_f.bin` (`blender -b -P renders/avatar.py -- avatar`, ≈ 10 s). Lu par `corps.js` |
 
 ## Côté app
 - `data.js` : `animTag(id, anim, nom, classe)` renvoie la balise `<video>` (exercice, sinon son animation, sinon alias), ou rien.
@@ -29,4 +30,5 @@ Tout est construit par nos scripts (aucun modèle ni vidéo tiers). L'ancien mot
 - [x] Lot Romy (22 + hip thrust) : en ligne
 - [x] Lot 2 (52 exercices) : rendu
 - [x] Lot 3 (25 échauffements / étirements) : rendu
+- [x] Lot 4 : shrugs haltères avec sangles (`shrug`, paramètre `elv` = épaules haussées dans `gen.py`)
 - [ ] Fin : `vids.py`, versions, test, commit, accord, push

@@ -161,7 +161,7 @@ def phase(f):
 
 
 DEF = dict(pel=(0, 0.925), t=90, hd=0, tw=0, lb=0, th=-90, sh=-90, ab=0, fy=0,
-           ua=-90, fa=-90, uab=6)
+           ua=-90, fa=-90, uab=6, elv=0)
 
 
 def merged(variant):
@@ -261,7 +261,7 @@ def pose_points(P):
         if fy:
             qy = Quaternion(Z, R(fy * sg))
             fdir = qy @ fdir
-        sh = S + Yc * sg * 0.185
+        sh = S + Yc * sg * 0.185 + u2c * (g("elv", s) or 0)  # elv : épaules haussées (shrug)
         ht = g("h", s)
         if ht is not None:
             ep = g("ep", s)
