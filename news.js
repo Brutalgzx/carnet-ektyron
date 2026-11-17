@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:15,d:"17/11",t:"💶 Ton budget courses est fait pour être dépensé",x:[
+  "Le coach ne cherche plus les économies : il vise ton budget de la semaine (sans le dépasser nettement) et le met dans la qualité.",
+  "Plus ton budget est large, plus la gamme monte : viande et poisson Label Rouge, produits frais, bio, plats plus riches en protéines.",
+  "Dans Nutrition › Liste de courses, « Recomposer mes repas » refait ta semaine pour coller au budget choisi."]},
  {id:14,d:"17/11",t:"🚫 Les zones que tu ne veux pas travailler",x:[
   "Dans « Refaire le questionnaire » ou « Adapter », à l'étape des zones : 1 appui = priorité, 2 appuis = 🚫 je ne veux pas la travailler, 3 appuis = normal.",
   "Ton coach ne te propose plus aucun exercice sur ces zones. En séance personnalisée, tu restes libre de les ajouter."]},

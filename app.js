@@ -116,12 +116,19 @@ function pool(m){const p=PROF,hate=hateIng(),ok=r=>!has(r,hate),no=p.nope||[];
 function tasteScore(r){const p=PROF,t=p.taste||{};let s=0;for(const k in t)if(t[k]>0&&has(r,TF[k]||[]))s+=.5;
  if((p.cuis||[]).includes(r.cu))s+=.6;if(r.m==="pdj"&&(p.pdjT==="sucre"||p.pdjT==="sale"))s+=r.sw===p.pdjT?1.2:-1.2;
  if(r.m==="main"&&p.ckt&&p.batch!=="oui"&&r.min>p.ckt)s-=(r.min-p.ckt)/10;if(r.hot)s+=p.spice===2?.4*r.hot:p.spice===0?-.8:0;return s}
-function genWeek(seed){const g0=GL;GL=gAuto();for(const k in RM)delete RM[k];try{return genWeek0(seed)}finally{GL=g0;for(const k in RM)delete RM[k]}}
-function genWeek0(seed){const R=rng(seed),T=targets(),slots=mealSlots(),B=PROF.budget/(7*slots.length);
- const pick=(m,n,styled)=>{let c=pool(m);if(styled&&PROF.styles.length&&!c.some(isPick)){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
-  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||slots.find(x=>x[0]==="dej")||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,s:R()-Math.max(0,cost/B-.9)*4+tasteScore(r)+goalScore(r)+(isPick(r)?2.5+mm.P*4/mm.k*3:0)}}).sort((a,b)=>b.s-a.s);
-  const out=[];for(let i=0;out.length<n;i++)out.push(sc[i%sc.length].r.id);return out};
+/* La semaine est composée en meilleure gamme, avec des recettes dont le coût colle à la part du budget de chaque repas ; gLvl() redescend ensuite si besoin. */
+let WOVR=null;/* semaine en cours d'essai (genWeek), lue par week() sans rien enregistrer */
+function genWeek(seed){const g0=GL,x0=GX;GL=3;GX=new Set();for(const k in RM)delete RM[k];
+ try{const B=PROF.budget||45;let sc=1,best=null,bd=1/0;/* on mesure le vrai coût de la semaine et on recale la cible (4 essais au plus) */
+  for(let it=0;it<4;it++){const W=genWeek0(seed,sc);WOVR=W;const c=weekCost();WOVR=null;const d=Math.abs(c-B);if(d<bd){bd=d;best=W}if(d<B*.03)break;sc=Math.max(.3,Math.min(3,sc*B/c))}
+  return best}finally{WOVR=null;GL=g0;GX=x0;for(const k in RM)delete RM[k]}}
+function genWeek0(seed,kb=1){const R=rng(seed),T=targets(),slots=mealSlots(),B=Math.max(5,PROF.budget-supTot().e*7)/7;
+ let mul=1;const pick=(m,n,styled)=>{let c=pool(m);if(styled&&PROF.styles.length&&!c.some(isPick)){const s=c.filter(r=>PROF.styles.includes(r.st));if(s.length>=4)c=s;else c=[...s,...c.filter(r=>!s.includes(r))].slice(0,Math.max(6,s.length))}
+  const sl=slots.find(x=>x[0]===(m==="main"?"din":m))||slots.find(x=>x[0]==="dej")||["snack","",.15],sc=c.map(r=>{const mm=rmac(r),cost=mm.e*(T.kcal*sl[2]/mm.k);return{r,cost,s:R()-Math.abs(cost/(B*kb*sl[2]*(m==="main"?mul:1))-1)*5+tasteScore(r)+goalScore(r)+(isPick(r)?2.5+mm.P*4/mm.k*3:0)}}).sort((a,b)=>b.s-a.s);
+  const out=[];for(let i=0;out.length<n;i++){out.push(sc[i%sc.length].r.id);sp[m]=(sp[m]||0)+sc[i%sc.length].cost/n}return out},sp={};
  const pdj=pick("pdj",2),snk=pick("snack",2),days=[];
+ /* Ce que le petit-déjeuner et la collation ne dépensent pas part dans les plats. */
+ {const fo=slots.filter(x=>x[0]==="pdj"||x[0]==="snack").reduce((a,x)=>a+x[2],0),fm=1-fo,so=(slots.some(x=>x[0]==="pdj")?sp.pdj||0:0)+(slots.some(x=>x[0]==="snack")?sp.snack||0:0);if(fm>0)mul=Math.max(.5,Math.min(2.5,(B-so)/(B*fm)))}
  if(PROF.batch==="oui"){const M=pick("main",4,true);/* 2 plats cuisinés le dimanche pour lun–mer, 2 le mercredi soir pour jeu–dim */
   for(let i=0;i<7;i++){const [a,b]=i<3?[M[0],M[1]]:[M[2],M[3]],sw=i%2;days.push({pdj:pdj[i%2],snack:snk[i%2],dej:sw?b:a,din:sw?a:b,bt:1})}}
  else{const dinners=pick("main",8,true);for(let i=0;i<7;i++)days.push({pdj:pdj[i%2],snack:snk[i%2],din:dinners[i],dej:i===0?dinners[7]:dinners[i-1],left:i>0})}
@@ -137,7 +144,7 @@ function swapMeal(rid,slot,day){const r=RECI[rid],W=week(),D=W.days[wIdx(+day)];
  const c=pool(r.m).filter(x=>x.id!==rid).map(x=>({x,s:R()*.5+tasteScore(x)-(used.has(x.id)?2:0)})).sort((a,b)=>b.s-a.s),nw=c.length?c[0].x:null;
  if(nw){D[slot]=nw.id;LS.set("coach-week",W);LS.set("coach-shop",{})}return nw}
 const hateN=W=>{const h=hateIng();return h.length?W.days.reduce((a,d)=>a+["pdj","dej","din","snack"].filter(k=>RECI[d[k]]&&has(RECI[d[k]],h)).length,0):0};
-function week(){let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2,hc:2};LS.set("coach-week",W)}
+function week(){if(WOVR)return WOVR;let W=LS.get("coach-week",null);if(!W||W.v!==2){W={...genWeek(Date.now()%1e9),v:2,hc:2};LS.set("coach-week",W)}
  /* Semaines déjà enregistrées : si un plat contient un aliment refusé, on recompose une fois (si ça fait mieux). */
  else if(W.hc!==2){const n=hateN(W);if(n){const N={...genWeek(Date.now()%1e9),v:2};if(hateN(N)<n){W=N;LS.set("coach-shop",{})}}W.hc=2;LS.set("coach-week",W)}return W}
 const wIdx=d=>(d+6)%7;
@@ -205,7 +212,7 @@ const Q=[
  {t:"Quel budget pour tes repas ?",s:"Par semaine, pour tes courses.",h:()=>{const pm=A.budget/(7*A.meals),lvl=pm<1.6?"Serré":pm<3?"Confortable":"Large";return `<div style="font:800 64px/1 var(--display);text-align:center;margin-top:10px"><span id="v-budget">${A.budget}</span> €<small class="muted" style="font:500 16px var(--body)"> / semaine</small></div>
    <input type="range" id="s-budget" data-s="budget" data-u="€" min="15" max="150" step="5" value="${A.budget}" aria-label="Budget par semaine">
    <div class="row small muted"><span class="sp">Serré</span><span>Confortable</span><span class="sp" style="text-align:right">Large</span></div>
-   <div class="hintbox"><span style="font-size:30px">🍱</span><span><b id="v-pm">${eur(pm)} / repas</b> · <span id="v-lvl">${lvl}</span><br><small class="muted">${A.meals*7} repas dans la semaine. Budget serré : on mise sur les basiques (riz, pâtes, œufs, légumineuses, thon).</small></span></div>`},ok:()=>true},
+   <div class="hintbox"><span style="font-size:30px">🍱</span><span><b id="v-pm">${eur(pm)} / repas</b> · <span id="v-lvl">${lvl}</span><br><small class="muted">${A.meals*7} repas dans la semaine. Le coach dépense ce budget au mieux : plus il est large, plus la gamme monte (Label Rouge, frais, bio).</small></span></div>`},ok:()=>true},
  {t:"Quel style de plats ?",s:"Choisis-en un ou plusieurs. Rien de coché : un mélange de tout.",h:()=>`<div class="grid2">${STYLES.map(s=>`<button class="tile" data-m="styles" data-v="${s.v}" aria-pressed="${A.styles.includes(s.v)}"><span class="e">${s.e}</span><b>${s.l}</b></button>`).join("")}</div>`,ok:()=>true},
  ...[]
 ];
@@ -363,7 +370,7 @@ function vTrain(){if(typeof cusOn!=="undefined"&&cusOn)return cusView();const S=
 function vFood(){if(PROF.refined&&PROF.refined.nut===0)return `<div class="card hot stack" style="text-align:center"><div style="font-size:44px">🥗</div><h2>Ton suivi nutrition</h2><p class="small muted" style="margin:0">Ton coach calcule tes calories, compose tes repas de la semaine et prépare ta liste de courses. Pour ça, il lui manque quelques réponses : ce que tu aimes, tes allergies, tes repas, ton magasin et ton budget. Environ 2 minutes. Aucun plat n'est proposé avant.</p><button class="btn" data-ref="nut" style="min-height:56px;font-size:17px">Démarrer mon suivi nutrition</button></div>`;const T=targets(),d=nutDay??new Date().getDay(),wc=weekCost(),over=wc>PROF.budget*1.05;
  const head=`<button class="btn" id="renut" style="margin-bottom:12px">🔄 Refaire mon plan nutrition</button><div class="kpis"><div><strong>${fr(T.kcal)}</strong><small>kcal / jour</small></div><div><strong>${T.p} g</strong><small>protéines</small></div><div><strong style="color:${over?"var(--warn)":"inherit"}">${eur(wc).replace(",00","")}</strong><small>sur ${PROF.budget} € / sem.</small></div></div>
  <div class="seg"><button data-nt="week" aria-pressed="${nutTab==="week"}">Repas de la semaine</button><button data-nt="shop" aria-pressed="${nutTab==="shop"}">Liste de courses</button><button data-nt="why" aria-pressed="${nutTab==="why"}">Mes besoins</button></div>`;
- if(nutTab==="shop"){const by=shopping(),ck=LS.get("coach-shop",{}),many=myStores().length>1;return head+budgetCard(wc)+`<div class="card stack"><div class="row"><div class="lab sp">Chez ${myStores().map(stLab).join(", ")} · ${GAM[gLvl()]}</div><b>${eur(wc)}</b></div>${over?`<div class="small" style="color:var(--warn)">Ton budget de ${PROF.budget} € est serré pour ${fr(T.kcal)} kcal par jour : le coach a déjà privilégié les recettes les moins chères. Compte plutôt ${eur(Math.ceil(wc))}.</div>`:`<div class="small muted">Dans ton budget de ${PROF.budget} € par semaine. Prix relevés le ${prixDate()}, hors promotions.</div>`}
+ if(nutTab==="shop"){const by=shopping(),ck=LS.get("coach-shop",{}),many=myStores().length>1;return head+budgetCard(wc)+`<div class="card stack"><div class="row"><div class="lab sp">Chez ${myStores().map(stLab).join(", ")} · ${GAM[gLvl()]}</div><b>${eur(wc)}</b></div>${over?`<div class="small" style="color:var(--warn)">Ton budget de ${PROF.budget} € est juste pour ${fr(T.kcal)} kcal par jour : même en premier prix, compte plutôt ${eur(Math.ceil(wc))}.</div>`:`<div class="small muted">Le coach vise ton budget de ${PROF.budget} € par semaine et le dépense en qualité (gamme ${GAM[gLvl()].toLowerCase()}). Prix relevés le ${prixDate()}, hors promotions.</div>`}
   ${Object.keys(by).sort().map(r=>`<div><div class="lab" style="margin-top:6px">${r}</div><ul class="list">${by[r].sort((a,b)=>a.n.localeCompare(b.n)).map(x=>`<li class="${ck[x.i]?"done":""}"><button class="chk ${ck[x.i]?"on":""}" data-shop="${x.i}" aria-label="${esc(x.n)}">${ck[x.i]?"✓":""}</button><button class="lnk sp" ${x.u?"":`data-food="${x.i}"`}>${x.n}<br><small class="muted">${eur(x.e)} · ${x.u||fr(x.pk,2)+" €/kg"} · ${x.tag}${many&&x.st?" · "+stLab(x.st):""}</small></button><b class="mono small">${x.q}</b></li>`).join("")}</ul></div>`).join("")}
   <button class="btn ghost" id="shop-reset">Tout décocher</button></div>`}
  if(nutTab==="why")return head+`<div class="card stack"><div class="lab">Comment ton coach calcule</div>
