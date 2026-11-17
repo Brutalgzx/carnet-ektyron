@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:14,d:"17/11",t:"🚫 Les zones que tu ne veux pas travailler",x:[
+  "Dans « Refaire le questionnaire » ou « Adapter », à l'étape des zones : 1 appui = priorité, 2 appuis = 🚫 je ne veux pas la travailler, 3 appuis = normal.",
+  "Ton coach ne te propose plus aucun exercice sur ces zones. En séance personnalisée, tu restes libre de les ajouter."]},
  {id:13,d:"17/11",t:"🏋️ Gainage : ton lest compte aussi",x:[
   "À côté du temps que tu tiens déjà au gainage, tu peux indiquer le lest que tu tiens (ex. 40 s avec 10 kg).",
   "Ton coach part de là : +5 s par séance jusqu'à 60 s, puis 5 kg de plus."]},

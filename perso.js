@@ -12,7 +12,7 @@ function cusView(){const L=cusList();let min="";try{min=L.length?` · environ ${
   ${L.length?gBtns(CUS_DAY,"▶ Jouer cette séance"):""}<button class="btn ghost" id="cus-add">+ Ajouter des exercices</button>${L.length?`<button class="link" id="cus-clear" style="color:var(--bad)">Tout vider</button>`:""}</div>
  ${L.map((e,i)=>{const l=lastLog(e.id);return `<article class="ex"><div class="hd"><b>${esc(e.n)}</b><span class="sc">${e.s}×${e.r[0]}–${e.r[1]}${unitR(e.id)}</span></div><div class="small">${e.c}</div><div class="small muted mono">Repos ${fmtT(e.rest)} · ${l?`dernière fois ${l.sets.map(s=>`${s.k}×${s.r}`).join(" · ")}`:"pas encore de données"}</div>
   <div class="row" style="margin-top:8px"><button class="chip" data-cmv="${i},-1" aria-label="Monter">↑</button><button class="chip" data-cmv="${i},1" aria-label="Descendre">↓</button><span class="sp"></span><button class="chip" data-crm="${i}">🗑️ Retirer</button></div></article>`}).join("")}`}
-function cusSheetHtml(){const cur=cusIds(),ok=Object.keys(EX).filter(id=>exOk(id,PROF)),seen=new Set(),
+function cusSheetHtml(){const cur=cusIds(),ok=Object.keys(EX).filter(id=>exOk(id,{...PROF,skip:[]})),seen=new Set(),
   groups=Object.values(MUSC).map(([n,ids])=>[n,ids.filter(id=>ok.includes(id)&&!seen.has(id)&&seen.add(id))]).filter(g=>g[1].length);
  const rest=ok.filter(id=>!seen.has(id));if(rest.length)groups.push(["autres",rest]);
  return `<div class="in" role="dialog" aria-label="Choisir mes exercices"><div class="row" style="padding-top:18px;position:sticky;top:0;background:var(--bg2);z-index:1"><h2 class="sp" style="margin:0">Choisir mes exercices</h2><button class="chip" data-close aria-label="Fermer">✓ ${cur.length}</button></div>
