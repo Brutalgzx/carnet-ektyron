@@ -118,8 +118,19 @@ function likeSheet(rid,slot,day){const r=RECI[rid],L=(PROF.pick||[]).map(id=>REC
  pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">Mes plats aimés</h2><button class="chip" data-likeback="${rid}" data-slot="${slot}" data-day="${day}" aria-label="Retour">✕</button></div>
  <p class="small muted" style="margin:0">Choisis le plat qui remplace « ${esc(r.n)} » ce jour-là seulement. La portion est recalculée pour toi.</p>
  ${same.length?`<ul class="list">${same.map(li).join("")}</ul>`:""}${oth.length?`<div class="lab">Autres plats aimés</div><ul class="list">${oth.map(li).join("")}</ul>`:""}`,"Mes plats aimés")}
+/* Fiche d'un repas : « Choisir dans tous les plats » → liste avec recherche, sans swipe, de tous les plats qui collent aux goûts du questionnaire (safeRec : régime, allergies, goûts refusés ; hors plats « je n'aime pas »). */
+const fold=x=>(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+function allSheet(rid,slot,day){const r=RECI[rid],no=new Set(PROF.nope||[]),L=PK_G.flatMap(([m])=>safeRec(m)).filter(x=>x.id!==rid&&!no.has(x.id)),same=L.filter(x=>x.m===r.m),oth=L.filter(x=>x.m!==r.m),
+ li=x=>`<li data-q="${esc(fold(x.n))}"><button class="lnk sp" style="text-align:left" data-likepick="${x.id}" data-slot="${slot}" data-day="${day}" data-from="${rid}"><span style="font-size:22px">${x.e}</span> ${esc(x.n)}${isPick(x)?' <span class="muted">♥</span>':""}</button></li>`;
+ const el=pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">Tous les plats</h2><button class="chip" data-likeback="${rid}" data-slot="${slot}" data-day="${day}" aria-label="Retour">✕</button></div>
+ <p class="small muted" style="margin:0">Les plats qui collent à tes goûts. Choisis celui qui remplace « ${esc(r.n)} » ce jour-là seulement. La portion est recalculée pour toi.</p>
+ <input id="all-q" type="search" placeholder="Rechercher un plat…" autocomplete="off">
+ ${same.length?`<ul class="list" data-grp>${same.map(li).join("")}</ul>`:""}${oth.length?`<div class="lab" data-grpl>Autres plats</div><ul class="list" data-grp>${oth.map(li).join("")}</ul>`:""}<p class="small muted" id="all-none" hidden>Aucun plat trouvé.</p>`,"Tous les plats");
+ $("#all-q").addEventListener("input",e=>{const q=fold(e.target.value.trim());let n=0;el.querySelectorAll("[data-q]").forEach(x=>{const ok=!q||x.dataset.q.includes(q);x.hidden=!ok;if(ok)n++});
+  el.querySelectorAll("[data-grp]").forEach(u=>{const v=[...u.children].some(x=>!x.hidden);u.hidden=!v;const l=u.previousElementSibling;if(l&&l.hasAttribute("data-grpl"))l.hidden=!v});$("#all-none").hidden=n>0})}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
  if(D.likes){likeSheet(D.likes,D.slot,D.day);return}
+ if(D.alls){allSheet(D.alls,D.slot,D.day);return}
  if(D.likeback){openRecipe(D.likeback,D.slot,D.day);return}
  if(D.likepick){const W=week(),d=W.days[wIdx(+D.day)],nw=RECI[D.likepick],old=RECI[D.from];if(!d||!nw)return;d[D.slot]=nw.id;LS.set("coach-week",W);LS.set("coach-shop",{});openRecipe(nw.id,D.slot,D.day);render();toast(`${old?old.n+" : remplacé par ":""}${nw.n} pour ce jour.`);return}
  if(t.id==="meal-edit"){mealSheet();return}
