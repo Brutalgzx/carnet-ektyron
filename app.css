@@ -97,6 +97,7 @@ input[type=range]{width:100%;margin:12px 0 4px;accent-color:var(--pink);height:2
 .top h1{flex:1}
 .lvl{display:flex;flex-direction:column;align-items:flex-end;font:600 12px var(--mono);color:var(--muted)}
 .lvl b{font:800 20px var(--display);color:var(--warn)}
+.thm{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--muted);font:500 15px/1 var(--body);display:grid;place-items:center;padding:0}
 nav.tabs{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:532px;margin:0 auto;z-index:15;
   background:var(--sheen),var(--glass-bar);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--edge);border-radius:30px;box-shadow:var(--hi),0 16px 40px -10px rgba(0,0,0,.7);
   display:grid;grid-template-columns:repeat(6,1fr);padding:5px}
@@ -241,3 +242,28 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 .wk-drag button.wk-over{outline:2px solid var(--warn);outline-offset:2px}
 .wk-ghost{border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px var(--mono);line-height:1.2;background:var(--grad);color:var(--on-acc);box-shadow:var(--glow);transform:scale(1.12)}
 .wk-ghost small{font:600 9.5px var(--body)}
+
+/* ---------- Mode clair (accent orange conservé) ---------- */
+:root[data-theme="light"]{
+  --bg:#F4F4F6; --bg2:#FFFFFF; --ink:#16161A; --muted:#6B6B73;
+  --good:#17935F; --warn:#D97A00; --bad:#E04545;
+  --card:rgba(255,255,255,.88); --card2:rgba(0,0,0,.05); --glass-bar:rgba(255,255,255,.75); --glass-sheet:rgba(248,248,250,.94);
+  --line:rgba(0,0,0,.10); --edge:rgba(0,0,0,.10);
+  --sheen:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 60%);
+  --hi:inset 0 1px 0 rgba(255,255,255,.9),0 1px 3px rgba(0,0,0,.05);
+  --shadow:0 10px 30px -14px rgba(0,0,0,.2);
+  --glow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 20px -8px rgba(245,114,0,.45);
+  color-scheme:light;
+}
+[data-theme="light"] body{background:radial-gradient(90% 50% at 15% -5%,rgba(255,122,26,.13),transparent 60%),radial-gradient(70% 45% at 100% 30%,rgba(255,170,102,.08),transparent 65%),var(--bg) fixed}
+[data-theme="light"] .ob-foot{background:linear-gradient(transparent,rgba(244,244,246,.94) 35%)}
+[data-theme="light"] .store{background:#16161A;color:#F4F4F6}
+[data-theme="light"] nav.tabs{box-shadow:var(--hi),0 12px 32px -12px rgba(0,0,0,.22)}
+[data-theme="light"] nav.tabs button[aria-current="page"]{background:rgba(255,122,26,.12);box-shadow:none}
+[data-theme="light"] .seg button[aria-pressed="true"]{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+[data-theme="light"] .meal .ph{background:radial-gradient(circle at 30% 30%,rgba(255,122,26,.22),rgba(0,0,0,.03))}
+[data-theme="light"] .anim{background:rgba(0,0,0,.04)}
+[data-theme="light"] .hc.sel{outline-color:#16161A}
+[data-theme="light"] .chk.on{color:#fff}
+[data-theme="light"] #sheet{background:rgba(0,0,0,.3)}
+[data-theme="light"] #pk-card,[data-theme="light"] .duo-face{background:var(--card)!important;box-shadow:var(--hi)}

@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:22,d:"17/11",t:"☀︎ Mode clair",x:[
+  "Sur « Aujourd'hui », le petit bouton rond à côté de ton niveau change le thème : ◐ selon ton iPhone, ☀︎ clair, ☾ sombre.",
+  "En « selon ton iPhone », l'appli passe en clair ou en sombre toute seule, en même temps que ton téléphone."]},
  {id:21,d:"17/11",t:"♥ Remplacer un repas par un plat que tu aimes",x:[
   "Dans la fiche d'un repas, « Choisir parmi mes plats aimés » ouvre la liste des plats gardés en swipe : celui que tu choisis remplace le repas pour ce jour seulement.",
   "Un plat que tu as gardé n'affiche plus « Je n'aime pas, remplace-la » : « Remplacer ce jour seulement » reste là."]},
