@@ -13,7 +13,7 @@ Tout est construit par nos scripts (aucun modèle ni vidéo tiers). L'ancien mot
 | `build_all.sh` | Rendu vidéo des exercices passés en argument |
 | `vids.py` | Met à jour la liste `VIDS` / `VALIAS` de `data.js` d'après les .mp4 présents |
 | `hipt.py`, `build.sh` | Premier essai validé (hip thrust), gardé tel quel |
-| `avatar.py` | Avatar « Mon corps » : corps en métaballes + une déformation par muscle → `avatar/avatar_m.bin`, `avatar_f.bin` (`blender -b -P renders/avatar.py -- avatar`, ≈ 10 s). Lu par `corps.js` |
+| `avatar_mh.py` | Avatar réaliste « Mon corps » : corps humain MakeHuman (maillage et cibles CC0, github.com/makehumancommunity/makehuman), une cible par muscle + gras + muscle global, short et yeux → `avatar/mh_m.bin`, `mh_f.bin`. `python3 renders/avatar_mh.py <makehuman/data> avatar`. Lu par `corps.js` |
 
 ## Côté app
 - `data.js` : `animTag(id, anim, nom, classe)` renvoie la balise `<video>` (exercice, sinon son animation, sinon alias), ou rien.

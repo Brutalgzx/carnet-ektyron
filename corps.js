@@ -1,10 +1,9 @@
 "use strict";
 /* « Mon corps » : avatar 3D à curseurs de muscles et aperçu de la silhouette au poids visé.
-   Maillage et déformations construits par renders/avatar.py (Blender, métaballes, aucun modèle tiers) → avatar/avatar_m.bin, avatar_f.bin.
+   Corps humain MakeHuman (CC0) préparé par renders/avatar_mh.py → avatar/mh_m.bin, mh_f.bin.
    three.js (vendor/three.min.js) n'est chargé qu'à l'ouverture de la page. Les curseurs libres sont gardés dans « coach-avatar ». */
 
 const AV_M=[["pecs","Pecs","🛡️"],["dos","Dos","🦅"],["epaules","Épaules","🎯"],["bras","Bras","💪"],["abdos","Abdos","🧱"],["trapezes","Trapèzes","🏔️"],["jambes","Jambes","🦵"],["fessiers","Fessiers","🍑"],["mollets","Mollets","🦶"],["gras","Masse grasse","🫧"]];
-const AV_FILE="avatar/avatar_%.bin?v=2";
 let AVS=null; /* état de la page : {mode, v:{muscle:curseur 0..100}} */
 const av_toM=s=>(s-20)/57, av_toS=m=>Math.max(0,Math.min(100,Math.round(20+m*57)));
 
@@ -39,51 +38,63 @@ function vCorps(){const p=PROF,S=avState(),now=avEstimate(false),go=p.tw!=null?a
   <p class="small muted" style="margin:0">Estimation à partir de ta taille, ton âge, ton poids et ton niveau : la génétique, le sommeil et la régularité changent beaucoup le résultat. Pas un avis médical.</p></div>`}
 
 /* ================= Rendu 3D ================= */
+/* Corps humain MakeHuman (CC0), exporté par renders/avatar_mh.py → avatar/mh_m.bin, mh_f.bin.
+   Chaque curseur ajoute sa cible (vecteurs de déplacement des sommets), comme les curseurs de MakeHuman. */
 let AV3=null;
+const AV_FILE="avatar/mh_%.bin?v=2",AV_GAIN={pecs:1.1,dos:1,epaules:1.5,bras:1.7,abdos:1.6,trapezes:1.6,jambes:1.7,fessiers:1,mollets:1,gras:1.1};
 function avLoadThree(){return window.THREE?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement("script");s.src="vendor/three.min.js";s.onload=ok;s.onerror=ko;document.head.appendChild(s)})}
 const AV_BIN={};
 function avLoadBin(sex){return AV_BIN[sex]||(AV_BIN[sex]=fetch(AV_FILE.replace("%",sex)).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(avParse))}
-/* Format AVT1 : en-tête (nv, nt, nm), boîte (min xyz, taille xyz), positions u16, triangles u16, puis par déformation : échelle f32 + valeurs i8 le long de la normale. */
-function avParse(buf){const dv=new DataView(buf),nv=dv.getUint32(4,1),nt=dv.getUint32(8,1),nm=dv.getUint32(12,1),lo=[0,1,2].map(i=>dv.getFloat32(16+4*i,1)),sz=[0,1,2].map(i=>dv.getFloat32(28+4*i,1));
- let o=40;const q=new Uint16Array(buf,o,nv*3);o+=nv*6;const idx=new Uint16Array(buf.slice(o,o+nt*6));o+=nt*6;if(nt%2)o+=2;
- const P=new Float32Array(nv*3);for(let i=0;i<nv;i++){const x=lo[0]+q[i*3]/65535*sz[0],y=lo[1]+q[i*3+1]/65535*sz[1],z=lo[2]+q[i*3+2]/65535*sz[2];P[i*3]=x;P[i*3+1]=z;P[i*3+2]=-y}
- const D=[];for(let m=0;m<nm;m++){const sc=dv.getFloat32(o,1);o+=4;const a=new Int8Array(buf,o,nv),f=new Float32Array(nv);for(let i=0;i<nv;i++)f[i]=a[i]*sc;D.push(f);o+=nv+(nv%4?4-nv%4:0)}
- return{nv,P,idx,D,h:sz[2]}}
+/* Format AVT2 : en-tête (nv, triangles corps / short / yeux, nb cibles), boîte, positions u16, triangles u16,
+   puis par cible : n, échelle, indices u16, déplacements i16 ×3. Ordre des cibles : AV_M puis « musc » (muscle global). */
+function avParse(buf){const dv=new DataView(buf),u=o=>dv.getUint32(o,1),nv=u(4),tb=u(8),ts=u(12),te=u(16),nm=u(20),lo=[0,1,2].map(i=>dv.getFloat32(24+4*i,1)),sz=[0,1,2].map(i=>dv.getFloat32(36+4*i,1));
+ let o=48;const q=new Uint16Array(buf,o,nv*3);o+=nv*6;const all=new Uint16Array(buf.slice(o,o+(tb+ts+te)*6));o+=(tb+ts+te)*6;if((tb+ts+te)%2)o+=2;
+ const P=new Float32Array(nv*3);for(let i=0;i<nv*3;i++)P[i]=lo[i%3]+q[i]/65535*sz[i%3];
+ const D=[];for(let m=0;m<nm;m++){const n=u(o),sc=dv.getFloat32(o+4,1);o+=8;const ids=new Uint16Array(buf.slice(o,o+n*2));o+=n*2+(n%2?2:0);const d=new Int16Array(buf.slice(o,o+n*6));o+=n*6+(n%2?2:0);
+  const f=new Float32Array(n*3);let mx=0;for(let i=0;i<n*3;i++){f[i]=d[i]*sc}for(let i=0;i<n;i++)mx=Math.max(mx,Math.hypot(f[i*3],f[i*3+1],f[i*3+2]));D.push({ids,f,mx})}
+ return{nv,P,body:all.subarray(0,tb*3),shorts:all.subarray(tb*3,(tb+ts)*3),eyes:all.subarray((tb+ts)*3),D,h:sz[1]}}
 
 function corpsMount(){const cv=$("#av-cv");if(!cv)return;const sex=PROF.sex==="f"?"f":"m";
- Promise.all([avLoadThree(),avLoadBin(sex)]).then(([,M])=>{if(!document.body.contains(cv))return;avBuild(cv,M);$("#av-load")?.remove()})
+ Promise.all([avLoadThree(),avLoadBin(sex)]).then(([,M])=>{if(!document.body.contains(cv))return;avBuild(cv,M,sex);$("#av-load")?.remove()})
   .catch(()=>{const l=$("#av-load");if(l)l.textContent="Avatar indisponible hors ligne. Reviens avec du réseau."})}
 
-function avBuild(cv,M){const T=THREE,box=cv.parentNode,W=box.clientWidth,H=box.clientHeight;
+function avBuild(cv,M,sex){const T=THREE,box=cv.parentNode,W=box.clientWidth,H=box.clientHeight;
  const R=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(Math.min(2,devicePixelRatio||1));R.setSize(W,H,false);
- R.outputEncoding=T.sRGBEncoding;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.05;
- const sc=new T.Scene(),cam=new T.PerspectiveCamera(30,W/H,.1,20);cam.position.set(0,.98,4.1);cam.lookAt(0,.9,0);
- sc.add(new T.HemisphereLight(0xfff4ea,0x24262c,.75));
- const key=new T.DirectionalLight(0xffffff,1.6);key.position.set(1.6,2.6,2.4);sc.add(key);
- const rim=new T.DirectionalLight(0xffb27a,1.1);rim.position.set(-2.2,1.6,-2.4);sc.add(rim);
- const fill=new T.DirectionalLight(0x9fb7ff,.35);fill.position.set(-2,.6,2);sc.add(fill);
- const g=new T.BufferGeometry(),pos=new Float32Array(M.P);g.setAttribute("position",new T.BufferAttribute(pos,3));g.setIndex(new T.BufferAttribute(M.idx,1));g.computeVertexNormals();
- const N0=avSmoothN(g.attributes.normal.array,M.idx,M.nv),col=new Float32Array(M.nv*3).fill(1);g.setAttribute("color",new T.BufferAttribute(col,3));
- const mat=new T.MeshStandardMaterial({color:0xd9d2ca,roughness:.52,metalness:.04,vertexColors:true});
- const mesh=new T.Mesh(g,mat),grp=new T.Group();grp.add(mesh);sc.add(grp);
- const floor=new T.Mesh(new T.CircleGeometry(.55,48),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.06}));floor.rotation.x=-Math.PI/2;floor.position.y=0;grp.add(floor);
- let rot=.5,auto=true,drag=null,dirty=true,raf=0,glow=0;
- const update=()=>{const S=AVS,k=AV_M.map(([m])=>av_toM(S.v[m]));for(let i=0;i<M.nv;i++){let d=0;for(let j=0;j<k.length;j++)d+=M.D[j][i]*k[j];pos[i*3]=M.P[i*3]+N0[i*3]*d;pos[i*3+1]=M.P[i*3+1]+N0[i*3+1]*d;pos[i*3+2]=M.P[i*3+2]+N0[i*3+2]*d}
-  const si=S.sel?AV_M.findIndex(([m])=>m===S.sel):-1;if(si>=0){const D=M.D[si];let mx=1e-4;for(let i=0;i<M.nv;i++)if(D[i]>mx)mx=D[i];for(let i=0;i<M.nv;i++){const t=Math.max(0,Math.min(1,D[i]/mx*1.6))*glow;col[i*3]=1;col[i*3+1]=1-.45*t;col[i*3+2]=1-.85*t}}else col.fill(1);
-  g.attributes.position.needsUpdate=true;g.attributes.color.needsUpdate=true;g.computeVertexNormals()};
- const loop=()=>{if(!document.body.contains(cv)){R.dispose();g.dispose();AV3=null;return}raf=requestAnimationFrame(loop);
-  if(auto)rot+=.004;if(AVS.sel&&glow<1){glow=Math.min(1,glow+.08);dirty=true}else if(!AVS.sel&&glow>0){glow=Math.max(0,glow-.06);dirty=true}
+ R.outputEncoding=T.sRGBEncoding;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.1;R.shadowMap.enabled=false;
+ const sc=new T.Scene(),cam=new T.PerspectiveCamera(26,W/H,.1,20),cy=M.h*.53;cam.position.set(0,cy+.05,M.h*2.55);cam.lookAt(0,cy,0);
+ sc.add(new T.HemisphereLight(0xfff1e6,0x2a2622,.65));
+ const key=new T.DirectionalLight(0xfff4ea,1.9);key.position.set(1.4,2.4,2.2);sc.add(key);
+ const rim=new T.DirectionalLight(0xffb27a,1.3);rim.position.set(-2.2,1.8,-2.2);sc.add(rim);
+ const rim2=new T.DirectionalLight(0xbfd2ff,.6);rim2.position.set(2.4,1.2,-1.8);sc.add(rim2);
+ const pos=new T.BufferAttribute(new Float32Array(M.P),3);
+ const geo=ix=>{const g=new T.BufferGeometry();g.setAttribute("position",pos);g.setIndex(new T.BufferAttribute(ix,1));return g};
+ const gb=geo(M.body),gs=geo(M.shorts),ge=geo(M.eyes),col=new Float32Array(M.nv*3);
+ /* Teinte de peau, brassière pour le modèle femme (bande autour de la poitrine), lueur orange du muscle réglé. */
+ const skin=[.78,.52,.39],cloth=[.13,.13,.15],top=new Uint8Array(M.nv);
+ if(sex==="f")for(let i=0;i<M.nv;i++){const x=M.P[i*3],y=M.P[i*3+1]/M.h;if(y>.695&&y<.778&&Math.abs(x)<.15+(y-.695)*.2)top[i]=1}
+ gb.setAttribute("color",new T.BufferAttribute(col,3));
+ const grp=new T.Group();sc.add(grp);
+ grp.add(new T.Mesh(gb,new T.MeshStandardMaterial({vertexColors:true,roughness:.58,metalness:0})));
+ grp.add(new T.Mesh(gs,new T.MeshStandardMaterial({color:0x1c1d22,roughness:.85,metalness:0,polygonOffset:true,polygonOffsetFactor:-1})));
+ grp.add(new T.Mesh(ge,new T.MeshStandardMaterial({color:0x2b2018,roughness:.25,metalness:0})));
+ const floor=new T.Mesh(new T.CircleGeometry(.5,48),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.06}));floor.rotation.x=-Math.PI/2;grp.add(floor);
+ let rot=0,auto=true,drag=null,dirty=true,glow=0,t0=performance.now();
+ const update=()=>{const S=AVS,a=pos.array;a.set(M.P);const mus=AV_M.filter(([m])=>m!=="gras");let mean=0;
+  AV_M.forEach(([m],j)=>{const k=av_toM(S.v[m])*AV_GAIN[m];if(m!=="gras")mean+=av_toM(S.v[m])/mus.length;if(!k)return;const {ids,f}=M.D[j];for(let n=0;n<ids.length;n++){const i=ids[n]*3;a[i]+=f[n*3]*k;a[i+1]+=f[n*3+1]*k;a[i+2]+=f[n*3+2]*k}});
+  {const {ids,f}=M.D[AV_M.length],k=mean*.7;for(let n=0;n<ids.length;n++){const i=ids[n]*3;a[i]+=f[n*3]*k;a[i+1]+=f[n*3+1]*k;a[i+2]+=f[n*3+2]*k}}
+  for(let i=0;i<M.nv;i++){const c=top[i]?cloth:skin;col[i*3]=c[0];col[i*3+1]=c[1];col[i*3+2]=c[2]}
+  const si=S.sel?AV_M.findIndex(([m])=>m===S.sel):-1;if(si>=0&&glow>0){const {ids,f,mx}=M.D[si];for(let n=0;n<ids.length;n++){const i=ids[n],t=Math.min(1,Math.hypot(f[n*3],f[n*3+1],f[n*3+2])/mx*2.2)*glow;
+   col[i*3]+=(1-col[i*3])*t;col[i*3+1]+=(.48-col[i*3+1])*t;col[i*3+2]+=(.1-col[i*3+2])*t}}
+  pos.needsUpdate=true;gb.attributes.color.needsUpdate=true;gb.computeVertexNormals();gs.computeVertexNormals()};
+ const loop=()=>{if(!document.body.contains(cv)){R.dispose();[gb,gs,ge].forEach(g=>g.dispose());AV3=null;return}requestAnimationFrame(loop);
+  if(auto)rot=Math.sin((performance.now()-t0)/2600)*.65;if(AVS.sel&&glow<1){glow=Math.min(1,glow+.08);dirty=true}else if(!AVS.sel&&glow>0){glow=Math.max(0,glow-.06);dirty=true}
   if(dirty){update();dirty=false}grp.rotation.y=rot;R.render(sc,cam)};
+ ge.computeVertexNormals();
  cv.addEventListener("pointerdown",e=>{drag={x:e.clientX,r:rot};auto=false;cv.setPointerCapture(e.pointerId)});
  cv.addEventListener("pointermove",e=>{if(drag)rot=drag.r+(e.clientX-drag.x)*.012});
  const up=()=>{drag=null};cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
  AV3={refresh:()=>{dirty=true}};loop()}
 
-/* Direction de gonflement : normales moyennées avec les voisins, non renormalisées. Dans les plis (aisselle, entrejambe)
-   les normales s'opposent, la moyenne raccourcit et le gonflement s'y atténue au lieu de faire des pointes. */
-function avSmoothN(n0,idx,nv){const nb=Array.from({length:nv},()=>new Set());for(let t=0;t<idx.length;t+=3){const a=idx[t],b=idx[t+1],c=idx[t+2];nb[a].add(b).add(c);nb[b].add(a).add(c);nb[c].add(a).add(b)}
- const L=nb.map(s=>[...s]);let n=Float32Array.from(n0);for(let it=0;it<6;it++){const o=new Float32Array(nv*3);for(let i=0;i<nv;i++){let x=n[i*3],y=n[i*3+1],z=n[i*3+2];for(const j of L[i]){x+=n[j*3];y+=n[j*3+1];z+=n[j*3+2]}const k=1/(L[i].length+1);o[i*3]=x*k;o[i*3+1]=y*k;o[i*3+2]=z*k}n=o}
- return n}
 function avRefresh(){if(AV3)AV3.refresh()}
 function avSync(){for(const [k] of AV_M){const i=$("#av-"+k),b=$("#avv-"+k);if(i)i.value=AVS.v[k];if(b)b.textContent=AVS.v[k]}avRefresh()}
 
