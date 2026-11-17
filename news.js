@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:7,d:"17/11",t:"🥗 Des repas seulement quand tu as dit ce que tu aimes",x:[
+  "Après le questionnaire, Aujourd'hui montre tes calories et macros du jour, avec un bouton « Configurer ma nutrition ».",
+  "Les plats n'apparaissent qu'une fois tes goûts, allergies et magasin renseignés, choisis parmi les recettes qui te correspondent."]},
  {id:6,d:"17/11",t:"🔄 Tout recommencer avec de nouveaux objectifs",x:[
   "En bas de Séances et de Nutrition, « Recommencer tout le questionnaire » repart de zéro, comme une nouvelle installation : nouveaux objectifs, nouveau programme, nouveaux repas.",
   "Tout ce que tu as déjà enregistré reste : séances faites, charges, pesées, mensurations."]},
