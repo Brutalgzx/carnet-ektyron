@@ -12,7 +12,7 @@ const DAY=864e5;
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 /* ================= État ================= */
-let PROF=LS.get("coach-profile",null), store=LS.get("carnet",{}), TRAIN=null, view="today", MV=null, selDay=new Date().getDay(), nutDay=null, nutTab="week";
+let PROF=LS.get("coach-profile",null), store=LS.get("carnet",{}), TRAIN=null, view="today", selDay=new Date().getDay(), nutDay=null, nutTab="week";
 const persist=()=>LS.set("carnet",store);
 /* XP toujours recalculée depuis les séances présentes (même formule que gStats) : une séance supprimée retire son XP. */
 const xpProf=()=>{const X=LS.get("carnet-xp",{xp:0,games:[]});X.games=X.games||[];X.xp=X.games.reduce((a,g)=>a+Math.round((g.vol||0)/10)+50,0);return X};
@@ -377,7 +377,7 @@ function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok
  document.body.append(el)}
 function vTrain(){if(typeof cusOn!=="undefined"&&cusOn)return cusView();const S=TRAIN[selDay],td=new Date().getDay();
  return `<div class="row" style="margin-top:-8px"><div class="small muted sp">${splitName(PROF)} · ${GYMS.find(g=>g.v===PROF.gym).l} · ${GOALS.find(g=>g.v===PROF.goal).l.toLowerCase()}</div><button class="chip" id="adj">Adapter</button></div>
- ${typeof cusBtn==="function"?cusBtn():""}<div class="row"><div class="small muted sp">${MV==null?"":MV==="pick"?"Touche la séance à déplacer":`Séance du ${DLONG[MV].toLowerCase()} : touche le jour d'arrivée`}</div><button class="chip" id="mv-tog">${MV==null?"Modifier":"Annuler"}</button></div><div class="week">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${MV==null?d===selDay:d===MV}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
+ ${typeof cusBtn==="function"?cusBtn():""}<div class="week wk-drag">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${d===selDay}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
  ${S?`<div class="card hot stack"><h2>${S.t}</h2><div class="small muted">${S.f} · environ ${sessMin(S)} min${S.own?" · modifiée par toi":""}</div>${gBtns(selDay,"▶ Jouer cette séance")}<button class="btn ghost" id="ed-tog">${edit?"✓ Terminer les modifications":"✏️ Modifier cette séance"}</button></div>
   ${S.x.map((e,i)=>{const l=lastLog(e.id);return `<article class="ex">${animTag(e.id,e.a,esc(e.n))}<div class="hd"><b>${e.n}</b><span class="sc">${e.s}×${e.r[0]}–${e.r[1]}${unitR(e.id)}</span></div><div class="small">${e.c}</div><div class="small muted mono">Repos ${fmtT(e.rest)} · ${l?`dernière fois ${l.sets.map(s=>`${s.k}×${s.r}`).join(" · ")}`:"pas encore de données"}</div>${edit?`<div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="chip" data-mv="${i},-1" aria-label="Monter">↑</button><button class="chip" data-mv="${i},1" aria-label="Descendre">↓</button><button class="chip" data-rn="${e.id}">✏️ Renommer</button><button class="chip" data-sw="${i}" style="flex:1">🔄 Changer</button><button class="chip" data-rm="${i}">🗑️ Retirer</button></div>`:""}</article>`}).join("")}${edit?`<button class="btn ghost" data-sw="-1">+ Ajouter un exercice</button>${S.own?`<button class="btn ghost" id="ed-reset">Revenir à la séance du coach</button>`:""}`:""}`
   :`<div class="card stack"><h2>Repos</h2><p class="small muted" style="margin:0">Pas de muscu aujourd'hui : de la marche ou 20 minutes de cardio léger si tu veux bouger.</p></div>`}`}
@@ -536,7 +536,6 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.gym){if(A.gym!==D.gym)A.equip=GYMS.find(g=>g.v===D.gym).eq;A.gym=D.gym;renderOb();return}
  if(D.eq){A.equip=A.equip.includes(D.eq)?A.equip.replace(D.eq,""):A.equip+D.eq;renderOb();return}
  if(D.wd!==undefined){const w=+D.wd;A.days=A.days.includes(w)?A.days.filter(x=>x!==w):[...A.days,w];renderOb();return}
- if(t.id==="mv-tog"){MV=MV==null?"pick":null;render();return}
  if(t.id==="ed-tog"){edit=!edit;render();return}
  if(t.id==="ed-reset"){delete PROF.custom[selDay];saveProg();toast("Séance du coach remise");return}
  if(D.mv){const [i,dir]=D.mv.split(",").map(Number),ids=curIds(),j=i+dir;if(j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];setCustom(ids);return}
@@ -574,9 +573,7 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(D.play!==undefined){if(gResumable(+D.play))gOpen();else{gDrop();gStart(+D.play)}return}
  if(D.gcancel!==undefined){if(confirm("Annuler cette séance ? Rien ne sera enregistré."))gCancel();return}
  if(D.gnew!==undefined){if(!confirm("Démarrer une nouvelle séance ? Les séries déjà faites restent dans ton carnet."))return;gDrop();gStart(+D.gnew);return}
- if(D.sday!==undefined){const d=+D.sday;if(MV==="pick"){if(!TRAIN[d]){toast("Pas de séance ce jour-là");return}MV=d;render();return}
-  if(MV!=null){const a=MV,sw=!!TRAIN[d];MV=null;selDay=d;if(a!==d){moveDay(a,d);toast(sw?`${DLONG[a]} et ${DLONG[d].toLowerCase()} échangés`:`Séance déplacée au ${DLONG[d].toLowerCase()}`)}else render();return}
-  selDay=d;render();return}
+ if(D.sday!==undefined){selDay=+D.sday;render();return}
  if(D.nday!==undefined){nutDay=+D.nday;render();return}
  if(D.nt){nutTab=D.nt;render();return}
  if(D.food){openFood(D.food,+D.g||0,D.back?recBack:null);return}
@@ -628,3 +625,18 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}ca
 document.addEventListener("click",e=>{const t=e.target.closest("[data-rn]");if(!t||!PROF)return;const id=t.dataset.rn,cur=(PROF.names||{})[id]||(Object.values(TRAIN||{}).flatMap(S=>S.x).find(x=>x.id===id)||{}).n||EX[id][0];
  const v=prompt("Nouveau nom de l'exercice (vide = nom d'origine)",cur);if(v===null)return;const n=v.replace(/[<>&"]/g,"").trim().slice(0,50);
  PROF.names={...(PROF.names||{})};if(n)PROF.names[id]=n;else delete PROF.names[id];LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);render();toast(n?"Renommé : "+n:"Nom d'origine remis")});
+/* Séance : appui long sur un jour, la case suit le doigt ; lâchée sur un autre jour, la séance y est déplacée (échange si ce jour en a déjà une). */
+(()=>{let tm=null,dr=null;const end=()=>{clearTimeout(tm);tm=null;if(dr){dr.g.remove();dr.b.classList.remove("wk-from");document.querySelectorAll(".wk-over").forEach(x=>x.classList.remove("wk-over"))}};
+ const over=(x,y)=>{const e=document.elementFromPoint(x,y),b=e&&e.closest(".wk-drag [data-sday]");return b};
+ document.addEventListener("pointerdown",e=>{const b=e.target.closest(".wk-drag [data-sday]");if(!b||!TRAIN||!TRAIN[+b.dataset.sday])return;const x0=e.clientX,y0=e.clientY;
+  tm=setTimeout(()=>{tm=null;const r=b.getBoundingClientRect(),g=b.cloneNode(true);g.removeAttribute("data-sday");g.className="wk-ghost";g.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:99`;
+   document.body.append(g);b.classList.add("wk-from");dr={a:+b.dataset.sday,b,g,dx:x0-r.left,dy:y0-r.top};if(navigator.vibrate)navigator.vibrate(15)},350);
+  const mv0=ev=>{if(tm&&Math.hypot(ev.clientX-x0,ev.clientY-y0)>10)end()};b.addEventListener("pointermove",mv0,{once:false});b.addEventListener("pointerup",()=>b.removeEventListener("pointermove",mv0),{once:true})});
+ document.addEventListener("pointermove",e=>{if(!dr)return;dr.g.style.left=e.clientX-dr.dx+"px";dr.g.style.top=e.clientY-dr.dy+"px";const t=over(e.clientX,e.clientY);
+  document.querySelectorAll(".wk-over").forEach(x=>x!==t&&x.classList.remove("wk-over"));if(t&&t!==dr.b)t.classList.add("wk-over")});
+ document.addEventListener("touchmove",e=>{if(dr)e.preventDefault()},{passive:false});
+ document.addEventListener("pointerup",e=>{if(!dr){end();return}const a=dr.a,t=over(e.clientX,e.clientY);end();dr=null;
+  const kill=ev=>{ev.stopPropagation();ev.preventDefault()};document.addEventListener("click",kill,{capture:true,once:true});setTimeout(()=>document.removeEventListener("click",kill,true),400);
+  if(!t)return;const d=+t.dataset.sday;if(d===a)return;const sw=!!TRAIN[d];selDay=d;moveDay(a,d);toast(sw?`${DLONG[a]} et ${DLONG[d].toLowerCase()} échangés`:`Séance déplacée au ${DLONG[d].toLowerCase()}`)});
+ document.addEventListener("pointercancel",()=>{end();dr=null});
+ document.addEventListener("contextmenu",e=>{if(e.target.closest(".wk-drag"))e.preventDefault()})})();

@@ -236,3 +236,8 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 .av-view canvas{display:block;width:100%;height:100%;cursor:grab}
 .av-load{position:absolute;inset:0;display:grid;place-items:center}
 .av-sl input[type=range]{margin:6px 0 2px}
+.wk-drag button{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.wk-drag button.wk-from{opacity:.35}
+.wk-drag button.wk-over{outline:2px solid var(--warn);outline-offset:2px}
+.wk-ghost{border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 13px var(--mono);line-height:1.2;background:var(--grad);color:var(--on-acc);box-shadow:var(--glow);transform:scale(1.12)}
+.wk-ghost small{font:600 9.5px var(--body)}

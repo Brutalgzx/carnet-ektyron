@@ -2,9 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
- {id:18,d:"17/11",t:"🗓️ Déplacer une séance",x:[
-  "Dans Séance, touche « Modifier » à côté des jours de la semaine.",
-  "Touche la séance à déplacer, puis le jour où tu veux la faire. Si ce jour a déjà une séance, les deux sont échangées.",
+ {id:19,d:"17/11",t:"🗓️ Déplacer une séance",x:[
+  "Dans Séance, reste appuyé sur un jour : la case vient avec ton doigt.",
+  "Lâche-la sur un autre jour pour y mettre la séance. Si ce jour a déjà une séance, les deux sont échangées.",
   "La séance garde ses exercices, même ceux que tu as changés."]},
  {id:17,d:"17/11",t:"🏋️ Développé couché toujours disponible",x:[
   "Même si tu as mis les pecs en 🚫, le développé couché (haltères ou barre) reste dans « + Ajouter un exercice ».",
