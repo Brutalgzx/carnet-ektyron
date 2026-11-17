@@ -599,6 +599,11 @@ fixMach1(PROF);
 function fixRomy1(p){if(!p||p.fx3||!/^rom/i.test(p.name||""))return;const X=LS.get("carnet-xp",null),g=X&&X.games||[];
  if(g.length===2){const k=[...g].sort((a,b)=>(b.sets||0)-(a.sets||0)||(b.vol||0)-(a.vol||0)||a.t-b.t)[0],o=g.find(x=>x!==k);X.games=[k];LS.set("carnet-xp",X);const D=LS.get("coach-del",{});D.g=[...(D.g||[]),o.t];LS.set("coach-del",D)}p.fx3=1}
 fixRomy1(PROF);
+/* Romy : en refaisant le questionnaire le 17/11 (pecs en 🚫), son programme à elle (5 séances, mode « Ton programme ») a été remplacé par celui du coach.
+   On remet le programme de sa dernière sauvegarde (15/11), dans son ordre ; le développé couché (pecs) est retiré par buildOwn. Le reste du nouveau profil est gardé. Une seule fois. */
+function fixRomy2(p){if(!p||p.fx4||!/^rom/i.test(p.name||"")||p.sex!=="f"||p.h!==154||p.age!==25)return;p.fx4=1;if(p.hasProg==="oui"&&p.progTxt)return;
+ Object.assign(p,{progTxt:"PROGRAMME SPORT :\nSÉANCE BAS DU CORPS\n(lundi, mercredi, vendredi)\n\t◦\tHip trust 4x8 (25kg) \n\t◦\tSquat 3x10 (30kg)\n\t◦\tPress couchée 3x12 (200kg)\n\t◦\tFentes bulgares à la smith penchée en avant 3x8 (20kg)\n\t◦\tLeg curl couché 3x8 (27kg)\n\t◦\tAbduction, penchée 3x12 (59kg)\n\t◦\tAbduction, droite 3x10 (32kg)\nSÉANCE BAS DU CORPS\n\t◦\tHip trust 4x8 (25kg) \n\t◦\tRdl 3x10 \n\t◦\tSumo squat 3x12 \n\t◦\tKickback poulie 3x10\n\t◦\tStep up 3x8\n\t◦\tAbduction, penchée 3x12 (59kg)\n\t◦\tAbduction, droite 3x10 (32kg)\nSEANCE HAUT DU CORPS 1 (mardi)\n\t◦\tDéveloppé couché charge 3x8 (10kg)\n\t◦\tLat pulldown 3x10 (32kg)\n\t◦\tDumbbel row 3x10 (12kg)\n\t◦\tRelevés de jambes suspendues 3x10\n\t◦\tDead bug 3x10\n\t◦\tHeel taps 3x20\nSEANCE HAUT DU CORPS 2 (samedi)\n\t◦\tRowing assis 3x8 (20kg)\n\t◦\tFace pull 3x12 (24,8kg)\n\t◦\tCurl Biceps 3x10 (5kg)\n\t◦\tRussian twist 3x10\n\t◦\tSuit case crunch 3x10\n\t◦\tGainage (4x1min) 10kg sur le dos",hasProg:"oui",progKeep:"tel",ownEx:{}});ownSetup(p);if(!p.ownDays.length){p.hasProg="non";return}p.ownV=6;p.mode="own";p.days=ownDaysFor(p);p.freq=p.days.length;p.custom={}}
+fixRomy2(PROF);
 PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&G.day!==7&&!TRAIN[G.day]){G=null;LS.del(GK)}}
 render();suiviInit();reglagesInit();jeuInit();
 if(PROF&&G){if(G.ph!=="done"&&!gToday(G.start))gDrop();else if(!G.away)gOpen()}
