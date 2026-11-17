@@ -112,7 +112,16 @@ function pkSwipe(){if(!PKD){const all=PK_G.flatMap(([m])=>safeRec(m)),seen=new S
  c.addEventListener("pointerup",()=>{if(x0==null)return;x0=null;c.style.transition="transform .25s";if(Math.abs(dx)>90)pkVote(dx>0);else c.style.transform=""})}
 function pkVote(keep){const r=PKD[PKI],c=$("#pk-card");if(keep)PKS.add(r.id);else{PKS.delete(r.id);PROF.nope=[...new Set([...(PROF.nope||[]),r.id])];LS.set("coach-profile",PROF)}
  if(c)c.style.transform=`translateX(${keep?120:-120}%) rotate(${keep?15:-15}deg)`;PKI++;setTimeout(pkSwipe,c?220:0)}
+/* Fiche d'un repas : « Choisir parmi mes plats aimés » → liste des plats gardés (PROF.pick), en choisir un le met à la place pour ce jour seulement. */
+function likeSheet(rid,slot,day){const r=RECI[rid],L=(PROF.pick||[]).map(id=>RECI[id]).filter(x=>x&&x.id!==rid),same=L.filter(x=>x.m===r.m),oth=L.filter(x=>x.m!==r.m),
+ li=x=>`<li><button class="lnk sp" style="text-align:left" data-likepick="${x.id}" data-slot="${slot}" data-day="${day}" data-from="${rid}"><span style="font-size:22px">${x.e}</span> ${esc(x.n)}</button></li>`;
+ pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">Mes plats aimés</h2><button class="chip" data-likeback="${rid}" data-slot="${slot}" data-day="${day}" aria-label="Retour">✕</button></div>
+ <p class="small muted" style="margin:0">Choisis le plat qui remplace « ${esc(r.n)} » ce jour-là seulement. La portion est recalculée pour toi.</p>
+ ${same.length?`<ul class="list">${same.map(li).join("")}</ul>`:""}${oth.length?`<div class="lab">Autres plats aimés</div><ul class="list">${oth.map(li).join("")}</ul>`:""}`,"Mes plats aimés")}
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(D.likes){likeSheet(D.likes,D.slot,D.day);return}
+ if(D.likeback){openRecipe(D.likeback,D.slot,D.day);return}
+ if(D.likepick){const W=week(),d=W.days[wIdx(+D.day)],nw=RECI[D.likepick],old=RECI[D.from];if(!d||!nw)return;d[D.slot]=nw.id;LS.set("coach-week",W);LS.set("coach-shop",{});openRecipe(nw.id,D.slot,D.day);render();toast(`${old?old.n+" : remplacé par ":""}${nw.n} pour ce jour.`);return}
  if(t.id==="meal-edit"){mealSheet();return}
  if(D.msel){t.classList.toggle("on");t.textContent=t.classList.contains("on")?"✓":"";return}
  if(t.id==="meal-ok"){const sel=MEALK.filter(k=>$(`#sheet [data-msel="${k}"]`)?.classList.contains("on"));if(!sel.length)return toast("Garde au moins un repas.");PROF.mealSel=sel;PROF.meals=sel.length;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{});$("#sheet")?.remove();nutTab="week";render();toast("Repas mis à jour : nouvelle semaine composée.");return}
