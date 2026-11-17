@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:6,d:"17/11",t:"🔄 Tout recommencer avec de nouveaux objectifs",x:[
+  "En bas de Séances et de Nutrition, « Recommencer tout le questionnaire » repart de zéro, comme une nouvelle installation : nouveaux objectifs, nouveau programme, nouveaux repas.",
+  "Tout ce que tu as déjà enregistré reste : séances faites, charges, pesées, mensurations."]},
  {id:5,d:"17/11",t:"🧍 Trapèzes au programme et avatar de ton corps",x:[
   "Dans « Les zones à travailler en priorité », tu peux maintenant choisir Trapèzes : shrugs aux haltères avec sangles et prise neutre (le poignet ne travaille pas), avec leur vidéo.",
   "Choisir Abdos ajoute maintenant jusqu'à 2 exercices par séance, en fin de séance : abdos, obliques et gainage en alternance.",
