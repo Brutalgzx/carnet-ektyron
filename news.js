@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:17,d:"17/11",t:"🏋️ Développé couché toujours disponible",x:[
+  "Même si tu as mis les pecs en 🚫, le développé couché (haltères ou barre) reste dans « + Ajouter un exercice ».",
+  "Tu l'ajoutes toi-même à la séance et au jour que tu veux : le coach ne le met nulle part d'office."]},
  {id:16,d:"17/11",t:"🔀 Ton ordre d'exercices est gardé",x:[
   "Refaire le questionnaire ou adapter ton programme ne remet plus tes séances dans l'ordre du coach.",
   "Chaque séance garde l'ordre que tu lui avais donné ; seuls les exercices des zones que tu ne veux plus travailler sont retirés.",

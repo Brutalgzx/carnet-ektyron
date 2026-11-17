@@ -22,6 +22,8 @@ function weekGames(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),
 /* ================= Programme d'entraînement ================= */
 const SCHEME={masse:{H:[3,6,10,180],M:[3,8,12,150],I:[3,10,15,90]},force:{H:[4,4,6,210],M:[3,6,8,180],I:[3,8,12,90]},
  seche:{H:[3,8,12,150],M:[3,8,12,120],I:[3,12,15,60]},recompo:{H:[3,6,10,150],M:[3,8,12,120],I:[3,10,15,75]}};
+/* Développé couché : toujours proposé dans « + Ajouter un exercice » et gardé s'il a été ajouté à la main, même avec les pecs 🚫 ou sans le matériel coché (Romy, 17/11). Le coach ne le place jamais d'office. */
+const HANDOK=["dch","benchx"],pickOk=(id,p)=>exOk(id,p)||HANDOK.includes(id);
 function exOk(id,p){const e=EX[id],eq=(p.equip||"")+"0";return [...e[2]].every(c=>eq.includes(c))&&!(p.pain||[]).some(z=>e[6].includes(z))&&!(p.skip||[]).some(z=>inZone(id,z))}
 /* Zones que l'utilisateur ne veut pas travailler (2ᵉ appui sur une zone) : fessiers = exercices d'isolation fessiers seulement. */
 const GLUTE_ONLY=["hipt","pont","kick","addab","abdp","abd"],inZone=(id,z)=>z==="fessiers"?GLUTE_ONLY.includes(id):EX[id][1]===PRIOG[z];
@@ -38,7 +40,7 @@ const splitName=p=>p.mode==="own"?"Ton programme":SPLITS.find(x=>x.v===splitOf(p
 /* Séance proposée par le coach, ou séance modifiée par l'utilisateur (gardée tant que le type de séance ne change pas). */
 function buildTraining(p){if(p.mode==="own"&&p.ownDays&&p.ownDays.length)return buildOwn(p);const days={},nMax={45:5,60:6,75:7,90:8}[p.dur]||6;
  for(const [d,k] of seqFor(p)){const T=TPL[k],cu=(p.custom||{})[d],own=!!(cu&&cu.k===k);let ids;
-  if(own)ids=cu.ids.filter(i=>EX[i]&&exOk(i,p));
+  if(own)ids=cu.ids.filter(i=>EX[i]&&pickOk(i,p));
   else{ids=pickSlots(k,p,nMax);if(!zoneList(p).length)ids.sort((a,b)=>isPrio(b,p)-isPrio(a,p))}
   days[d]={k,t:T.t,f:T.f,x:ids.map(i=>mkEx(i,p)),own}}
  return days}
@@ -361,7 +363,7 @@ function autoSwap(i){const cur=curIds(),id=cur[i],mk=MUSCOF[id],key=selDay+":"+i
  const sc=x=>(EX[x][3]===EX[id][3]?4:0)+(EX[x][4]&&EX[x][4]===EX[id][4]?2:0)+(EX[x][2]!=="0"?1:0)-(seen.has(x)?20:0);
  pool.sort((a,b)=>sc(b)-sc(a));if(seen.has(pool[0])){seen.clear();seen.add(id);pool.sort((a,b)=>sc(b)-sc(a))}
  const nx=pool[0];seen.add(nx);cur[i]=nx;setCustom(cur);toast(`${EX[nx][0]} : toujours les ${mn}. Touche encore pour une autre option.`)}
-function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok=Object.keys(EX).filter(id=>!cur.includes(id)&&exOk(id,PROF)),
+function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok=Object.keys(EX).filter(id=>!cur.includes(id)&&pickOk(id,PROF)),
   groups=[...new Set(ok.map(id=>EX[id][1]))].sort((a,b)=>(b===g0)-(a===g0));
  const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in" role="dialog" aria-label="Choisir un exercice"><div class="row" style="padding-top:18px;position:sticky;top:0;background:var(--bg2)"><h2 class="sp" style="margin:0">${i>=0?"Remplacer "+esc(EX[cur[i]][0]):"Ajouter un exercice"}</h2><button class="chip" data-close aria-label="Fermer">✕</button></div>
   <p class="small muted">Seulement les exercices faisables avec ton matériel${(PROF.pain||[]).length?" et sans gêne pour ta zone à ménager":""}.</p>

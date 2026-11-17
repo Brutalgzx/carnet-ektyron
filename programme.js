@@ -151,7 +151,7 @@ const ownDaysFor=p=>{const w=(p.ownDays||[]).map(d=>d.dow);return w.length&&w.ev
 function mkOwn(o,p){const [n,g,,kind,a,c]=EX[o.id],S=SCHEME[p.goal][kind],r=o.r[0]===o.r[1]?[o.r[0],o.r[0]+2]:[o.r[0],o.r[1]];const rr=HOLD.has(o.id)?holdR(p):r;return{id:o.id,n:(p.names||{})[o.id]||o.n||n,g,a,c,s:o.s,r:rr,rest:S[3],kind,kg:o.kg}}
 function buildOwn(p){regOwn(p);const days={},L=p.ownDays,ds=[...p.days].sort((a,b)=>(a+6)%7-(b+6)%7);
  ds.forEach((d,i)=>{const k="own"+(i%L.length),O=L[i%L.length],cu=(p.custom||{})[d],own=!!(cu&&cu.k===k);
-  const ok=id=>!(p.skip||[]).some(z=>inZone(id,z)),x=own?cu.ids.filter(id=>EX[id]&&ok(id)).map(id=>{const o=O.x.find(y=>y.id===id);return o?mkOwn(o,p):mkEx(id,p)}):O.x.filter(o=>ok(o.id)).map(o=>mkOwn(o,p));
+  const ok=id=>!(p.skip||[]).some(z=>inZone(id,z)),x=own?cu.ids.filter(id=>EX[id]&&(ok(id)||HANDOK.includes(id))).map(id=>{const o=O.x.find(y=>y.id===id);return o?mkOwn(o,p):mkEx(id,p)}):O.x.filter(o=>ok(o.id)).map(o=>mkOwn(o,p));
   days[d]={k,t:O.t,f:"Ton programme",x,own}});return days}
 const ownTip=e=>{const inc=e.kind==="I"?"1 kg":"2,5 kg",out=[`Teste ta charge à ${e.r[0]} reps avec 2 reps en réserve, monte jusqu'à ${e.r[1]} sur toutes les séries, puis +${inc} et retour à ${e.r[0]}.`];
  if(e.r[1]>20)out.push("Beaucoup de reps : quand ça devient facile, ajoute du poids plutôt que des reps.");if(e.r[0]<4)out.push("Très lourd : garde 1 à 2 reps en réserve, la technique avant la charge.");if(e.s>5)out.push("Beaucoup de séries : si tu stagnes 2 semaines, enlèves-en une.");return out.join(" ")};
