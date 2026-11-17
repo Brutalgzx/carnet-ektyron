@@ -135,7 +135,7 @@ async function pushOff(){try{const r=await navigator.serviceWorker.ready,s=await
 
 /* ---------- Affine ton profil ---------- */
 function refineList(){if(!PROF)return[];const r=PROF.refined||{},o=[];
- if(r.nut===0)o.push({k:"nut",e:"🥗",t:"Ton suivi nutrition",s:"Poids, objectif, goûts, allergies, magasin : ton coach prépare tes repas."});else{if(!r.taste)o.push({k:"taste",e:"❤️",t:"Allergies et goûts",s:"Ce que tu adores, ce que tu ne manges jamais, tes allergies."});
+ if(r.nut===0)o.push({k:"nut",e:"🥗",t:"Ton suivi nutrition",s:"Tes goûts, allergies, repas et magasin : ton coach prépare tes repas."});else{if(!r.taste)o.push({k:"taste",e:"❤️",t:"Allergies et goûts",s:"Ce que tu adores, ce que tu ne manges jamais, tes allergies."});
  if(!r.food)o.push({k:"food",e:"🛒",t:"Repas et courses",s:"Nombre de repas, magasin, budget et style de plats."});}
  if(!r.equip)o.push({k:"equip",e:"🏋️",t:"Le matériel de ta salle",s:"Décoche ce qui manque, coche ce qu'elle a en plus."});
  if(!LS.get("coach-meas",[]).length)o.push({k:"meas",e:"📏",t:"Tes mensurations",s:"Taille, bras, cuisse : ce que la balance ne voit pas."});
