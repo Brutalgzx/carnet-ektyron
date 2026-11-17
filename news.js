@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:16,d:"17/11",t:"🔀 Ton ordre d'exercices est gardé",x:[
+  "Refaire le questionnaire ou adapter ton programme ne remet plus tes séances dans l'ordre du coach.",
+  "Chaque séance garde l'ordre que tu lui avais donné ; seuls les exercices des zones que tu ne veux plus travailler sont retirés.",
+  "Si le type d'une séance change (nouveau découpage), elle repart de la proposition du coach."]},
  {id:15,d:"17/11",t:"💶 Ton budget courses est fait pour être dépensé",x:[
   "Le coach ne cherche plus les économies : il vise ton budget de la semaine (sans le dépasser nettement) et le met dans la qualité.",
   "Plus ton budget est large, plus la gamme monte : viande et poisson Label Rouge, produits frais, bio, plats plus riches en protéines.",

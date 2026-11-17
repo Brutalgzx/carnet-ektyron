@@ -42,6 +42,12 @@ function buildTraining(p){if(p.mode==="own"&&p.ownDays&&p.ownDays.length)return 
   else{ids=pickSlots(k,p,nMax);if(!zoneList(p).length)ids.sort((a,b)=>isPrio(b,p)-isPrio(a,p))}
   days[d]={k,t:T.t,f:T.f,x:ids.map(i=>mkEx(i,p)),own}}
  return days}
+/* Questionnaire refait ou programme adapté : l'ordre perso de chaque type de séance suit ce type, même si les jours ou le split changent.
+   Seuls les exercices devenus interdits (zone exclue, douleur, matériel) sont retirés, par buildTraining. Programme collé changé : rien n'est reporté. */
+function keepCustom(old,p){const cu=old&&old.mode===p.mode&&(p.mode!=="own"||old.progTxt===p.progTxt)&&old.custom||{},out={},used=new Set();p.custom={};
+ if(Object.keys(cu).length){const T=buildTraining(p);for(const d in T){const k=T[d].k,src=cu[d]&&cu[d].k===k&&!used.has(d)?d:Object.keys(cu).find(x=>!used.has(x)&&cu[x]&&cu[x].k===k);
+  if(src!=null){used.add(src);out[d]={k,ids:cu[src].ids}}}}
+ p.custom=out;return p}
 function migrate(p){if(!p)return p;
  /* Romy : son profil refait le 16/11 avait perdu son poids visé (50 kg en 4 mois, dernière sauvegarde du 15/11). Remis une seule fois. */
  if(!p.fx1&&p.sex==="f"&&p.h===154&&p.age===25&&/^rom/i.test(p.name||"")&&p.tw==null){p.tw=50;p.twg="recompo";p.months=4;p.fx1=1}
@@ -256,7 +262,7 @@ function recN(p){const g=goalPlan(p),av=p.avail&&p.avail.length>=2?p.avail:WEEK,
 function spreadDays(n,av){if(DAYSET[n]&&DAYSET[n].every(d=>av.includes(d)))return DAYSET[n];let best=av.slice(0,n),bs=-99;
  for(let m=0;m<128;m++){const ds=WEEK.filter(d=>m>>d&1);if(ds.length!==n||!ds.every(d=>av.includes(d)))continue;const o=ds.map(d=>(d+6)%7),g=o.map((x,i)=>((o[(i+1)%n]-x+7)%7)||7),sc=Math.min(...g)*10-Math.max(...g);if(sc>bs){bs=sc;best=ds}}return best}
 function coachDecide(p){const {n,av}=recN(p),dur=p.level==="deb"||p.goal==="seche"?60:75;
- p.rec=n;p.recDur=dur;p.days=spreadDays(n,av);p.dur=dur;p.split="auto";p.prio=p.prio||[];p.custom={};return p}
+ p.rec=n;p.recDur=dur;p.days=spreadDays(n,av);p.dur=dur;p.split="auto";p.prio=p.prio||[];return p}
 function planWhy(p){const g=goalPlan(p),T=targets(),n=p.days.length,sp=splitName(p),L={deb:"débutant",int:"intermédiaire",av:"confirmé"}[p.level];
  const out=[];
  out.push(["🗓️",`${n} séances par semaine`,n===p.rec?(R=>R.n===p.rec?R.why[0].toUpperCase()+R.why.slice(1)+".":`En ${L}${g.fast?" avec un objectif ambitieux":""}, c'est le bon dosage : assez pour progresser vite, avec 48 h de repos pour les petits muscles et 72 h pour les gros.`)(recN(p)):`Ton coach recommandait ${p.rec} séances. Tu en as choisi ${n} pour coller à ton emploi du temps.`]);
@@ -282,7 +288,7 @@ function startRefine(k){if(k==="taste")return startTastes();A=JSON.parse(JSON.st
     (une seule source pour les deux plans) ; on ne les pose ici que s'ils manquent (vieux profils). Pour les changer : « Refaire le questionnaire ». */
  if(k==="nut"){const done=new Map([[Q[2],A.h&&A.w&&A.age],[Q[3],A.goal],[Q[5],A.tw!=null],[Q[10],A.act],[Q[11],A.diet]]);FLOW=Object.assign(REF.nut.filter(q=>!done.get(q)),{ref:"nut"})}obI=0;view="ob";renderOb()}
 function saveRefine(){const k=FLOW.ref;if((A.stores||[]).length)A.store=A.stores[0];coursesReset();A.refined={...(A.refined||{}),[k]:1};if(k==="nut"){A.refined.food=A.refined.taste=1;nutTab="week"}PROF=A;LS.set("coach-profile",PROF);if(k==="food"||k==="nut"){LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{})}TRAIN=buildTraining(PROF);FLOW=STEPS;view=k==="food"||k==="nut"?"food":"train";render();toast(k==="nut"?"C'est parti : ta semaine de repas est prête":k==="food"?"Enregistré : nouvelle semaine de repas":"Matériel enregistré : programme mis à jour")}
-function saveAdjust(){A.freq=A.days.length;if(JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);FLOW=STEPS;showPlan();toast("Programme adapté")}
+function saveAdjust(){A.freq=A.days.length;keepCustom(PROF,A);PROF=A;LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);FLOW=STEPS;showPlan();toast("Programme adapté")}
 
 /* Tout recommencer : questionnaire vierge, comme après une nouvelle installation. Seuls prénom, taille, poids et âge sont repris pour aller plus vite.
    Les séances faites, charges, pesées, mensurations, bilans, XP et compte ne sont pas touchés (autres clés). Le profil n'est remplacé qu'à la fin du questionnaire : « ‹ » à la 1re question annule. */
@@ -313,7 +319,7 @@ function buildScreen(){document.body.className="ob";const L=["Lecture de tes ré
  <ul class="steps">${L.map(l=>`<li><i></i>${l}</li>`).join("")}</ul><div class="pbar"><i id="pb" style="width:0"></i><b id="pbt">0 %</b></div></div>`;
  const li=$$(".steps li"),t0=performance.now(),D=4200;
  (function step(){const now=performance.now(),k=Math.min(1,(now-t0)/D),n=Math.floor(k*li.length);li.forEach((x,i)=>{x.className=i<n?"ok":i===n?"now":"";x.firstChild.textContent=i<n?"✓":""});$("#pb").style.width=k*100+"%";$("#pbt").textContent=Math.round(k*100)+" %";
-  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;LS.del("coach-draft");for(const k in QDEF)if(A[k]==null||A[k]===""||(k==="ckt"&&!A[k]))A[k]=QDEF[k];if(!A.refined)A.refined=PROF?PROF.refined||{}:{};if(!(A.refined.nut||A.refined.taste&&A.refined.food))A.refined.nut=0;/* goûts pas encore donnés : aucun plat proposé, seulement les calories et macros */coachDecide(A);A.likes=progLikes(A);if(A.hasProg==="oui"){ownSetup(A);A.ownV=6;A.mode=!A.ownDays.length?"coach":A.progKeep==="tel"?"own":"choose";if(A.mode==="own"){A.days=ownDaysFor(A);A.custom={}}}else A.mode="coach";A.freq=A.days.length;if(PROF&&JSON.stringify(PROF.days)+PROF.split!==JSON.stringify(A.days)+A.split)A.custom={};PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
+  if(k<1)setTimeout(step,60);else setTimeout(()=>{const first=!PROF;LS.del("coach-draft");for(const k in QDEF)if(A[k]==null||A[k]===""||(k==="ckt"&&!A[k]))A[k]=QDEF[k];if(!A.refined)A.refined=PROF?PROF.refined||{}:{};if(!(A.refined.nut||A.refined.taste&&A.refined.food))A.refined.nut=0;/* goûts pas encore donnés : aucun plat proposé, seulement les calories et macros */coachDecide(A);A.likes=progLikes(A);if(A.hasProg==="oui"){ownSetup(A);A.ownV=6;A.mode=!A.ownDays.length?"coach":A.progKeep==="tel"?"own":"choose";if(A.mode==="own"){A.days=ownDaysFor(A);A.custom={}}}else A.mode="coach";A.freq=A.days.length;keepCustom(PROF,A);PROF=A;LS.set("coach-profile",PROF);LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});TRAIN=buildTraining(PROF);showPlan()},350)})()}
 
 /* ================= Écrans ================= */
 const ICON={today:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',train:'<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>',food:'<path d="M7 3v8a3 3 0 0 0 3 3v7M10 3v6M4 3v6a3 3 0 0 0 3 3M17 3c-2 0-3 3-3 6s1 4 3 4v8"/>',prog:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
