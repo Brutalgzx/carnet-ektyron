@@ -1,4 +1,4 @@
-const CACHE="ektyron-v99",VC="ektyron-vids";
+const CACHE="ektyron-v100",VC="ektyron-vids";
 const ASSETS=["./", "index.html", "fonts.css","app.css","data.js","prix.js","courses.js","app.js","nutri.js","suivi.js","coach.js","reglages.js","prep.js","programme.js","corps.js","eau.js","jeu.js","duo.js","perso.js","hist.js","anim.js","news.js", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "fonts/BarlowCondensed-600.woff2", "fonts/BarlowCondensed-800.woff2", "fonts/IBMPlexMono-500.woff2", "fonts/IBMPlexSans-400.woff2", "fonts/IBMPlexSans-600.woff2"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS.map(u=>new Request(u,{cache:"reload"})))).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!=="ektyron-data"&&k!==VC).map(k=>caches.delete(k)))).then(()=>caches.open(VC)).then(c=>Promise.all(VNEW.map(u=>c.match(u,{ignoreSearch:true}).then(r=>r&&c.delete(u,{ignoreSearch:true}).then(()=>c.add(u+"?v=2")))))).catch(()=>{}).then(()=>self.clients.claim())));
@@ -7,7 +7,7 @@ const VNEW=["renders/rowu.mp4"];
 /* Réseau d'abord (toujours la dernière version), cache seulement hors ligne. */
 self.addEventListener("fetch",e=>{if(e.request.method!=="GET"||new URL(e.request.url).origin!==location.origin)return;
   /* Vidéos : celles du programme sont gardées dans « ektyron-vids » (bouton dans Réglages) ; les autres viennent du réseau. */
-  if(/\.mp4$/.test(new URL(e.request.url).pathname)){e.respondWith(caches.open(VC).then(c=>c.match(e.request,{ignoreSearch:true})).then(r=>r?ranged(r,e.request):fetch(e.request)));return}
+  if(/\.mp4$/.test(new URL(e.request.url).pathname)){e.respondWith(caches.open(VC).then(c=>c.match(e.request,{ignoreSearch:true})).then(r=>r&&r.status===200?ranged(r,e.request):fetch(e.request)));return}
   const nav=e.request.mode==="navigate";
   e.respondWith(fetch(e.request,{cache:"no-cache"}).then(r=>{if(r.ok){const k=r.clone();caches.open(CACHE).then(c=>c.put(nav?"./":e.request,k))}return r})
    .catch(()=>caches.match(nav?"./":e.request,{ignoreSearch:true})))});

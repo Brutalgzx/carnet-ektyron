@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:20,d:"17/11",t:"🎬 Fini l'écran noir des vidéos",x:[
+  "Pendant la séance, une vidéo d'exercice qui reste noire se recharge toute seule au bout de quelques secondes.",
+  "En revenant dans l'appli, les vidéos à l'écran repartent : plus besoin de fermer et rouvrir l'appli."]},
  {id:19,d:"17/11",t:"🗓️ Déplacer une séance",x:[
   "Dans Séance, reste appuyé sur un jour : la case vient avec ton doigt.",
   "Lâche-la sur un autre jour pour y mettre la séance. Si ce jour a déjà une séance, les deux sont échangées.",
