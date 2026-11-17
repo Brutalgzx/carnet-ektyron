@@ -26,7 +26,7 @@ const hist=id=>(store[id]||[]).filter(x=>!x.dl&&x.sets&&x.sets.length);
 const bestE=h=>Math.max(...h.sets.map(e1rm));
 /* Double progression : toutes les séries en haut de fourchette → +2,5 kg.
    Stagnation : aucune séance des 3 dernières ne dépasse ta meilleure force estimée (Epley) d'avant. */
-function exAdvice(id,e){const H=hist(id),n=H.length;if(!n)return null;const L=H[n-1],top=Math.max(...L.sets.map(s=>s.k));
+function exAdvice(id,e){const H=hist(id),n=H.length;if(!n||HOLD.has(id))return null;const L=H[n-1],top=Math.max(...L.sets.map(s=>s.k));
  if(L.sets.length>=e.s&&L.sets.every(s=>s.r>=e.r[1]))return{k:"up",id,n:e.n,from:top,to:top?top+2.5:0};
  if(n>=3){const E=H.slice(-3).map(bestE),ref=n>3?Math.max(...H.slice(0,-3).map(bestE)):E[0],cmp=n>3?E:E.slice(1);
   if(Math.max(...cmp)<=ref*1.01)return{k:"stall",id,n:e.n,from:top,to:r25(top*.9)}}

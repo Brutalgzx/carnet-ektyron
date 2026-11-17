@@ -2,6 +2,11 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:12,d:"17/11",t:"⏱ Gainage au chrono, 0 kg accepté",x:[
+  "Le gainage se fait maintenant au chrono : plus de reps, tu lances le chrono, tu tiens, et les secondes se notent toutes seules.",
+  "Ton coach te dit combien de temps tenir selon ton niveau, et quand ajouter du lest (seulement quand tu tiens 60 s sur toutes les séries).",
+  "Tu sais déjà combien de temps tu tiens ? Indique-le pendant la série : ton coach part de là, et si tu tiens déjà 60 s, il te fait passer au lest ou à un exercice plus dur.",
+  "Pour les exercices au poids du corps (relevés de jambes, tractions…), laisse les kilos vides ou à 0 : la série est acceptée."]},
  {id:11,d:"17/11",t:"🔎 Recherche d'exercices",x:[
   "Dans « Séance personnalisée », une barre de recherche en haut de la liste trouve un exercice en tapant son nom ou le muscle (ex. « curl », « pecs », « ischios »)."]},
  {id:10,d:"17/11",t:"🧩 Séance personnalisée",x:[
