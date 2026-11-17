@@ -172,7 +172,7 @@ function exList(d,slot){const E=LS.get("coach-extra",{})[exDate(d)]||{};return s
 function exTot(d,slot){return exList(d,slot).reduce((a,x)=>({k:a.k+x.k,P:a.P+x.P,C:a.C+x.C,F:a.F+x.F}),{k:0,P:0,C:0,F:0})}
 function exSave(d,slot,f){const E=LS.get("coach-extra",{}),k=exDate(d),lim=new Date(Date.now()-14*DAY).toISOString().slice(0,10);E[k]=E[k]||{};E[k][slot]=f(E[k][slot]||[]);if(!E[k][slot].length)delete E[k][slot];
  for(const x in E)if(x<lim||!Object.keys(E[x]).length)delete E[x];LS.set("coach-extra",E)}
-function exBlock(slot,d){const L=exList(d,slot);return `<div class="lab">En plus à ce repas</div>${L.length?`<ul class="list">${L.map((x,i)=>`<li><span class="sp">${esc(x.n)}<br><small class="muted">${x.g?x.g+" g · ":""}${fr(x.k)} kcal · ${fr(x.P)} g protéines</small></span><button class="chip" data-exdel="${i}" data-slot="${slot}" data-day="${d}" aria-label="Retirer ${esc(x.n)}">✕</button></li>`).join("")}</ul>`:""}<button class="btn ghost" data-exadd="${slot}" data-day="${d}">＋ J'ai mangé un petit extra</button>`}
+function exBlock(slot,d){const L=exList(d,slot);return `<div class="lab">En plus à ce repas</div>${L.length?`<ul class="list">${L.map((x,i)=>`<li><span class="sp">${esc(x.n)}<br><small class="muted">${x.g?x.g+" g · ":""}${fr(x.k)} kcal · ${fr(x.P)} g protéines</small></span><button class="chip" data-exdel="${i}" data-slot="${slot}" data-day="${d}" aria-label="Retirer ${esc(x.n)}">✕</button></li>`).join("")}</ul>`:""}<button class="btn ghost" data-exadd="${slot}" data-day="${d}">＋ J'ai mangé un extra (yaourt, dessert…)</button>`}
 let exBase=null;
 function exForm(slot,d){exBase=null;const f=(id,l)=>`<label class="small" style="flex:1">${l}<input class="txt" id="ex-${id}" type="number" inputmode="decimal" min="0" style="font-size:17px;padding:10px"></label>`;
  pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">Un petit extra</h2><button class="chip" data-exback aria-label="Retour">✕</button></div>
@@ -188,9 +188,9 @@ document.addEventListener("input",e=>{if(!$("#ex-ok"))return;if(e.target.id==="e
  else if(e.target.id==="ex-g")exFill();else if(/^ex-[kPCF]$/.test(e.target.id))exBase=null});
 let exOff=[];
 document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
- if(D.exadd){exForm(D.exadd,D.day);return}
- if(D.exback!==undefined){recBack?openRecipe(...recBack):$("#sheet")?.remove();return}
- if(D.exdel){exSave(D.day,D.slot,L=>L.filter((_,i)=>i!==+D.exdel));openRecipe(...recBack);render();return}
+ if(D.exadd){foodSheet(D.exadd,D.day,D.exfrom||"r");return}
+ if(D.exback!==undefined){EXF?foodSheet(EXF.slot,EXF.d,EXF.from):recBack?openRecipe(...recBack):$("#sheet")?.remove();return}
+ if(D.exdel){exSave(D.day,D.slot,L=>L.filter((_,i)=>i!==+D.exdel));D.exfrom==="n"?null:openRecipe(...recBack);render();return}
  if(t.id==="ex-find"){const n=$("#ex-n").value.trim(),R=$("#ex-res");if(n.length<2)return toast("Écris d'abord ce que tu as mangé.");R.textContent="Recherche…";
   /* Open Food Facts : ancienne recherche (ouverte à tous les sites), sinon la nouvelle ; en cas d'échec, saisie de l'étiquette. */
   const q=encodeURIComponent(n),get=u=>fetch(u).then(r=>{if(!r.ok)throw 0;return r.json()});
@@ -200,4 +200,47 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
  if(D.exoff){const p=exOff[+D.exoff],n=p.nutriments;exBase={k:+n["energy-kcal_100g"]||0,P:+n.proteins_100g||0,C:+n.carbohydrates_100g||0,F:+n.fat_100g||0};$("#ex-n").value=p.product_name.slice(0,60);$("#ex-res").textContent="Valeurs reprises pour la quantité mangée.";exFill();return}
  if(t.id==="ex-ok"){const n=$("#ex-n").value.trim(),v=k=>Math.max(0,+$("#ex-"+k).value||0),x={n,g:Math.round(+$("#ex-g").value||0),k:v("k"),P:v("P"),C:v("C"),F:v("F")};
   if(!n)return toast("Écris ce que tu as mangé.");if(!x.k)return toast("Indique au moins les calories.");
-  exSave(D.day,D.slot,L=>[...L,x]);openRecipe(...recBack);render();toast(`${n} ajouté : +${fr(x.k)} kcal, +${fr(x.P)} g de protéines.`)}});
+  exSave(D.day,D.slot,L=>[...L,x]);exDone();toast(`${n} ajouté : +${fr(x.k)} kcal, +${fr(x.P)} g de protéines.`)}});
+
+/* Case « Extras » (page Nutrition) et liste des aliments (aliments.js) avec recherche, à la façon d'un carnet alimentaire :
+   on cherche, on touche l'aliment, on règle la quantité (portions ou grammes), le calcul est fait tout seul.
+   Rangés avec les extras de la fiche d'un repas (« coach-extra ») ; slot "x" = hors repas. EXF = d'où on vient (n = Nutrition, r = fiche d'un repas). */
+let EXF=null;
+const exSlotName=s=>s==="x"?"Hors repas":((mealSlots().find(m=>m[0]===s)||MEALS4.find(m=>m[0]===s)||[s,s])[1]);
+function exDone(){const f=EXF;EXF=null;if(f&&f.from==="n")$("#sheet")?.remove();else if(recBack)openRecipe(...recBack);else $("#sheet")?.remove();render()}
+function exDay(d){const E=LS.get("coach-extra",{})[exDate(d)]||{},T=exTot(d),rows=Object.keys(E).flatMap(s=>E[s].map((x,i)=>`<li><span class="ph" style="font-size:20px">${x.e||"🍽️"}</span><span class="sp">${esc(x.n)}<br><small class="muted">${exSlotName(s)} · ${x.g?fr(x.g)+" g · ":""}${fr(x.k)} kcal · ${fr(x.P,1)} g prot.</small></span><button class="chip" data-exdel="${i}" data-slot="${s}" data-day="${d}" data-exfrom="n" aria-label="Retirer ${esc(x.n)}">✕</button></li>`));
+ return `<div class="row" style="margin-top:4px"><div class="lab sp">Extras</div>${rows.length?`<small class="muted mono">${fr(T.k)} kcal · ${fr(T.P)} g prot.</small>`:""}</div>
+ ${rows.length?`<ul class="list">${rows.join("")}</ul>`:""}<button class="btn ghost" data-exadd="x" data-day="${d}" data-exfrom="n">＋ Ajouter un extra (yaourt, gâteau, crêpe…)</button>`}
+function foodSheet(slot,d,from){EXF={slot,d,from};const rec=(LS.get("coach-exrec",[])).map(id=>ALIM.find(x=>x.id===id)).filter(Boolean),
+ li=x=>`<li data-q="${esc(fold(x.n+" "+x.g))}"><button class="lnk sp" style="text-align:left" data-food="${x.id}"><span style="font-size:20px">${x.e}</span> ${esc(x.n)}<br><small class="muted">1 ${esc(x.pu)} (${fr(x.pg)} g) · ${fr(x.k*x.pg/100)} kcal · ${fr(x.P*x.pg/100,1)} g prot.</small></button></li>`;
+ const el=pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">Ajouter un extra</h2><button class="chip" data-exclose aria-label="Fermer">✕</button></div>
+ <p class="small muted" style="margin:0">${slot==="x"?"":`Pour : ${esc(exSlotName(slot))}. `}Cherche ce que tu as mangé, touche-le, règle la quantité : les calories et les macros sont calculées toutes seules.</p>
+ <input id="food-q" class="srch" type="search" placeholder="Rechercher : yaourt, crêpe, chips…" autocomplete="off">
+ ${rec.length?`<div class="lab" data-grpl>Récents</div><ul class="list" data-grp>${rec.map(li).join("")}</ul>`:""}
+ ${ALIM_G.map(([g,e])=>`<div class="lab" data-grpl>${e} ${g}</div><ul class="list" data-grp>${ALIM.filter(x=>x.g===g).map(li).join("")}</ul>`).join("")}
+ <p class="small muted" id="food-none" hidden>Pas dans la liste.</p>
+ <button class="btn ghost" id="food-other">🔎 Pas dans la liste : chercher en ligne ou recopier l'étiquette</button>`,"Ajouter un extra");
+ $("#food-q").addEventListener("input",e=>{const q=fold(e.target.value.trim()),W=q.split(/\s+/).filter(Boolean);let n=0,seen=new Set();el.querySelectorAll("[data-q]").forEach(x=>{const id=x.firstElementChild.dataset.food,ok=!W.length||W.every(w=>x.dataset.q.includes(w));
+   x.hidden=!ok||(W.length&&seen.has(id));if(!x.hidden){n++;seen.add(id)}});
+  el.querySelectorAll("[data-grp]").forEach(u=>{const v=[...u.children].some(x=>!x.hidden);u.hidden=!v;const l=u.previousElementSibling;if(l&&l.hasAttribute("data-grpl"))l.hidden=!v});$("#food-none").hidden=n>0})}
+let FQ=null;
+function foodQty(id){const x=ALIM.find(a=>a.id===id);if(!x)return;FQ={x,g:x.pg};const f=EXF||{slot:"x"},S=f.from==="n"?[["x","Hors repas"],...mealSlots().map(m=>[m[0],m[1]])]:null;
+ pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">${x.e} ${esc(x.n)}</h2><button class="chip" data-exback aria-label="Retour">✕</button></div>
+ <p class="small muted" style="margin:0">1 ${esc(x.pu)} = ${fr(x.pg)} g · pour 100 g : ${fr(x.k)} kcal, ${fr(x.P,1)} g protéines, ${fr(x.C,1)} g glucides, ${fr(x.F,1)} g lipides.</p>
+ <div class="row" style="gap:8px;justify-content:center"><button class="chip" data-fqp="-0.5" aria-label="Moins">−</button><b class="mono" id="fq-n" style="font-size:22px;min-width:120px;text-align:center"></b><button class="chip" data-fqp="0.5" aria-label="Plus">＋</button></div>
+ <label class="small">Ou en grammes<input id="fq-g" class="srch" type="number" inputmode="decimal" min="0" value="${x.pg}"></label>
+ <div class="card" id="fq-t" style="text-align:center"></div>
+ ${S?`<div class="lab">C'était pendant</div><div class="row" style="flex-wrap:wrap;gap:6px">${S.map(([k,l],i)=>`<button class="chip" data-fqs="${k}" aria-pressed="${i===0}">${esc(l)}</button>`).join("")}</div>`:""}
+ <button class="btn" id="fq-ok">Ajouter</button>`,x.n);fqShow()}
+function fqShow(){const {x,g}=FQ,p=g/x.pg,r=v=>v*g/100;$("#fq-n").textContent=`${fr(Math.round(p*10)/10,1)} ${x.pu}`;if(document.activeElement?.id!=="fq-g")$("#fq-g").value=Math.round(g);
+ $("#fq-t").innerHTML=`<b style="font-size:24px">${fr(r(x.k))} kcal</b><br><small class="muted">${fr(r(x.P),1)} g protéines · ${fr(r(x.C),1)} g glucides · ${fr(r(x.F),1)} g lipides</small>`}
+document.addEventListener("input",e=>{if(e.target.id==="fq-g"&&FQ){FQ.g=Math.max(0,+e.target.value||0);fqShow()}});
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(D.food){foodQty(D.food);return}
+ if(D.exclose!==undefined){const f=EXF;EXF=null;f&&f.from==="r"&&recBack?openRecipe(...recBack):$("#sheet")?.remove();return}
+ if(t.id==="food-other"&&EXF){exForm(EXF.slot,EXF.d);return}
+ if(D.fqp&&FQ){FQ.g=Math.max(0,Math.round((FQ.g/FQ.x.pg+ +D.fqp)*2)/2*FQ.x.pg);fqShow();return}
+ if(D.fqs){t.parentElement.querySelectorAll("[data-fqs]").forEach(b=>b.setAttribute("aria-pressed",b===t));return}
+ if(t.id==="fq-ok"&&FQ&&EXF){const {x,g}=FQ,r=v=>Math.round(v*g/10)/10;if(!g)return toast("Indique la quantité.");
+  const slot=$("#sheet [data-fqs][aria-pressed='true']")?.dataset.fqs||EXF.slot,it={n:x.n,e:x.e,g:Math.round(g),k:Math.round(x.k*g/100),P:r(x.P),C:r(x.C),F:r(x.F)};
+  exSave(EXF.d,slot,L=>[...L,it]);LS.set("coach-exrec",[x.id,...LS.get("coach-exrec",[]).filter(i=>i!==x.id)].slice(0,8));FQ=null;exDone();toast(`${x.n} ajouté : +${fr(it.k)} kcal, +${fr(it.P,1)} g de protéines.`)}});

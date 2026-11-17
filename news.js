@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:24,d:"17/11",t:"🍰 Case Extras en Nutrition",x:[
+  "Sous tes repas du jour, une nouvelle case « Extras » : un yaourt, une crêpe, un gâteau, des chips… mangés en plus.",
+  "Cherche dans plus de 250 aliments courants, touche-le, règle la quantité (portions ou grammes) : calories, protéines, glucides et lipides sont calculés tout seuls et comptés dans ta journée.",
+  "Pas dans la liste ? Cherche-le en ligne ou recopie l'étiquette."]},
  {id:23,d:"17/11",t:"🔍 Choisir un plat sans swipe",x:[
   "Dans la fiche d'un repas, « 🔍 Choisir dans tous les plats » ouvre la liste de tous les plats qui collent à tes goûts, avec une recherche.",
   "Touche un plat : il remplace le repas pour ce jour seulement, sur Aujourd'hui et Nutrition."]},
