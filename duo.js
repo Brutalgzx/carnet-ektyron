@@ -12,7 +12,45 @@ async function duoApi(path,body){const r=await fetch(duoUrl()+path,{method:"POST
 function duoDays(){return Object.keys(TRAIN||{}).map(Number).filter(d=>TRAIN[d])}
 function duoDefDay(){const t=new Date().getDay(),D=duoDays();for(let i=0;i<7;i++){const d=(t+i)%7;if(D.includes(d))return d}return D[0]}
 /* Ce que l'autre voit : la fiche du jeu (respecte tes réglages de partage) + ta séance choisie avec tes charges. */
-function duoCard(day){const S=TRAIN[day],o={...jeuSnap(),day,t:S?S.t:"",x:S?S.x.map(e=>{const l=lastLog(e.id),s=l&&l.sets[0];return{id:e.id,n:e.n,g:e.g,s:e.s,r:e.r,k:s?s.k:(e.kg??null)}}):[]};return o}
+const duoLite=e=>{const l=lastLog(e.id),s=l&&l.sets[0];return{id:e.id,n:e.n,g:e.g,s:e.s,r:e.r,k:s?s.k:(e.kg??null)}};
+function duoCard(day){const S=TRAIN[day];return{...jeuSnap(),day,t:S?S.t:"",x:S?S.x.map(duoLite):[],
+ pool:duoPool().map(duoLite),nx:Math.max(0,...duoDays().map(d=>TRAIN[d].x.length)),eq:PROF.equip||"",pain:PROF.pain||[],
+ typ0:duoTypOf(S),typ:DUO&&DUO.typ||"",typAt:DUO&&DUO.typAt||0}}
+
+/* ---------- séance commune : même type, mêmes exercices, chacun ses charges ---------- */
+const DTYP={
+ haut:{t:"Haut du corps",s:["chestInc","backVert","chestFlat","backRow","shPress","side","tri","bic","rear","chestIso"],g:["Pecs","Dos","Épaules","Bras"]},
+ bas:{t:"Bas du corps",s:["quad","hinge","curl","glute","quad2","quadIso","calf","abs","add"],g:["Jambes","Abdos"]},
+ push:{t:"Push",s:["chestInc","chestFlat","shPress","dips","side","tri","chestIso","triOvh"],g:["Pecs","Épaules"]},
+ pull:{t:"Pull",s:["backVert","backRow","rear","bic","backUp","bic2","lowb"],g:["Dos"]},
+ full:{t:"Full body",s:["quad","chestFlat","backVert","hinge","side","backRow","bic","tri","calf","abs"],g:["Pecs","Dos","Épaules","Bras","Jambes","Abdos"]}};
+function duoTypOf(S){if(!S)return"full";const k=S.k||"",t=(S.t||"").toLowerCase();
+ return /^up/.test(k)||/haut|upper/.test(t)?"haut":/^(low|legs|glute)/.test(k)||/bas du|jambe|leg|lower|fess/.test(t)?"bas":/push|pouss/.test(k+t)?"push":/pull|tirage|dos/.test(k+t)?"pull":"full"}
+/* Tous les exercices de mon programme (une fois chacun). */
+function duoPool(){const out=[],seen=new Set();for(const d of duoDays())for(const e of TRAIN[d].x)if(!seen.has(e.id)){seen.add(e.id);out.push(e)}return out}
+const duoNorm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
+const duoSame=(a,b)=>a.id===b.id||duoNorm(a.n)===duoNorm(b.n);
+/* Les deux fiches dans le même ordre sur les deux téléphones (celui qui a créé la salle d'abord). */
+function duoPair(){if(!duoS)return null;const ks=Object.keys(duoS.m).sort((a,b)=>(b===duoS.host)-(a===duoS.host));if(ks.length<2)return null;
+ const A=duoS.m[ks[0]].card,B=duoS.m[ks[1]].card;return A&&B&&A.pool&&B.pool?[A,B]:null}
+/* Type choisi : le dernier choix fait par l'un des deux, sinon la séance du jour de celui qui a créé la salle. */
+function duoTyp(){const P=duoPair();if(!P)return DUO&&DUO.typ||"full";const c=P.filter(c=>c.typ&&DTYP[c.typ]).sort((a,b)=>b.typAt-a.typAt)[0];return c?c.typ:DTYP[P[0].typ0]?P[0].typ0:"full"}
+/* Calcul identique des deux côtés : d'abord les exercices que vous avez tous les deux, puis on complète
+   emplacement par emplacement (même groupe musculaire), en prenant d'abord ce que l'un des deux fait déjà. */
+function duoPlan(){const P=duoPair();if(!P)return null;const [A,B]=P,ty=duoTyp(),T=DTYP[ty],slotted=new Set(Object.values(SLOT).flat());
+ const si=e=>{const i=T.s.findIndex(s=>SLOT[s].includes(e.id));return i>=0?i:slotted.has(e.id)||!T.g.includes(e.g)?-1:T.s.length+T.g.indexOf(e.g)};
+ const cap=Math.max(4,Math.min(A.nx||6,B.nx||6,T.s.length)),ok=(id,c)=>{try{return exOk(id,{equip:c.eq||"",pain:c.pain||[]})}catch(e){return true}};
+ const com=A.pool.filter(e=>si(e)>=0&&B.pool.some(b=>duoSame(e,b))).sort((a,b)=>si(a)-si(b)),seen=new Set(),first=[],dup=[];
+ com.forEach(e=>{(seen.has(si(e))?dup:first).push(e);seen.add(si(e))});
+ const out=[...first,...dup].slice(0,cap).map(e=>({id:e.id,n:e.n,g:e.g,com:1})),has=id=>out.some(o=>o.id===id),used=new Set(out.map(si));
+ for(let i=0;i<T.s.length&&out.length<cap;i++){if(used.has(i))continue;const L=SLOT[T.s[i]];
+  const both=id=>!has(id)&&(!EX[id]||ok(id,A)&&ok(id,B)),inP=f=>[...A.pool,...B.pool].find(e=>L.includes(e.id)&&f(e.id)),inC=f=>{const id=L.find(id=>EX[id]&&f(id));return id&&{id,n:EX[id][0],g:EX[id][1]}};
+  const e=inP(both)||inC(both)||inP(id=>!has(id))||inC(id=>!has(id));
+  if(e){out.push({id:e.id,n:e.n,g:e.g,com:0});used.add(i)}}
+ out.sort((a,b)=>si(a)-si(b));return{ty,t:T.t,x:out,A,B}}
+/* Ma version d'un exercice de la séance commune : mes séries, reps, repos et charges. */
+function duoMine(e){const m=duoPool().find(x=>duoSame(x,e));if(m)return{...m};if(EX[e.id])return mkEx(e.id,PROF);
+ const S=SCHEME[PROF.goal]?.M||[3,8,12,120];return{id:e.id,n:e.n,g:e.g,a:"",c:"",s:S[0],r:[S[1],S[2]],rest:S[3],kind:"M"}}
 
 function duoOpen(){let el=$("#duo");if(!el){el=document.createElement("div");el.id="duo";document.body.appendChild(el)}el.hidden=false;document.body.classList.add("duo-on");duoPane="card";duoDraw()}
 function duoHideSheet(){const el=$("#duo");if(el)el.hidden=true;document.body.classList.remove("duo-on");duoMotOff()}
@@ -53,8 +91,11 @@ function duoRefresh(){if($("#duo")&&!$("#duo").hidden)duoDraw();if(G&&G.duo&&!$(
 function duoOrder(mine,his,host){if(host||!his||!his.length)return null;const left=[...mine.keys()],ord=[];
  for(const h of his){const i=left.findIndex(k=>mine[k].g===h.g);if(i>=0)ord.push(left.splice(i,1)[0])}
  const o=[...ord,...left];return o.every((v,i)=>v===i)?null:o}
-function duoLaunch(){if(!DUO||!TRAIN[DUO.day])return;const H=duoHim();if(G&&G.ph!=="done")gDrop();
- gStart(DUO.day);G.duo=DUO.code;const o=duoOrder(TRAIN[DUO.day].x,H&&H.card.x,duoS.host===duoS.me);if(o){G.ord=o;G.si=0}gSave();duoHideSheet();gShow();
+function duoLaunch(){if(!DUO)return;if(!TRAIN[DUO.day])DUO.day=duoDefDay();if(!TRAIN[DUO.day])return;const H=duoHim(),P=duoPlan();if(G&&G.ph!=="done")gDrop();
+ gStart(DUO.day);G.duo=DUO.code;
+ if(P&&P.x.length){G.list=P.x.map(duoMine);G.t=`${P.t} · duo`}
+ else{const o=duoOrder(TRAIN[DUO.day].x,H&&H.card.x,duoS.host===duoS.me);if(o){G.ord=o;G.si=0}}
+ gSave();duoHideSheet();gShow();
  toast(H?`Séance duo avec ${H.card.nick} : c'est parti !`:"Séance duo lancée")}
 
 /* Pendant la séance : bandeau « à qui le tour » + on prévient l'autre de ce qu'on va faire. */
@@ -89,12 +130,17 @@ function duoDraw(){const el=$("#duo");if(!el)return;const H=duoHim(),top=`<div c
  let body="";
  if(pane==="prof")body=C.stats?jeuSheet(C.nick,C.stats,C.lvl,0):`<div class="card small muted">${esc(C.nick)} ne partage pas ses statistiques.</div>`;
  if(pane==="det")body=`<div class="card stack"><div class="lab">${esc(C.nick)} · ${esc(C.t||"")}</div>${C.wPlan?`<div class="small muted">${C.wDone||0}/${C.wPlan} séances cette semaine</div>`:""}<ul class="list">${(C.x||[]).map(e=>`<li><span class="sp">${esc(e.n)}</span><b>${e.s} × ${e.r[0]}–${e.r[1]}${e.k!=null?` · ${kgS(e.k)}`:""}</b></li>`).join("")}</ul></div>`;
- const days=duoDays();
+ const days=duoDays(),P=duoPlan();
+ if(P&&pane==="det")body=`<div class="card stack"><div class="lab">${esc(C.nick)} · ses charges sur la séance commune</div><ul class="list">${P.x.map(e=>{const o=(C.pool||[]).find(x=>duoSame(x,e));return `<li><span class="sp">${esc(e.n)}</span><b>${o?`${o.s} × ${o.r[0]}–${o.r[1]}${o.k!=null?` · ${kgS(o.k)}`:""}`:"nouveau"}</b></li>`}).join("")}</ul></div>`;
+ const seance=P?`<div class="card stack"><div class="lab">Votre séance commune</div><div class="row" style="flex-wrap:wrap;gap:6px">${Object.keys(DTYP).map(k=>`<button class="chip" data-duo="typ" data-k="${k}" aria-pressed="${k===P.ty}">${DTYP[k].t}</button>`).join("")}</div>
+   <ul class="list">${P.x.map(e=>{const m=duoMine(e);return `<li><span class="sp">${esc(m.n)}${e.com?"":` <small class="muted">· ajouté</small>`}</span><b>${m.s} × ${m.r[0]}–${m.r[1]}</b></li>`}).join("")}</ul>
+   <div class="small muted">${P.x.filter(e=>e.com).length} exercice(s) que vous faites tous les deux${P.x.some(e=>!e.com)?", complétés avec des exercices des mêmes muscles":""}. Vous faites la même séance en alternant les séries ; chacun garde ses charges et ses reps. Le choix du type se voit des deux côtés.</div></div>`
+  :`<div class="card stack"><div class="lab">Ta séance</div><div class="row" style="flex-wrap:wrap;gap:6px">${days.map(d=>`<button class="chip" data-duo="day" data-d="${d}" aria-pressed="${d===DUO.day}">${esc(TRAIN[d].t)}</button>`).join("")}</div>
+   <div class="small muted">Vous alternez : pendant que l'un fait sa série, l'autre récupère. L'app range vos exercices pour rester dans la même zone de la salle.${C.pool?"":` (${esc(C.nick||"Ton pote")} doit mettre l'appli à jour pour faire la même séance que toi.)`}</div></div>`;
  el.innerHTML=`<div class="duo-in stack">${top}<div class="duo-pair">${face(me,"Toi")}<span class="duo-x">🤝</span>${face(C,"Ton pote")}</div>
   ${H.away?`<div class="hintbox small">📡 ${esc(C.nick)} ne répond plus pour l'instant.</div>`:""}
   <div class="duo-tabs"><button class="chip" data-duo="prof" aria-pressed="${pane==="prof"}">Voir le profil</button><button class="chip" data-duo="det" aria-pressed="${pane==="det"}">Voir les détails</button></div>${body}
-  <div class="card stack"><div class="lab">Ta séance</div><div class="row" style="flex-wrap:wrap;gap:6px">${days.map(d=>`<button class="chip" data-duo="day" data-d="${d}" aria-pressed="${d===DUO.day}">${esc(TRAIN[d].t)}</button>`).join("")}</div>
-   <div class="small muted">Vous alternez : pendant que l'un fait sa série, l'autre récupère. L'app range vos exercices pour rester dans la même zone de la salle.</div></div>
+  ${seance}
   <button class="btn" data-duo="go">▶ Lancer la séance duo</button><button class="link" data-duo="leave">Quitter la salle</button></div>`}
 
 document.addEventListener("click",async e=>{const t=e.target.closest("[data-duo]");if(!t)return;const a=t.dataset.duo;auUnlock();
@@ -105,6 +151,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest("[data-duo]
  if(a==="join"){const c=($("#duo-code").value||"").trim().toUpperCase();if(c.length!==4){duoMsg("Le code fait 4 lettres.");return}
   try{const st=await duoApi("/duo/join",{code:c,card:duoCard(duoDefDay())});DUO={code:c,day:duoDefDay()};duoJoined(st)}catch(er){duoMsg(er.message)}return}
  if(a==="prof"||a==="det"){duoPane=duoPane===a?"card":a;duoDraw();return}
+ if(a==="typ"){DUO.typ=t.dataset.k;DUO.typAt=Date.now();duoSave();const m=duoMe();if(m)m.card=duoCard(DUO.day);duoAct("card",{card:duoCard(DUO.day)});duoDraw();return}
  if(a==="day"){DUO.day=+t.dataset.d;duoSave();duoAct("card",{card:duoCard(DUO.day)});duoDraw();return}
  if(a==="go"){if(!TRAIN[DUO.day])return;DUO.ended=0;duoSave();await duoAct("card",{card:duoCard(DUO.day)});duoAct("start");if(!(G&&G.duo))duoLaunch();return}
  if(a==="leave"){duoApi("/duo/act",{op:"leave"}).catch(()=>{});duoReset();duoDraw();return}

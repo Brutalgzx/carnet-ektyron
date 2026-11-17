@@ -389,7 +389,7 @@ function beep(f,d,w=0,v=.28){if(!auCtx)return;try{const t=auCtx.currentTime+w,le
 function chime(w=0){[[523,0],[659,.16],[784,.32],[1047,.5]].forEach(([f,d],i)=>beep(f,i<3?.3:.9,w+d,i<3?.22:.26))}
 async function lockOn(){try{if(navigator.wakeLock&&!wake&&document.visibilityState==="visible"){wake=await navigator.wakeLock.request("screen");wake.addEventListener("release",()=>{wake=null})}}catch(e){}}
 function lockOff(){try{wake&&wake.release()}catch(e){}wake=null}
-const gSave=()=>LS.set(GK,G), gList=()=>TRAIN[G.day].x, gEx=()=>gList()[G.ord?G.ord[G.ei]:G.ei], gNum=v=>parseFloat(String(v).replace(",","."));
+const gSave=()=>LS.set(GK,G), gList=()=>G.list||TRAIN[G.day].x, gEx=()=>gList()[G.ord?G.ord[G.ei]:G.ei], gNum=v=>parseFloat(String(v).replace(",","."));
 const restOf=e=>(LS.get("carnet-rest",{})[e.id])||e.rest;
 function gStart(day){auUnlock();G={day,ei:0,si:0,ph:"set",sets:{},start:Date.now(),fb:"",prs:[]};gSave();gOpen()}
 function gOpen(){delete G.away;gSave();document.body.classList.add("g-on");$("#game").hidden=false;$("#game").scrollTop=0;lockOn();gShow()}
@@ -435,7 +435,7 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
   gLastS=null;gInt=setInterval(gTick,200);gTick();return}
  const st=gStats(),X=xpProf();if(!G.saved&&!st.n){G.saved=1;G.xp=0}if(!G.saved){X.xp+=st.xp;X.games.push({t:Date.now(),day:G.day,vol:st.vol,sets:st.n});X.games=X.games.slice(-300);LS.set("carnet-xp",X);G.saved=1;G.xp=st.xp;gSave();beep(784,.15);beep(988,.15,.16);beep(1319,.35,.32)}
  const L=level(X.xp);
- box.innerHTML=`<div class="g-win"><div class="lab">${TRAIN[G.day].t}</div><div class="big">${st.n?"Séance validée":"Aucune série notée : séance non comptée"}</div><div class="muted small">${weekGames()}/${PROF.freq} séances cette semaine</div></div>
+ box.innerHTML=`<div class="g-win"><div class="lab">${G.t||TRAIN[G.day].t}</div><div class="big">${st.n?"Séance validée":"Aucune série notée : séance non comptée"}</div><div class="muted small">${weekGames()}/${PROF.freq} séances cette semaine</div></div>
  <div class="g-stats"><div><strong>${fr(st.vol)}</strong><small>kg soulevés</small></div><div><strong>${st.n}</strong><small>séries</small></div><div><strong>${st.min}</strong><small>minutes</small></div><div><strong>+${G.xp}</strong><small>XP gagnés</small></div></div>
  ${G.prs.length?`<div class="g-pr">Record battu : ${G.prs.join(", ")}</div>`:""}
  <div class="card stack"><b>Niveau ${L.l}</b><div class="bar" style="height:10px"><i style="width:${L.pct}%;background:var(--warn)"></i></div><small class="muted">Encore ${L.left} XP pour le niveau ${L.l+1}</small></div>

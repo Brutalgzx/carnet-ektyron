@@ -45,7 +45,7 @@ const prepMin=L=>Math.max(1,Math.round(prepDur(L)/60));
 
 /* ===== Partie : phases « warm » (avant) et « str » (après) ===== */
 let pInt=null;
-const pList=()=>G.ph==="warm"?warmList(TRAIN[G.day]):stretchList(TRAIN[G.day]);
+const pList=()=>G.ph==="warm"?warmList({x:gList()}):stretchList({x:gList()});
 function pStartItem(i){const L=pList();G.pi=i;G.pz=0;const it=L[i];G.pTot=it.d*(it.side?2:1);G.pEnd=Date.now()+G.pTot*1000;G.pHalf=0;gSave()}
 function pLeave(){clearInterval(pInt);if(G.ph==="warm"){G.ph="set";G.fb="";gSave();gShow()}else{G.ph="done";G.strDone=1;gSave();gShow()}$("#game").scrollTop=0}
 function pShow(){clearInterval(gInt);clearInterval(pInt);const L=pList(),i=G.pi||0,it=L[i],nx=L[i+1],warm=G.ph==="warm",run=!!G.pEnd;
