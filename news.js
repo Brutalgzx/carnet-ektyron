@@ -2,6 +2,8 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:11,d:"17/11",t:"🔎 Recherche d'exercices",x:[
+  "Dans « Séance personnalisée », une barre de recherche en haut de la liste trouve un exercice en tapant son nom ou le muscle (ex. « curl », « pecs », « ischios »)."]},
  {id:10,d:"17/11",t:"🧩 Séance personnalisée",x:[
   "Dans Séances, le bouton « Séance personnalisée » te laisse composer ta séance : choisis tes exercices muscle par muscle, parmi ceux faisables avec ton matériel.",
   "Tu peux aussi partir d'un type de séance (Push, Pull, Jambes, Full body…) puis la modifier. Elle se joue et s'enregistre comme une séance normale."]},
