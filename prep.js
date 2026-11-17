@@ -78,7 +78,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||
  else if(t.id==="p-all")pLeave()});
 
 /* Aperçu dans l'onglet Séance */
-{const vt=vTrain;vTrain=function(){let h=vt();const S=TRAIN[selDay];if(!S?.x?.length)return h;
+{const vt=vTrain;vTrain=function(){let h=vt();const S=typeof cusOn!=="undefined"&&cusOn?{x:cusList()}:TRAIN[selDay];if(!S?.x?.length)return h;
  const li=L=>L.map(x=>`<li><span class="sp">${x.e} ${x.n}${x.side?" <small class=\"muted\">(2 côtés)</small>":""}</span><b class="mono">${fmtT(x.d)}</b></li>`).join(""),W=warmList(S),T=stretchList(S);
  const card=(ic,t,L,note)=>`<details class="card"><summary style="cursor:pointer"><b>${ic} ${t}</b> <span class="small muted">· ~${prepMin(L)} min · ${L.length} mouvements</span></summary><ul class="list" style="margin-top:8px">${li(L)}</ul>${note?`<p class="small muted" style="margin:6px 0 0">${note}</p>`:""}</details>`;
  const a=h.indexOf('<article class="ex">'),z=h.lastIndexOf("</article>");if(a<0)return h;

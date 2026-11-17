@@ -349,9 +349,9 @@ function openPicker(i){pickAt=i;const cur=curIds(),g0=i>=0?EX[cur[i]][1]:null,ok
   <p class="small muted">Seulement les exercices faisables avec ton matériel${(PROF.pain||[]).length?" et sans gêne pour ta zone à ménager":""}.</p>
   ${groups.map(g=>`<div class="lab" style="margin-top:12px">${g}</div><div class="opts">${ok.filter(id=>EX[id][1]===g).map(id=>`<button class="opt" data-pick="${id}" style="min-height:48px;padding:10px 14px"><span><b>${esc(EX[id][0])}</b><small>${esc(EX[id][5])}</small></span></button>`).join("")}</div>`).join("")}</div>`;
  document.body.append(el)}
-function vTrain(){const S=TRAIN[selDay],td=new Date().getDay();
+function vTrain(){if(typeof cusOn!=="undefined"&&cusOn)return cusView();const S=TRAIN[selDay],td=new Date().getDay();
  return `<div class="row" style="margin-top:-8px"><div class="small muted sp">${splitName(PROF)} · ${GYMS.find(g=>g.v===PROF.gym).l} · ${GOALS.find(g=>g.v===PROF.goal).l.toLowerCase()}</div><button class="chip" id="adj">Adapter</button></div>
- <div class="week">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${d===selDay}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
+ ${typeof cusBtn==="function"?cusBtn():""}<div class="week">${WEEK.map(d=>`<button data-sday="${d}" aria-pressed="${d===selDay}" class="${d===td?"today":""}">${DN[d]}<small>${TRAIN[d]?TRAIN[d].t.replace(/ (du corps|body)/,"").split(" ")[0]:"Repos"}</small></button>`).join("")}</div>
  ${S?`<div class="card hot stack"><h2>${S.t}</h2><div class="small muted">${S.f} · environ ${sessMin(S)} min${S.own?" · modifiée par toi":""}</div>${gBtns(selDay,"▶ Jouer cette séance")}<button class="btn ghost" id="ed-tog">${edit?"✓ Terminer les modifications":"✏️ Modifier cette séance"}</button></div>
   ${S.x.map((e,i)=>{const l=lastLog(e.id);return `<article class="ex">${animTag(e.id,e.a,esc(e.n))}<div class="hd"><b>${e.n}</b><span class="sc">${e.s}×${e.r[0]}–${e.r[1]}</span></div><div class="small">${e.c}</div><div class="small muted mono">Repos ${fmtT(e.rest)} · ${l?`dernière fois ${l.sets.map(s=>`${s.k}×${s.r}`).join(" · ")}`:"pas encore de données"}</div>${edit?`<div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="chip" data-mv="${i},-1" aria-label="Monter">↑</button><button class="chip" data-mv="${i},1" aria-label="Descendre">↓</button><button class="chip" data-rn="${e.id}">✏️ Renommer</button><button class="chip" data-sw="${i}" style="flex:1">🔄 Changer</button><button class="chip" data-rm="${i}">🗑️ Retirer</button></div>`:""}</article>`}).join("")}${edit?`<button class="btn ghost" data-sw="-1">+ Ajouter un exercice</button>${S.own?`<button class="btn ghost" id="ed-reset">Revenir à la séance du coach</button>`:""}`:""}`
   :`<div class="card stack"><h2>Repos</h2><p class="small muted" style="margin:0">Pas de muscu aujourd'hui : de la marche ou 20 minutes de cardio léger si tu veux bouger.</p></div>`}`}
@@ -400,7 +400,7 @@ async function lockOn(){try{if(navigator.wakeLock&&!wake&&document.visibilitySta
 function lockOff(){try{wake&&wake.release()}catch(e){}wake=null}
 const gSave=()=>LS.set(GK,G), gList=()=>G.list||TRAIN[G.day].x, gEx=()=>gList()[G.ord?G.ord[G.ei]:G.ei], gNum=v=>parseFloat(String(v).replace(",","."));
 const restOf=e=>(LS.get("carnet-rest",{})[e.id])||e.rest;
-function gStart(day){auUnlock();G={day,ei:0,si:0,ph:"set",sets:{},start:Date.now(),fb:"",prs:[]};gSave();gOpen()}
+function gStart(day){auUnlock();G={day,ei:0,si:0,ph:"set",sets:{},start:Date.now(),fb:"",prs:[]};if(day===7&&typeof cusList==="function"){G.list=cusList();G.t="Séance personnalisée"}gSave();gOpen()}
 function gOpen(){delete G.away;gSave();document.body.classList.add("g-on");$("#game").hidden=false;$("#game").scrollTop=0;lockOn();gShow()}
 /* Séance en cours reprenable : même jour de programme, lancée aujourd'hui. */
 const gToday=t=>new Date(t).toDateString()===new Date().toDateString(), gResumable=day=>!!G&&G.day===day&&G.ph!=="done"&&gToday(G.start);
@@ -442,7 +442,7 @@ function gShow(){clearInterval(gInt);const box=$("#g-in");
   <div class="g-adj"><button id="g-m" aria-label="Moins 15 secondes">−15</button><button id="g-go">Je suis prêt</button><button id="g-p" aria-label="Plus 15 secondes">+15</button></div>
   <div class="g-next"><small>Ensuite</small><b>${nx.n}</b><span>Série ${G.si+1}/${nx.s} · objectif ${nx.r[0]}–${nx.r[1]} reps</span></div>`;
   gLastS=null;gInt=setInterval(gTick,200);gTick();return}
- const st=gStats(),X=xpProf();if(!G.saved&&!st.n){G.saved=1;G.xp=0}if(!G.saved){X.xp+=st.xp;X.games.push({t:Date.now(),day:G.day,vol:st.vol,sets:st.n});X.games=X.games.slice(-300);LS.set("carnet-xp",X);G.saved=1;G.xp=st.xp;gSave();beep(784,.15);beep(988,.15,.16);beep(1319,.35,.32)}
+ const st=gStats(),X=xpProf();if(!G.saved&&!st.n){G.saved=1;G.xp=0}if(!G.saved){X.xp+=st.xp;X.games.push({t:Date.now(),day:G.day,vol:st.vol,sets:st.n,...(G.t?{nm:G.t}:{})});X.games=X.games.slice(-300);LS.set("carnet-xp",X);G.saved=1;G.xp=st.xp;gSave();beep(784,.15);beep(988,.15,.16);beep(1319,.35,.32)}
  const L=level(X.xp);
  box.innerHTML=`<div class="g-win"><div class="lab">${G.t||TRAIN[G.day].t}</div><div class="big">${st.n?"Séance validée":"Aucune série notée : séance non comptée"}</div><div class="muted small">${weekGames()}/${PROF.freq} séances cette semaine</div></div>
  <div class="g-stats"><div><strong>${fr(st.vol)}</strong><small>kg soulevés</small></div><div><strong>${st.n}</strong><small>séries</small></div><div><strong>${st.min}</strong><small>minutes</small></div><div><strong>+${G.xp}</strong><small>XP gagnés</small></div></div>
@@ -561,7 +561,7 @@ fixMach1(PROF);
 function fixRomy1(p){if(!p||p.fx3||!/^rom/i.test(p.name||""))return;const X=LS.get("carnet-xp",null),g=X&&X.games||[];
  if(g.length===2){const k=[...g].sort((a,b)=>(b.sets||0)-(a.sets||0)||(b.vol||0)-(a.vol||0)||a.t-b.t)[0],o=g.find(x=>x!==k);X.games=[k];LS.set("carnet-xp",X);const D=LS.get("coach-del",{});D.g=[...(D.g||[]),o.t];LS.set("coach-del",D)}p.fx3=1}
 fixRomy1(PROF);
-PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&!TRAIN[G.day]){G=null;LS.del(GK)}}
+PROF=migrate(PROF);if(PROF){LS.set("coach-profile",PROF);TRAIN=buildTraining(PROF);if(G&&G.day!==7&&!TRAIN[G.day]){G=null;LS.del(GK)}}
 render();suiviInit();reglagesInit();jeuInit();
 if(PROF&&G){if(G.ph!=="done"&&!gToday(G.start))gDrop();else if(!G.away)gOpen()}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}

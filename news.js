@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:10,d:"17/11",t:"🧩 Séance personnalisée",x:[
+  "Dans Séances, le bouton « Séance personnalisée » te laisse composer ta séance : choisis tes exercices muscle par muscle, parmi ceux faisables avec ton matériel.",
+  "Tu peux aussi partir d'un type de séance (Push, Pull, Jambes, Full body…) puis la modifier. Elle se joue et s'enregistre comme une séance normale."]},
  {id:9,d:"17/11",t:"🧍 Un vrai corps humain dans « Mon corps »",x:[
   "L'avatar est maintenant un corps humain réaliste : visage, mains, muscles dessinés, peau.",
   "Chaque curseur gonfle le vrai muscle (pecs, dos, épaules, bras, abdos, trapèzes, jambes, fessiers, mollets), et « À X kg » montre ta silhouette au poids visé."]},

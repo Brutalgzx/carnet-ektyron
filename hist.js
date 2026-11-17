@@ -26,7 +26,7 @@ function vHist(){const S=histSessions(),by={};for(const s of S)(by[dKey(s.t)]=by
  const day=(by[hDay]||[]).slice().reverse();
  const det=day.map(s=>{const T=TRAIN&&TRAIN[s.day],dur=s.start?Math.round((s.t-s.start)/60000):null,hh=t=>new Date(t).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   const ex=s.ex.map(e=>{const sets=e.sets.filter(x=>x&&x.r>0);return `<li><span class="sp"><b class="small">${esc((EX[e.id]||[e.id])[0])}</b>${e.dl?' <small class="muted">· décharge</small>':""}<br><small class="muted">${sets.map(x=>x.k>0?`${kgS(x.k)} × ${x.r}`:`${x.r} reps`).join(" · ")}</small></span><small class="muted">${sets.length} série${sets.length>1?"s":""}</small></li>`}).join("");
-  return `<div class="card stack"><div class="row"><span class="sp"><div class="lab">${s.start?hh(s.start)+" – ":""}${hh(s.t)}</div><b style="font-size:18px">${esc(T?T.t:"Séance")}</b></span></div>
+  return `<div class="card stack"><div class="row"><span class="sp"><div class="lab">${s.start?hh(s.start)+" – ":""}${hh(s.t)}</div><b style="font-size:18px">${esc(s.nm||(T?T.t:"Séance"))}</b></span></div>
   <div class="kpis"><div><strong>${s.sets||0}</strong><small>séries</small></div><div><strong>${fr(toU(s.vol||0))}</strong><small>volume (${wU()})</small></div><div><strong>${dur!=null?dur+" min":"–"}</strong><small>durée</small></div></div>
   ${ex?`<ul class="list">${ex}</ul>`:'<p class="small muted" style="margin:0">Détail des exercices non disponible pour cette séance.</p>'}
   <button class="link" data-hdel="${s.t}" style="color:var(--bad)">Supprimer cette séance</button></div>`}).join("");
