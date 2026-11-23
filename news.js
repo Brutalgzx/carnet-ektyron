@@ -2,6 +2,11 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:25,d:"24/11",t:"🧍 Exercices en 3D",x:[
+  "Les fiches d'exercices passent en 3D pour plus de 40 mouvements : un corps anatomique qui fait le geste, muscles colorés (rouge = principal, orange = secondaire, bleu = stabilisateur).",
+  "Tourne autour au doigt, choisis la vue (face, profil, dos, 3/4), ralentis ×0,5 ou mets en pause.",
+  "Bouton « Technique » : départ, mouvement, respiration, amplitude, erreurs fréquentes et sécurité.",
+  "Les autres exercices gardent leur vidéo."]},
  {id:24,d:"17/11",t:"🍰 Case Extras en Nutrition",x:[
   "Sous tes repas du jour, une nouvelle case « Extras » : un yaourt, une crêpe, un gâteau, des chips… mangés en plus.",
   "Cherche dans plus de 250 aliments courants, touche-le, règle la quantité (portions ou grammes) : calories, protéines, glucides et lipides sont calculés tout seuls et comptés dans ta journée.",
