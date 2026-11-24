@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:37,d:"24/11",t:"🫀 L'anatomie sur l'Accueil",x:[
+  "L'onglet Anatomie passe juste après Accueil dans la barre du bas.",
+  "Le mannequin anatomique est aussi sur l'Accueil : touche un muscle, puis « Voir les exercices » pour aller à sa liste.",
+  "Dans l'onglet Anatomie, tous les exercices du muscle s'affichent d'un coup avec leur animation : tu fais défiler, plus rien à déplier."]},
  {id:36,d:"24/11",t:"＋ Ajouter mon plat depuis l'Accueil",x:[
   "Dans « Nutrition du jour » sur l'Accueil, le bouton « ＋ Ajouter mon plat » ouvre le catalogue des supermarchés (Carrefour, Leclerc, Lidl, Auchan, Intermarché, Super U, Monoprix…).",
   "📷 Scan : vise le code-barres d'un produit avec l'appareil photo, il est retrouvé tout seul.",

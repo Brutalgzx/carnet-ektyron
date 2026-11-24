@@ -130,9 +130,11 @@ const A3D_MUSC={"grand-pectoral":["pecs"],"petit-pectoral":["pecs"],"dentele-ant
 const EXT={H:"Polyarticulaire lourd",M:"Polyarticulaire",I:"Isolation"};
 function anExos(id){const ids=[...new Set((A3D_MUSC[id]||[]).flatMap(k=>MUSC[k]?MUSC[k][1]:[]))].filter(x=>EX[x]);
  const ok=x=>typeof pickOk!=="function"||pickOk(x,PROF);return ids.sort((a,b)=>ok(b)-ok(a))
-  .map(x=>`<details class="an-exo"><summary><b>${esc(EX[x][0])}</b>${ok(x)?"":` <span class="small muted">· pas dans ta salle</span>`}</summary>${animTag(x,EX[x][4],esc(EX[x][0]))}<p class="small" style="margin:6px 0 0">${esc(EX[x][5])}</p><p class="small muted" style="margin:4px 0 0">${EXT[EX[x][3]]||""}</p></details>`)}
-function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN.sel),xs=anExos(AN.sel);return `<b>${m[0]}</b>${g?` <span class="muted small">· ${anLab(g)}</span>`:""}<br><span class="small">${m[1]}</span>
-  ${xs.length?`<details class="an-list" open><summary>🏋️ ${xs.length} exercice${xs.length>1?"s":""} qui le cible${xs.length>1?"nt":""}</summary>${xs.join("")}</details>`:`<p class="small muted" style="margin:6px 0 0">Pas d'exercice dédié dans le coach pour ce muscle.</p>`}`}
+  .map(x=>`<div class="an-exo"><b>${esc(EX[x][0])}</b>${ok(x)?"":` <span class="small muted">· pas dans ta salle</span>`}${animTag(x,EX[x][4],esc(EX[x][0]))}<p class="small" style="margin:6px 0 0">${esc(EX[x][5])}</p><p class="small muted" style="margin:4px 0 0">${EXT[EX[x][3]]||""}</p></div>`)}
+/* Tous les exercices du muscle sont affichés d'un coup, chacun avec son animation : on fait défiler, rien à déplier. Sur l'Accueil (raccourci), juste le muscle et un bouton vers l'onglet Anatomie. */
+function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN.sel),home=view==="today",xs=home?[]:anExos(AN.sel),n=home?new Set((A3D_MUSC[AN.sel]||[]).flatMap(k=>MUSC[k]?MUSC[k][1]:[]).filter(x=>EX[x])).size:xs.length,
+  t=`${n} exercice${n>1?"s":""} qui le cible${n>1?"nt":""}`;return `<b>${m[0]}</b>${g?` <span class="muted small">· ${anLab(g)}</span>`:""}<br><span class="small">${m[1]}</span>
+  ${home?(n?`<button class="btn" data-tab="anat" style="margin-top:10px">🏋️ Voir les ${t}</button>`:""):xs.length?`<div class="an-list"><div class="lab">🏋️ ${t}</div>${xs.join("")}</div>`:`<p class="small muted" style="margin:6px 0 0">Pas d'exercice dédié dans le coach pour ce muscle.</p>`}`}
  return `<span class="small muted">Touche un muscle sur le mannequin pour voir son nom et son rôle. Glisse à l'horizontale pour le tourner.</span>`}
 function vAnat(){const pr=(PROF.prio||[]).some(k=>A3D_GROUPS[k]);if(AN.g==null&&!AN.sel)AN.g=pr?"prio":"pecs";const g=AN.sel?null:AN.g;
  const chip=(k,l)=>`<button data-ang="${k}" aria-pressed="${g===k}">${l}</button>`;
@@ -149,3 +151,11 @@ function anatMount(){const el=$("#an3d");if(!el)return;an3dStop();const idle=t=>
 /* Réinitialiser : plus de muscle choisi, groupe par défaut, mannequin remonté de face. */
 document.addEventListener("click",e=>{if(!e.target.closest("#an-reset"))return;AN.sel=null;AN.g=(PROF.prio||[]).some(k=>A3D_GROUPS[k])?"prio":"pecs";anRefresh();anatMount()});
 document.addEventListener("click",e=>{const c=e.target.closest("[data-ang]");if(!c)return;AN.g=c.dataset.ang;AN.sel=null;anRefresh()});
+
+/* Raccourci Anatomie sur l'Accueil : le même mannequin, toucher un muscle le montre, le bouton mène aux exercices. */
+function anatHome(){if(!window.a3dAnatomy)return "";if(AN.g==null&&!AN.sel)AN.g=(PROF.prio||[]).some(k=>A3D_GROUPS[k])?"prio":"pecs";
+ return `<div class="card stack"><div class="row"><div class="lab sp">Anatomie</div><button class="lnk small" data-tab="anat">Ouvrir ›</button></div>
+  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle">Chargement 3D…</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
+  <div id="an-info" class="an-info">${anInfo()}</div></div>`}
+/* Après un nouvel affichage : on remet la scène 3D déjà chargée au lieu de la relancer. */
+function anatKeep(K){const el=$("#an3d");if(!el)return;if(K&&AN.h&&AN.el===K){el.replaceWith(K);AN.h.set(anRoles())}else anatMount()}
