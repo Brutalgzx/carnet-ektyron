@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:28,d:"24/11",t:"⚖️ Corriger une pesée",x:[
+  "Dans le suivi du poids, « Corriger une pesée » liste tes dernières pesées : touche « Modifier » pour changer le chiffre, ou ✕ pour la supprimer.",
+  "Si une pesée faite après manger avait fait changer tes calories, la correction annule ce changement : tu reviens à ton plan d'avant.",
+  "Rappel : pèse-toi le matin à jeun, le poids varie d'1 à 2 kg dans la journée."]},
  {id:27,d:"24/11",t:"✊ Mains, mollets et presse en 3D",x:[
   "Les doigts se referment maintenant autour de la barre, des poignées et des haltères (main ouverte à plat pour les pompes).",
   "Mollets : le corps monte de 8 cm sur la pointe des pieds, talons qui décollent (avant : 2 cm).",

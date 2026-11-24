@@ -174,13 +174,25 @@ function shopping(){const tot={};for(const d of WEEK)for(const m of dayMeals(d))
  return by}
 
 /* ================= Suivi du poids et ajustement ================= */
-function coachAdjust(){const W=LS.get("coach-weights",[]);if(W.length<2)return null;const last=W[W.length-1],ref=[...W].reverse().find(x=>last.t-x.t>=6*DAY);if(!ref)return null;
+/* Analyse de la courbe (sans effet) : rythme, ajustement proposé d (kcal) et message. Rejouable pour corriger une pesée. */
+function coachEval(W){if(W.length<2)return null;const last=W[W.length-1],ref=[...W].reverse().find(x=>last.t-x.t>=6*DAY);if(!ref)return null;
  const rate=(last.kg-ref.kg)/((last.t-ref.t)/(7*DAY)),g=PROF.goal,r=`${rate>0?"+":""}${fr(rate,2)} kg par semaine`;let d=0,m;
  if(g==="masse"||g==="force"){if(rate<.15){d=150;m=`Tu évolues à ${r} : c'est trop lent pour construire du muscle. J'ajoute 150 kcal par jour.`}else if(rate>.6){d=-100;m=`Tu prends ${r} : un peu trop vite, ça risque d'être du gras. Je retire 100 kcal par jour.`}else m=`Tu prends ${r} : c'est le bon rythme. On garde le cap.`}
  else if(g==="seche"){if(rate>-.25){d=-150;m=`Tu évolues à ${r} : la sèche avance trop lentement. Je retire 150 kcal par jour.`}else if(rate<-1){d=100;m=`Tu perds ${r} : trop vite, tu risques de perdre du muscle. J'ajoute 100 kcal par jour.`}else m=`Tu perds ${r} : rythme idéal pour garder ton muscle.`}
  else{if(rate>.3){d=-100;m=`Tu prends ${r} : trop pour une recomposition. Je retire 100 kcal.`}else if(rate<-.5){d=100;m=`Tu perds ${r} : trop vite. J'ajoute 100 kcal.`}else m=`Ton poids est stable (${r}) : parfait pour une recomposition. Juge plutôt au miroir et aux charges.`}
- if(d){if(last.t-LS.get("coach-kadj-t",0)>=6*DAY){LS.set("coach-kadj",LS.get("coach-kadj",0)+d);LS.set("coach-kadj-t",last.t)}else{m+=" Ajustement déjà fait cette semaine, on réévalue à la prochaine pesée.";}}
+ return {d,m,last}}
+function coachAdjust(){const r=coachEval(LS.get("coach-weights",[]));if(!r)return null;let m=r.m;const last=r.last;
+ if(r.d){if(last.t-LS.get("coach-kadj-t",0)>=6*DAY){LS.set("coach-kadj",LS.get("coach-kadj",0)+r.d);LS.set("coach-kadj-t",last.t);const L=LS.get("coach-kadj-log",{});L[last.t]=r.d;LS.set("coach-kadj-log",L)}else{m+=" Ajustement déjà fait cette semaine, on réévalue à la prochaine pesée.";}}
  return m}
+/* Corriger (v en kg) ou supprimer (v = null) la pesée n° i. Si elle avait déclenché un ajustement de calories, il est annulé :
+   on revient à l'état d'avant cette pesée, le coach réanalysera à la prochaine pesée. */
+function fixWeight(i,v){const W=LS.get("coach-weights",[]),e=W[i];if(!e)return;let undone=0;
+ if(LS.get("coach-kadj-t",0)===e.t){const L=LS.get("coach-kadj-log",{});let d=L[e.t];if(d==null){const r=coachEval(W.slice(0,i+1));d=r?r.d:0}
+  if(d){LS.set("coach-kadj",LS.get("coach-kadj",0)-d);undone=d}
+  delete L[e.t];LS.set("coach-kadj-log",L);LS.set("coach-kadj-t",Math.max(0,...Object.keys(L).map(Number).filter(t=>t<e.t)))}
+ if(v==null)W.splice(i,1);else e.kg=v;LS.set("coach-weights",W);
+ LS.set("coach-msg",undone?`Pesée ${v==null?"supprimée":"corrigée"} : l'ajustement de ${undone>0?"+":""}${undone} kcal par jour qu'elle avait déclenché est annulé. Ton coach réanalysera ta courbe à la prochaine pesée.`:"");
+ toast(v==null?"Pesée supprimée.":"Pesée corrigée.");render()}
 
 /* ================= Questionnaire ================= */
 let A=null, obI=0;
@@ -587,6 +599,9 @@ document.addEventListener("click",e=>{if(e.target.id==="sheet"){e.target.remove(
  if(t.id==="renut"){$("#sheet")?.remove();const el=document.createElement("div");el.id="sheet";el.innerHTML=`<div class="in stack" role="dialog" aria-label="Refaire mon plan nutrition"><h2 style="margin:18px 0 0">Refaire ton plan nutrition ?</h2><p class="small muted" style="margin:0">Tu repasses le questionnaire nutrition : repas, magasins, budget, aliments, allergies… (ton poids, ton objectif et ton activité viennent de ton profil) Tes réponses actuelles sont déjà remplies, change seulement ce qui a bougé. Ton coach recalcule ensuite tes calories à partir de ton programme et de ton objectif.</p><p class="small" style="margin:0;color:var(--warn)">Ta semaine de repas actuelle et ta liste de courses cochée seront remplacées.</p><button class="btn" data-ref="nut">Oui, refaire mon plan</button><button class="btn ghost" data-close>Annuler</button></div>`;document.body.appendChild(el);return}
  if(t.id==="regen"){LS.set("coach-week",{...genWeek(Date.now()%1e9),v:2});LS.set("coach-shop",{});render();toast("Nouvelle semaine de repas générée.");return}
  if(t.id==="w-save"){saveWeight();return}
+ if(D.wfix!=null){const W=LS.get("coach-weights",[]),w=W[+D.wfix];if(!w)return;const a=prompt(`Poids corrigé pour le ${new Date(w.t).toLocaleDateString("fr-FR",{day:"numeric",month:"long"})} (${wU()})`,fr(toU(w.kg),1));if(a===null)return;
+  const v=+fromU(gNum(a)).toFixed(2);if(!(v>30&&v<250)){toast("Poids non valable.");return}fixWeight(+D.wfix,v);return}
+ if(D.wdel!=null){const W=LS.get("coach-weights",[]),w=W[+D.wdel];if(w&&confirm(`Supprimer la pesée du ${new Date(w.t).toLocaleDateString("fr-FR",{day:"numeric",month:"long"})} (${kgS(w.kg)}) ?`))fixWeight(+D.wdel,null);return}
  if(t.id==="redo"){startOnboarding(true);return}
  if(t.id==="restart"){startFresh();return}
  if(t.id==="bk-x"){const s=JSON.stringify(bkData());$("#bk-t").value=s;bkMark("code");
