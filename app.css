@@ -275,6 +275,7 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 .a3d-stage,.a3d-stage *{touch-action:pan-y!important}
 .a3d-phase{position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.55);font-size:12px;font-weight:600;color:#fcd34d}
 .a3d-phase.a3d-con{color:#f87171}.a3d-phase.a3d-exc{color:#7dd3fc}
+.a3d-duo{position:absolute;left:8px;top:36px;max-width:62%;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:700;line-height:1.25}.a3d-duo.ok{background:rgba(22,101,52,.85);color:#dcfce7}.a3d-duo.ko{background:rgba(153,27,27,.9);color:#fee2e2}
 .a3d-leg{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:2px;padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.55);font-size:11px;color:#e5e7eb}
 .a3d-leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
 .a3d-mach{position:absolute;left:8px;right:8px;bottom:8px;padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.6);font-size:11px;color:#e5e7eb}

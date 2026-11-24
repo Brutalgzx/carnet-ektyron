@@ -3,7 +3,7 @@ import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { type Animation, type Prop, overlayOf, poseAt } from "../lib/animations";
+import { type Animation, type Prop, overlayOf, poseAt, faultPoseAt } from "../lib/animations";
 import jointsData from "../data/joints.json";
 import { buildMachine } from "./machine";
 import type { BodyPoint } from "../lib/animations";
@@ -445,6 +445,8 @@ interface Props {
   showProps?: boolean;
   /** "anatomie" = vrais muscles BodyParts3D animés ; "mannequin" = silhouette simplifiée. */
   figure?: "anatomie" | "mannequin";
+  /** true pendant la répétition « geste à éviter ». */
+  fault?: React.MutableRefObject<boolean>;
 }
 
 const v1 = new THREE.Vector3();
@@ -457,7 +459,7 @@ const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 useGLTF.preload(ANIM_MODEL, ((window as any).A3D_BASE||"atlas3d/")+"draco/");
 
-export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = true, figure = "anatomie" }: Props) {
+export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = true, figure = "anatomie", fault }: Props) {
   const { scene } = useGLTF(ANIM_MODEL, ((window as any).A3D_BASE||"atlas3d/")+"draco/");
   const rig = useMemo(() => (figure === "anatomie" ? buildAnatomyRig(scene) : buildRig()), [figure, scene]);
   const holder = useRef<THREE.Group>(null);
@@ -567,7 +569,7 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
         if (!m.mesh.visible) continue;
         m.mat.emissiveIntensity = 0.12 + 1.0 * act * ((m.mesh.userData.weight as number) ?? 0);
       }
-    const p = poseAt(anim, t);
+    const p = fault?.current ? faultPoseAt(anim, t) : poseAt(anim, t);
     const foreAxis = rig.el.map((e) => {
       const w = e.children.find((c) => (c as THREE.Bone).isBone);
       return w ? w.position.clone().normalize() : new THREE.Vector3(0, -1, 0);

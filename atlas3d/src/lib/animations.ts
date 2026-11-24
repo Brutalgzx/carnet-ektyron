@@ -823,3 +823,85 @@ for (const a of animations) {
   const c = OPEN.has(a.id) ? 0 : HOLD.has(a.id) ? 85 : a.id === "plank" ? 70 : 25;
   a.keys = a.keys.map((k) => ({ t: k.t, pose: { ...(g === undefined ? {} : { pron: g }), grip: c, ...k.pose } }));
 }
+
+// ───── Geste à éviter : la même animation, déformée par l'erreur la plus fréquente ─────
+/** d = écart ajouté au pic du mouvement (proportionnel à l'avancée), c = écart constant, amp = amplitude (1 = normale). */
+export interface Fault { label: string; d?: Pose; c?: Pose; amp?: number }
+const F = {
+  dos: { label: "Dos rond", d: { spine: 30, neck: 12 } },
+  genoux: { label: "Genoux qui rentrent", d: { hipAbd: -16 } },
+  elan: { label: "Élan du buste", d: { rootPitch: -16, hipFlex: -16, spine: -6 } },
+  hausse: { label: "Épaules qui montent", d: { shrug: 4.5 } },
+  creux: { label: "Bassin qui s'affaisse", c: { spine: -12, hipFlex: -18 } },
+  coudesOuv: { label: "Coudes trop ouverts", d: { shAbd: 26 } },
+  coudesAv: { label: "Coudes qui avancent", d: { shFlex: 38 } },
+  cambre: { label: "Dos trop cambré", c: { spine: -16 } },
+  cambreHaut: { label: "Cambrer en haut au lieu de serrer", d: { spine: -24 } },
+  nuque: { label: "Tirer sur la nuque", d: { neck: 32 } },
+  demi: { label: "Demi-amplitude", amp: 0.45 },
+  tropBas: { label: "Descendre trop bas", amp: 1.3 },
+} satisfies Record<string, Fault>;
+export const faults: Record<string, Fault> = {
+  squat: F.genoux, airsquat: F.genoux, hacksquat: F.genoux, sumosquat: F.genoux, bulgarian: F.genoux, lunges: F.genoux, stepup: F.genoux,
+  gobletsquat: F.dos, deadlift: F.dos, rdl: F.dos, dbrdl: F.dos, barbellrow: F.dos, kbswing: F.dos, reardeltfly: F.dos, russiantwist: { label: "Dos rond", c: { spine: 22 } },
+  legpress: { label: "Bassin qui décolle en bas", d: { spine: 22 } },
+  onearmrow: { label: "Tourner le buste pour tirer", d: { twist: 28 } },
+  bench: F.coudesOuv, dbbench: F.coudesOuv, inclinepress: F.coudesOuv, smithincline: F.coudesOuv, chestpress: F.coudesOuv,
+  pushup: F.creux, declinepushup: F.creux, plank: F.creux, invertedrow: { label: "Bassin qui tombe", c: { hipFlex: 24, spine: 8 } },
+  dbfly: { label: "Bras trop tendus", c: { elbow: -14 } }, pecdeck: F.hausse, cablefly: F.hausse,
+  curl: F.elan, hammercurl: F.elan, bagcurl: F.elan, cablecurlback: F.elan, ropehammer: F.elan, inclinecurl: F.coudesAv, preachercurl: F.demi,
+  pushdown: { label: "Coudes qui bougent", d: { shFlex: 32 } }, onearmpushdown: { label: "Coudes qui bougent", d: { shFlex: 32 } },
+  overheadcable: F.coudesOuv, dbextension: F.coudesOuv, tricepsmachine: F.demi,
+  dips: F.tropBas, benchdips: F.tropBas, pullup: F.demi, pikepushup: F.demi, hspu: F.demi, muscleup: F.demi,
+  pulldown: { label: "Se jeter en arrière", d: { rootPitch: -22, hipFlex: -22 } }, seatedrow: { label: "Balancer le buste", d: { rootPitch: -20, hipFlex: -20 } },
+  chestrow: F.hausse, widerow: F.hausse, facepull: F.hausse, reversefly: F.hausse, ytw: F.hausse,
+  shoulderpress: F.cambre, shoulderpressseated: F.cambre, dbshoulderpress: F.cambre,
+  lateralraise: { label: "Élan et épaules qui montent", d: { rootPitch: -10, hipFlex: -10, knee: 10, shrug: 4 } }, cablelateral: F.hausse, lateralraisemachine: F.hausse, leanabduction: F.hausse,
+  hipthrust: F.cambreHaut, singlebridge: F.cambreHaut, backext: { label: "Hyperextension en haut", d: { spine: -24, neck: -15 } }, cablekickback: { label: "Cambrer le dos", d: { spine: -22 } },
+  legext: F.demi, seatedlegcurl: F.demi, lyinglegcurl: { label: "Bassin qui décolle", d: { hipFlex: 22 } }, nordic: { label: "Hanches pliées", c: { hipFlex: 35 } },
+  calfraise: F.demi, seatedcalf: F.demi, hipabduction: F.demi, hipadduction: F.demi, shrug: F.demi,
+  abcrunch: F.nuque, cablecrunch: F.nuque, heeltaps: F.nuque, suitcasecrunch: F.nuque, superman: { label: "Nuque cassée vers l'arrière", d: { neck: -28 } },
+  legraise: { label: "Bas du dos qui décolle", c: { spine: -14 } }, deadbug: { label: "Bas du dos qui décolle", c: { spine: -14 } },
+  hangingraise: { label: "Balancer le corps", d: { rootPitch: -16 } },
+};
+export const faultOf = (anim: Animation): Fault => faults[anim.id] ?? F.demi;
+
+const effortCache = new WeakMap<Animation, number[]>();
+/** Avancée du mouvement (0 = position de départ, 1 = point le plus éloigné), échantillonnée une fois par animation. */
+function effortAt(anim: Animation, t: number): number {
+  let e = effortCache.get(anim);
+  if (!e) {
+    const p0 = poseAt(anim, 0) as Record<string, number>;
+    const raw = Array.from({ length: 41 }, (_, i) => {
+      const p = poseAt(anim, i / 40) as Record<string, number>;
+      let s = 0;
+      for (const k in p0) s += Math.abs(p[k] - p0[k]);
+      return s;
+    });
+    const m = Math.max(...raw) || 1;
+    effortCache.set(anim, (e = raw.map((v) => v / m)));
+  }
+  const x = Math.min(40, Math.max(0, t * 40)), i = Math.floor(x), f = x - i;
+  return e[i] + ((e[Math.min(40, i + 1)] ?? e[i]) - e[i]) * f;
+}
+
+/** Pose de la répétition « à éviter ». */
+export function faultPoseAt(anim: Animation, t: number): Required<Pose> {
+  const f = faultOf(anim);
+  const out = poseAt(anim, t) as Record<string, number>;
+  if (f.amp != null) {
+    const p0 = poseAt(anim, 0) as Record<string, number>;
+    for (const k in out) out[k] = p0[k] + (out[k] - p0[k]) * f.amp;
+  }
+  const e = effortAt(anim, t);
+  const w = Math.min(1, t / 0.12, (1 - t) / 0.12); // l'écart constant arrive et repart en douceur
+  const add = (d: Pose | undefined, k: number) => {
+    if (d) for (const [n, v] of Object.entries(d)) {
+      out[n] += v! * k;
+      for (const i of [0, 1]) if (`${n}_${i}` in out) out[`${n}_${i}`] += v! * k;
+    }
+  };
+  add(f.d, e);
+  add(f.c, w);
+  return out as Required<Pose>;
+}

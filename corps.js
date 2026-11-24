@@ -130,7 +130,7 @@ const A3D_MUSC={"grand-pectoral":["pecs"],"petit-pectoral":["pecs"],"dentele-ant
 const EXT={H:"Polyarticulaire lourd",M:"Polyarticulaire",I:"Isolation"};
 function anExos(id){const ids=[...new Set((A3D_MUSC[id]||[]).flatMap(k=>MUSC[k]?MUSC[k][1]:[]))].filter(x=>EX[x]);
  const ok=x=>typeof pickOk!=="function"||pickOk(x,PROF);return ids.sort((a,b)=>ok(b)-ok(a))
-  .map(x=>`<details class="an-exo"><summary><b>${esc(EX[x][0])}</b>${ok(x)?"":` <span class="small muted">· pas dans ta salle</span>`}</summary><p class="small" style="margin:6px 0 0">${esc(EX[x][5])}</p><p class="small muted" style="margin:4px 0 0">${EXT[EX[x][3]]||""}</p></details>`)}
+  .map(x=>`<details class="an-exo"><summary><b>${esc(EX[x][0])}</b>${ok(x)?"":` <span class="small muted">· pas dans ta salle</span>`}</summary>${animTag(x,EX[x][4],esc(EX[x][0]))}<p class="small" style="margin:6px 0 0">${esc(EX[x][5])}</p><p class="small muted" style="margin:4px 0 0">${EXT[EX[x][3]]||""}</p></details>`)}
 function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN.sel),xs=anExos(AN.sel);return `<b>${m[0]}</b>${g?` <span class="muted small">· ${anLab(g)}</span>`:""}<br><span class="small">${m[1]}</span>
   ${xs.length?`<details class="an-list" open><summary>🏋️ ${xs.length} exercice${xs.length>1?"s":""} qui le cible${xs.length>1?"nt":""}</summary>${xs.join("")}</details>`:`<p class="small muted" style="margin:6px 0 0">Pas d'exercice dédié dans le coach pour ce muscle.</p>`}`}
  return `<span class="small muted">Touche un muscle sur le mannequin pour voir son nom et son rôle. Glisse à l'horizontale pour le tourner.</span>`}

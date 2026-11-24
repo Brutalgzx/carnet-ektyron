@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:34,d:"24/11",t:"✓✗ Bon geste, puis geste à éviter",x:[
+  "Chaque animation 3D joue maintenant en deux temps : une répétition correcte (bandeau vert « ✓ Bon geste »), puis la même avec l'erreur la plus fréquente (bandeau rouge « ✗ À éviter » : dos rond, genoux qui rentrent, élan du buste, épaules qui montent…).",
+  "Le bouton ✓✗ sous la scène coupe ou remet ce mode.",
+  "Onglet Anatomie : chaque exercice de la liste sous le muscle a son animation 3D quand tu le déplies."]},
  {id:33,d:"24/11",t:"↺ Réinitialiser l'anatomie",x:[
   "Onglet Anatomie : le bouton « ↺ Réinitialiser » efface le muscle choisi, revient à tes priorités et remet le mannequin de face."]},
  {id:32,d:"24/11",t:"🧍 Tous les exercices en 3D",x:[
