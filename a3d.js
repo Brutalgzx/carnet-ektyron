@@ -1,21 +1,21 @@
 /* Fiches exercices 3D (moteur d'Atlas Fitness 3D, atlas3d/atlas3d.js chargé seulement quand une fiche 3D est à l'écran).
    Une seule scène 3D vivante à la fois : la fiche la plus visible. Sans WebGL ou si le chargement échoue → vidéo d'avant. */
 /* Exercice Ektyron → exercice Atlas (donne l'animation et les muscles principal / secondaire / stabilisateur). */
-const A3D_MAP={incl:"~incline-dumbbell-press",dbinc:"incline-dumbbell-press",benchx:"bench-press",dch:"~bench-press",
- pompes:"push-up",pompesd:"~push-up",diam:"diamond-push-up",pfly:"pec-deck",ecbh:"cable-crossover",dips:"~dips",dipsb:"dips",
- tvert:"lat-pulldown",tract:"pull-up",rowm:"~seated-row-machine",rowc:"~seated-row-machine",rowx:"barbell-row",rowinv:"australian-pull-up",
- dmil:"~shoulder-press-machine",elmac:"lateral-raise-machine",elath:"lateral-raise-dumbbell",elat:"~lateral-raise-dumbbell",
- pupi:"biceps-curl-machine",curld:"barbell-curl",triv:"triceps-pushdown",tri1:"~triceps-pushdown",
+const A3D_MAP={dbinc:"incline-dumbbell-press",benchx:"bench-press",
+ pompes:"push-up",diam:"diamond-push-up",pfly:"pec-deck",ecbh:"cable-crossover",dipsb:"dips",
+ tvert:"lat-pulldown",tract:"pull-up",rowx:"barbell-row",rowinv:"australian-pull-up",elmac:"lateral-raise-machine",elath:"lateral-raise-dumbbell",
+ pupi:"biceps-curl-machine",curld:"barbell-curl",triv:"triceps-pushdown",
  hack:"hack-squat",smsq:"smith-squat",press:"leg-press",squatpdc:"bodyweight-squat",lext:"leg-extension",lcurl1:"seated-leg-curl",lcurl2:"lying-leg-curl",
- hipt:"hip-thrust-barbell",moll:"calf-raise-machine",crun:"~abdominal-crunch-machine",bext:"back-extension",
- abd:"hip-abductor",abdp:"~hip-abductor",addab:"~hip-abductor",gain:"plank"};
+ hipt:"hip-thrust-barbell",moll:"calf-raise-machine",bext:"back-extension",
+ abd:"hip-abductor",gain:"plank",
+ dbfly:"ek-dbfly",dch:"ek-dch",incl:"ek-incl",pompesd:"ek-pompesd",dips:"ek-dips",rowu:"ek-rowu",rowm:"ek-rowm",rowc:"ek-rowc",tlarg:"ek-tlarg",rfly:"ek-rfly",facep:"ek-facep",oiseau:"ek-oiseau",ytw:"ek-ytw",dmil:"ek-dmil",elat:"ek-elat",pike:"ek-pike",shrug:"ek-shrug",cpou:"ek-cpou",curlh:"ek-curlh",mart:"ek-mart",marth:"ek-marth",curlpdc:"ek-curlpdc",tri1:"ek-tri1",ovh:"ek-ovh",extd:"ek-extd",dipsbanc:"ek-dipsbanc",gobsq:"ek-gobsq",sumosq:"ek-sumosq",bulg:"ek-bulg",fentes:"ek-fentes",stepup:"ek-stepup",rdl:"ek-rdl",rdlx:"ek-rdlx",nordic:"ek-nordic",pont:"ek-pont",kick:"ek-kick",addab:"ek-addab",abdp:"ek-abdp",moll2:"ek-moll2",crun:"ek-crun",releve:"ek-releve",hlr:"ek-hlr",deadbug:"ek-deadbug",heeltap:"ek-heeltap",rtwist:"ek-rtwist",suitc:"ek-suitc",superman:"ek-superman"};
 /* « ~ » = mouvement proche mais pas identique : on montre l'animation sans la fiche technique d'Atlas. */
 function a3dOf(id,a){return A3D_MAP[id]||A3D_MAP[a]||null}
 (function(){
  const ok=(()=>{try{const c=document.createElement("canvas");return !!(window.WebGLRenderingContext&&(c.getContext("webgl2")||c.getContext("webgl")))}catch(e){return false}})();
  if(!ok){window.A3D_OFF=true;return}
  let eng=null,loading=null,cur=null,stop=null;const vis=new Map();
- const load=()=>eng?Promise.resolve(eng):loading||(loading=new Promise((res,rej)=>{const s=document.createElement("script");s.src="atlas3d/atlas3d.js?v=6";
+ const load=()=>eng?Promise.resolve(eng):loading||(loading=new Promise((res,rej)=>{const s=document.createElement("script");s.src="atlas3d/atlas3d.js?v=7";
   s.onload=()=>window.A3D_ENGINE?res(eng=window.A3D_ENGINE):rej();s.onerror=rej;document.head.appendChild(s)}));
  window.a3dAnatomy=(el,roles,pick)=>{if(cur)off();return load().then(E=>{el.innerHTML="";return E.anatomy(el,roles,pick)})};
  const fallback=el=>{const v=el.dataset.v;el.outerHTML=v?`<video class="anim anim-v${el.classList.contains("g-anim")?" g-anim":""}" data-src="renders/${v}.mp4?v=${v==="rowu"?2:1}" muted loop playsinline preload="none"></video>`:""};

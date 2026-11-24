@@ -1,4 +1,5 @@
 import type { Exercise } from "./types";
+import { ektyronExercises } from "./exercisesEktyron";
 
 // Consignes techniques générales de musculation. Les muscles cités renvoient
 // aux fiches anatomiques (src/data/muscles.ts). Les rôles "principal /
@@ -1046,7 +1047,7 @@ const EXTRA_ANIM: Record<string, string> = {
   "handstand-push-up": "hspu", "muscle-up": "muscleup",
 };
 
-export const exercises: Exercise[] = list.map((e) => ({
+export const exercises: Exercise[] = [...list, ...ektyronExercises].map((e) => ({
   ...e,
   animation: e.animation ?? EXTRA_ANIM[e.id],
   concentric: e.concentric ?? "Phase de levée / poussée de la charge (le muscle principal se raccourcit).",

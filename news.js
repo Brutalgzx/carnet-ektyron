@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:32,d:"24/11",t:"🧍 Tous les exercices en 3D",x:[
+  "Les 77 exercices du coach ont maintenant leur démonstration 3D : 35 nouveaux (fentes bulgares, soulevé roumain, face pull, dead bug, russian twist…) et 12 refaits à l'identique au lieu d'une animation approchée.",
+  "Chacun a sa fiche Technique : départ, mouvement, respiration, amplitude, erreurs fréquentes et sécurité.",
+  "Les exercices sur une jambe ou un bras (fentes, rowing un bras, pont une jambe…) bougent enfin d'un seul côté."]},
  {id:31,d:"24/11",t:"🏋️ Exercices par muscle",x:[
   "Dans l'onglet Anatomie, touche un muscle : une liste déroulante montre tous les exercices qui le ciblent.",
   "Ceux faisables dans ta salle passent en premier ; touche un exercice pour voir le conseil d'exécution."]},

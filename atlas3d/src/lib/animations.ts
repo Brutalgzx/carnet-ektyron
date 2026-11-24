@@ -16,15 +16,16 @@
 //              90 = prise neutre, paumes face à face ; 170 = pronation, prise « dessus » sur une barre)
 //  grip      : fermeture des doigts en degrés aux jointures (0 = main ouverte à plat, ~85 = main fermée sur une barre)
 
-export type JointName = "rootPitch" | "spine" | "neck" | "shFlex" | "shAbd" | "elbow" | "hipFlex" | "hipAbd" | "knee" | "ankle" | "shHor" | "pron" | "grip";
-export type Pose = Partial<Record<JointName, number>>;
+export type JointName = "rootPitch" | "spine" | "neck" | "shFlex" | "shAbd" | "elbow" | "hipFlex" | "hipAbd" | "knee" | "ankle" | "shHor" | "pron" | "grip" | "twist" | "lean" | "shrug";
+/** Valeurs communes aux deux côtés ; « shFlex_1 » (etc.) surcharge un seul côté (0 = côté x négatif, 1 = x positif). */
+export type Pose = Partial<Record<JointName | `${JointName}_0` | `${JointName}_1`, number>>;
 
-export type PropKind = "bench" | "barbell" | "dumbbells" | "pullupBar" | "parallelBars" | "seat" | "backrest" | "legPad" | "sled" | "latBar" | "handles" | "mat" | "rack" | "kettlebell";
+export type PropKind = "bench" | "barbell" | "dumbbells" | "pullupBar" | "parallelBars" | "seat" | "backrest" | "legPad" | "sled" | "latBar" | "handles" | "mat" | "rack" | "kettlebell" | "dumbbell";
 
 export interface Prop {
   kind: PropKind;
   /** Accroché au mannequin : suit les mains, les tibias ou les pieds. */
-  attach?: "hands" | "shins" | "feet" | "chest";
+  attach?: "hands" | "hand0" | "hand1" | "shins" | "feet" | "chest";
   position?: [number, number, number];
   rotation?: [number, number, number];
   size?: [number, number, number];
@@ -47,7 +48,7 @@ export interface Animation {
   name: string;
   duration: number; // secondes pour une répétition complète à vitesse normale
   /** feet = milieu de la plante au sol ; toes = avant-pied (le talon peut monter) ; hands = mains sur la barre. */
-  anchor: "feet" | "toes" | "hands" | null;
+  anchor: "feet" | "toes" | "hands" | "foot0" | "foot1" | "hand0" | "hand1" | null;
   anchorTarget?: [number, number, number];
   /** Point visé par la caméra (sinon : mains pour les suspensions, bassin sinon). */
   camTarget?: [number, number, number];
@@ -410,6 +411,238 @@ export const animations: Animation[] = [
 ];
 
 
+// ───── Exercices d'Ektyron sans équivalent dans Atlas (fiches « ek-… » de src/data/exercisesEktyron.ts) ─────
+// Prise : pron 165 = pronation, 90 = neutre, 0 = supination ; grip = fermeture des doigts.
+const hold = (pron: number): Pose => ({ pron, grip: 85 });
+const SUP: Pose = { ...stand, rootPitch: -90, hipFlex: -18, knee: 95, hipAbd: 18 }; // allongé sur un banc plat, pieds au sol
+const SUP_PLACE = { anchor: null, rootPos: [0, 0.58, 0.05] as [number, number, number] };
+const FLAT_BENCH: Prop = { kind: "bench", position: [0, 0.22, -0.25], size: [0.3, 0.44, 1.25] };
+const FLOOR: Pose = { ...stand, rootPitch: -90 }; // allongé sur le dos au sol
+const PRONE: Pose = { ...stand, rootPitch: 90, ankle: -55 }; // allongé sur le ventre
+const MAT: Prop = { kind: "mat", position: [0, 0.005, 0] };
+const DB: Prop = { kind: "dumbbells", attach: "hands" };
+const DB1: Prop = { kind: "dumbbells", attach: "hand1" };
+const ONE_DB: Prop = { kind: "dumbbell", attach: "hands" };
+const INCL_BACK: Prop = { kind: "backrest", position: [0, 0.6, -0.31], rotation: [-0.9, 0, 0], size: [0.4, 0.75, 0.08] };
+const ROPE: Prop = { kind: "handles", attach: "hands" };
+const hinge = (deg: number, knee: number): Pose => ({ rootPitch: deg, hipFlex: deg + knee * 0.5, knee, ankle: knee * 0.5 });
+
+animations.push(
+  rep("dbfly", "Écarté haltères sur banc", 2.8, SUP_PLACE,
+    { ...SUP, ...hold(90), shFlex: 80, shAbd: 6, elbow: 14 },
+    { ...SUP, ...hold(90), shFlex: 78, shHor: 80, shAbd: 6, elbow: 28 },
+    [0.5, 1], [FLAT_BENCH, DB]),
+  rep("dbbench", "Développé couché haltères", 3, SUP_PLACE,
+    { ...SUP, ...hold(165), shFlex: 82, shAbd: 10, elbow: 2 },
+    { ...SUP, ...hold(165), shFlex: -20, shAbd: 60, elbow: 95 },
+    [0.5, 1], [FLAT_BENCH, DB]),
+  rep("smithincline", "Développé incliné à la Smith", 2.8, { anchor: null, rootPos: [0, 0.52, 0] },
+    { ...stand, ...hold(165), rootPitch: -52, hipFlex: 30, knee: 80, hipAbd: 16, shFlex: 92, shAbd: 10, elbow: 4 },
+    { ...stand, ...hold(165), rootPitch: -52, hipFlex: 30, knee: 80, hipAbd: 16, shFlex: 14, shAbd: 66, elbow: 100 },
+    [0.5, 1], [INCL_BACK, SEAT, { kind: "barbell", attach: "hands" }]),
+  rep("declinepushup", "Pompes pieds surélevés", 2.4, { anchor: "feet", anchorTarget: [0, 0.46, -0.85] },
+    { ...stand, rootPitch: 80, ankle: -40, shFlex: 78, shAbd: 18, elbow: 0, grip: 0, pron: 165 },
+    { ...stand, rootPitch: 92, ankle: -45, shFlex: 36, shAbd: 62, elbow: 98, grip: 0, pron: 165 },
+    [0.5, 1], [MAT, { kind: "bench", position: [0, 0.22, -0.95], size: [0.4, 0.44, 0.4] }]),
+  rep("chestrow", "Rowing machine poitrine appuyée", 2.8, { anchor: null, rootPos: [0, 0.46, 0] },
+    { ...seated, ...hold(90), rootPitch: 12, hipFlex: 102, shFlex: 92, shAbd: 10, elbow: 0 },
+    { ...seated, ...hold(90), rootPitch: 12, hipFlex: 102, shFlex: -10, shAbd: 20, elbow: 105 },
+    [0, 0.5], [SEAT]),
+  rep("dbshoulderpress", "Développé épaules haltères assis", 2.8, { anchor: null, rootPos: [0, 0.46, 0] },
+    { ...seated, ...hold(165), shFlex: 20, shAbd: 80, elbow: 95 },
+    { ...seated, ...hold(165), shFlex: 165, shAbd: 15, elbow: 6 },
+    [0, 0.5], [SEAT, { kind: "backrest", position: [0, 0.82, -0.17] }, DB]),
+  rep("cablelateral", "Élévation latérale à la poulie", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), hipAbd: 6, shAbd_1: 8, shFlex_1: 10, elbow_1: 12, shAbd_0: 30, elbow_0: 30, grip_0: 25 },
+    { ...stand, ...hold(90), hipAbd: 6, shAbd_1: 86, shFlex_1: 12, elbow_1: 12, shAbd_0: 30, elbow_0: 30, grip_0: 25 },
+    [0, 0.5], [{ kind: "handles", attach: "hand1" }]),
+  rep("onearmpushdown", "Extension triceps poulie un bras", 2.4, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), rootPitch: 8, hipFlex: 6, knee: 8, shFlex_1: 8, shAbd_1: 4, elbow_1: 100, shAbd_0: 12, elbow_0: 20, grip_0: 25 },
+    { ...stand, ...hold(90), rootPitch: 8, hipFlex: 6, knee: 8, shFlex_1: 2, shAbd_1: 4, elbow_1: 4, shAbd_0: 12, elbow_0: 20, grip_0: 25 },
+    [0, 0.5], [{ kind: "handles", attach: "hand1" }]),
+  rep("cablecrunch", "Crunch à la poulie haute", 2.6, { anchor: "feet", anchorTarget: [0, 0.03, -0.42] },
+    { ...stand, ...hold(90), rootPitch: 12, hipFlex: 12, knee: 90, ankle: -30, spine: 0, shFlex: 150, shAbd: 25, elbow: 130 },
+    { ...stand, ...hold(90), rootPitch: 34, hipFlex: 34, knee: 90, ankle: -30, spine: 46, neck: 10, shFlex: 150, shAbd: 25, elbow: 130 },
+    [0, 0.5], [MAT, ROPE]),
+  rep("leanabduction", "Abduction de hanche buste penché", 2.4, { anchor: null, rootPos: [0, 0.47, 0] },
+    { ...seated, rootPitch: 32, hipFlex: 122, hipAbd: 4, shFlex: 60, elbow: 30, shAbd: 25 },
+    { ...seated, rootPitch: 32, hipFlex: 122, hipAbd: 40, shFlex: 60, elbow: 30, shAbd: 25 },
+    [0, 0.5], [SEAT]),
+  rep("onearmrow", "Rowing unilatéral haltère", 2.8, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), rootPitch: 72, hipFlex: 98, knee: 26, ankle: 0, hipAbd: 8, shFlex_0: 80, shAbd_0: 12, elbow_0: 0, grip_0: 30, pron_0: 165, shFlex_1: 72, shAbd_1: 8, elbow_1: 0 },
+    { ...stand, ...hold(90), rootPitch: 72, hipFlex: 98, knee: 26, ankle: 0, hipAbd: 8, shFlex_0: 80, shAbd_0: 12, elbow_0: 0, grip_0: 30, pron_0: 165, shFlex_1: -12, shAbd_1: 14, elbow_1: 100, twist: 10 },
+    [0, 0.5], [DB1, { kind: "bench", position: [-0.25, 0.2, 0.42], size: [0.35, 0.4, 0.5] }]),
+  rep("widerow", "Tirage poulie prise large, coudes levés", 2.8, { anchor: null, rootPos: [0, 0.46, 0] },
+    { ...seated, ...hold(165), rootPitch: 0, knee: 25, hipFlex: 88, shFlex: 86, shAbd: 10, elbow: 0 },
+    { ...seated, ...hold(165), rootPitch: -4, knee: 25, hipFlex: 84, shFlex: 84, shHor: 92, shAbd: 10, elbow: 92 },
+    [0, 0.5], [SEAT, { kind: "latBar", attach: "hands" }]),
+  rep("reversefly", "Reverse pec fly (oiseau machine)", 2.6, { anchor: null, rootPos: [0, 0.46, 0] },
+    { ...seated, ...hold(90), rootPitch: 6, hipFlex: 96, shFlex: 88, shHor: -4, elbow: 8 },
+    { ...seated, ...hold(90), rootPitch: 6, hipFlex: 96, shFlex: 86, shHor: 92, elbow: 8 },
+    [0, 0.5], [SEAT]),
+  rep("facepull", "Face pull à la poulie", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), rootPitch: -6, hipFlex: -2, knee: 10, ankle: 4, shFlex: 92, shAbd: 4, elbow: 4 },
+    { ...stand, ...hold(90), rootPitch: -6, hipFlex: -2, knee: 10, ankle: 4, shFlex: 92, shHor: 88, shAbd: 4, elbow: 105 },
+    [0, 0.5], [ROPE]),
+  rep("reardeltfly", "Oiseau haltères buste penché", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), ...hinge(72, 22), shFlex: 74, shAbd: 6, elbow: 16 },
+    { ...stand, ...hold(90), ...hinge(72, 22), shFlex: 74, shHor: 86, shAbd: 6, elbow: 16 },
+    [0, 0.5], [DB]),
+  {
+    id: "ytw", name: "Y-T-W allongé", duration: 6, anchor: null, rootPos: [0, 0.12, 0], concentric: [0, 1], props: [MAT],
+    keys: [
+      { t: 0, pose: { ...PRONE, shFlex: 172, shAbd: 30, elbow: 5 } },
+      { t: 0.16, pose: { ...PRONE, shFlex: 184, shAbd: 30, elbow: 5, spine: -6 } },
+      { t: 0.33, pose: { ...PRONE, shFlex: -4, shAbd: 90, elbow: 5 } },
+      { t: 0.5, pose: { ...PRONE, shFlex: -10, shAbd: 90, elbow: 5, spine: -6 } },
+      { t: 0.64, pose: { ...PRONE, shFlex: -4, shAbd: 50, elbow: 30 } },
+      { t: 0.78, pose: { ...PRONE, shFlex: -14, shAbd: 50, elbow: 30, spine: -6 } },
+      { t: 0.9, pose: { ...PRONE, shFlex: -4, shAbd: 90, elbow: 5 } },
+      { t: 1, pose: { ...PRONE, shFlex: 172, shAbd: 30, elbow: 5 } },
+    ],
+  },
+  rep("pikepushup", "Pompes piquées (pike)", 2.6, { anchor: "feet", anchorTarget: [0, 0.03, -0.6] },
+    { ...stand, rootPitch: 128, hipFlex: 88, knee: 0, ankle: -10, shFlex: 172, shAbd: 14, elbow: 0, grip: 0, pron: 165 },
+    { ...stand, rootPitch: 140, hipFlex: 96, knee: 0, ankle: -10, shFlex: 128, shAbd: 40, elbow: 100, grip: 0, pron: 165 },
+    [0.5, 1], [MAT]),
+  rep("cablecurlback", "Curl poulie dos à la poulie", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(0), rootPitch: 4, shFlex: -18, shAbd: 8, elbow: 6 },
+    { ...stand, ...hold(0), rootPitch: 4, shFlex: -6, shAbd: 8, elbow: 132 },
+    [0, 0.5], [{ kind: "handles", attach: "hands" }]),
+  rep("inclinecurl", "Curl haltères sur banc incliné", 2.6, { anchor: null, rootPos: [0, 0.52, 0] },
+    { ...stand, ...hold(0), rootPitch: -52, hipFlex: 30, knee: 80, hipAbd: 16, shFlex: -52, shAbd: 10, elbow: 4 },
+    { ...stand, ...hold(0), rootPitch: -52, hipFlex: 30, knee: 80, hipAbd: 16, shFlex: -44, shAbd: 10, elbow: 130 },
+    [0, 0.5], [INCL_BACK, SEAT, DB]),
+  rep("ropehammer", "Curl marteau à la corde", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), shFlex: 4, shAbd: 4, elbow: 6 },
+    { ...stand, ...hold(90), shFlex: 12, shAbd: 4, elbow: 132 },
+    [0, 0.5], [ROPE]),
+  rep("hammercurl", "Curl marteau haltères", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), shFlex: 2, shAbd: 8, elbow: 6 },
+    { ...stand, ...hold(90), shFlex: 12, shAbd: 8, elbow: 136 },
+    [0, 0.5], [DB]),
+  rep("bagcurl", "Curl avec sac à dos chargé", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(0), shFlex: 4, shAbd: 2, elbow: 8 },
+    { ...stand, ...hold(0), shFlex: 14, shAbd: 2, elbow: 132 },
+    [0, 0.5], [{ kind: "kettlebell", attach: "hands" }]),
+  rep("overheadcable", "Extension triceps au-dessus de la tête (poulie)", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), ...hinge(22, 14), shFlex: 150, shAbd: 10, elbow: 125 },
+    { ...stand, ...hold(90), ...hinge(22, 14), shFlex: 158, shAbd: 10, elbow: 8 },
+    [0, 0.5], [ROPE]),
+  rep("dbextension", "Extension triceps haltère derrière la tête", 2.6, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), hipAbd: 8, shFlex: 165, shAbd: 4, elbow: 140 },
+    { ...stand, ...hold(90), hipAbd: 8, shFlex: 168, shAbd: 4, elbow: 8 },
+    [0, 0.5], [ONE_DB]),
+  rep("benchdips", "Dips sur une chaise", 2.4, { anchor: "hands", anchorTarget: [0, 0.4, -0.24] },
+    { ...stand, ...hold(165), rootPitch: 0, hipFlex: 97, knee: 86, ankle: -11, shFlex: -36, shAbd: 12, elbow: 4 },
+    { ...stand, ...hold(165), rootPitch: 6, hipFlex: 107, knee: 48, ankle: -53, shFlex: -64, shAbd: 16, elbow: 92 },
+    [0.5, 1], [{ kind: "bench", position: [0, 0.19, -0.3], size: [0.6, 0.38, 0.4] }]),
+  rep("gobletsquat", "Goblet squat", 3, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...squatTop, ...hold(90), shFlex: 34, shAbd: 18, elbow: 140 },
+    { ...squatBottom, ...hold(90), rootPitch: 34, hipFlex: 122, shFlex: 64, shAbd: 26, elbow: 140 },
+    [0.5, 1], [ONE_DB]),
+  rep("sumosquat", "Sumo squat haltère", 3, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...squatTop, ...hold(90), hipAbd: 32, shFlex: 4, shAbd: 0, elbow: 4 },
+    { ...squatBottom, ...hold(90), rootPitch: 26, hipFlex: 100, knee: 98, ankle: 22, hipAbd: 40, shFlex: 26, shAbd: 0, elbow: 4 },
+    [0.5, 1], [ONE_DB]),
+  rep("bulgarian", "Fentes bulgares", 3, { anchor: "foot0", anchorTarget: [-0.1, 0, 0.3] },
+    { ...stand, ...hold(90), rootPitch: 8, hipFlex_0: 20, knee_0: 12, ankle_0: 0, hipFlex_1: -26, knee_1: 52, ankle_1: -84, shFlex: 8, elbow: 6 },
+    { ...stand, ...hold(90), rootPitch: 18, hipFlex_0: 103, knee_0: 90, ankle_0: 5, hipFlex_1: -11, knee_1: 133, ankle_1: -8, shFlex: 18, elbow: 6 },
+    [0.5, 1], [DB, { kind: "bench", position: [0.1, 0.21, -0.5], size: [0.4, 0.42, 0.4] }]),
+  {
+    id: "lunges", name: "Fentes marchées", duration: 4.4, anchor: "feet", anchorTarget: [0, 0.02, 0], concentric: [0.15, 0.5], props: [],
+    keys: [
+      { t: 0, pose: { ...stand } },
+      { t: 0.25, pose: { ...stand, rootPitch: 4, hipFlex_0: 89, knee_0: 85, ankle_0: 0, hipFlex_1: -34, knee_1: 49, ankle_1: 27, shAbd: 10, elbow: 10 } },
+      { t: 0.5, pose: { ...stand } },
+      { t: 0.75, pose: { ...stand, rootPitch: 4, hipFlex_1: 89, knee_1: 85, ankle_1: 0, hipFlex_0: -34, knee_0: 49, ankle_0: 27, shAbd: 10, elbow: 10 } },
+      { t: 1, pose: { ...stand } },
+    ],
+  },
+  rep("nordic", "Leg curl nordique", 3.4, { anchor: "feet", anchorTarget: [0, 0.07, -0.55] },
+    { ...stand, rootPitch: 0, hipFlex: 0, knee: 90, ankle: -50, shFlex: 30, shAbd: 20, elbow: 100 },
+    { ...stand, rootPitch: 62, hipFlex: 0, knee: 28, ankle: -50, shFlex: 70, shAbd: 20, elbow: 70 },
+    [0.5, 1], [MAT]),
+  rep("dbrdl", "Soulevé de terre roumain haltères", 3.2, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(165), hipAbd: 5, shFlex: 0, shAbd: 4, elbow: 0 },
+    { ...stand, ...hold(165), rootPitch: 72, spine: 2, hipFlex: 82, knee: 16, ankle: 6, hipAbd: 5, shFlex: 72, shAbd: 4, elbow: 0 },
+    [0.5, 1], [DB]),
+  rep("rdl", "Soulevé de terre roumain barre", 3.2, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(165), hipAbd: 5, shFlex: 0, shAbd: 8, elbow: 0 },
+    { ...stand, ...hold(165), rootPitch: 70, spine: 2, hipFlex: 80, knee: 16, ankle: 6, hipAbd: 5, shFlex: 70, shAbd: 8, elbow: 0 },
+    [0.5, 1], [{ kind: "barbell", attach: "hands" }]),
+  rep("singlebridge", "Pont fessier une jambe", 2.6, { anchor: "foot0", anchorTarget: [-0.1, 0, 0.25] },
+    { ...FLOOR, rootPitch: -90, hipFlex_0: 45, knee_0: 110, ankle_0: -25, hipFlex_1: 45, knee_1: 0, shFlex: 0, shAbd: 20 },
+    { ...FLOOR, rootPitch: -110, hipFlex_0: 0, knee_0: 100, ankle_0: -9, hipFlex_1: 0, knee_1: 0, shFlex: -20, shAbd: 20 },
+    [0, 0.5], [MAT]),
+  rep("seatedcalf", "Mollets assis", 2.2, { anchor: "toes", anchorTarget: [0, 0.06, 0.62] },
+    { ...seated, ...hold(90), rootPitch: 6, hipFlex: 96, knee: 85, ankle: 14, shFlex: 40, shAbd: 20, elbow: 50 },
+    { ...seated, ...hold(90), rootPitch: 6, hipFlex: 96, knee: 85, ankle: -24, shFlex: 40, shAbd: 20, elbow: 50 },
+    [0, 0.5], [{ kind: "seat", position: [0, 0.36, 0.05] }, { kind: "legPad", position: [0, 0.62, 0.34] }]),
+  rep("legraise", "Relevés de jambes allongé", 2.6, { anchor: null, rootPos: [0, 0.11, 0] },
+    { ...FLOOR, hipFlex: 8, knee: 4, ankle: -20, shFlex: -8, shAbd: 18 },
+    { ...FLOOR, hipFlex: 88, knee: 4, ankle: -20, shFlex: -8, shAbd: 18 },
+    [0, 0.5], [MAT]),
+  rep("superman", "Superman", 2.6, { anchor: null, rootPos: [0, 0.12, 0] },
+    { ...PRONE, shFlex: 172, shAbd: 18, elbow: 4 },
+    { ...PRONE, spine: -12, neck: -8, shFlex: 176, shAbd: 18, elbow: 4, hipFlex: -8 },
+    [0, 0.5], [MAT]),
+  rep("cablekickback", "Kickback fessier à la poulie", 2.4, { anchor: "foot0", anchorTarget: [-0.1, 0, 0] },
+    { ...stand, ...hold(90), rootPitch: 26, hipFlex_0: 30, knee_0: 10, ankle_0: 6, hipFlex_1: 36, knee_1: 40, shFlex: 70, shAbd: 14, elbow: 20 },
+    { ...stand, ...hold(90), rootPitch: 26, hipFlex_0: 30, knee_0: 10, ankle_0: 6, hipFlex_1: -24, knee_1: 12, shFlex: 70, shAbd: 14, elbow: 20 },
+    [0, 0.5], []),
+  rep("stepup", "Step up sur banc", 3, { anchor: "foot0", anchorTarget: [-0.1, 0.45, 0.2] },
+    { ...stand, ...hold(90), rootPitch: 22, hipFlex_0: 100, knee_0: 104, ankle_0: 18, hipFlex_1: 10, knee_1: 6, ankle_1: 12, shFlex: 18, elbow: 6 },
+    { ...stand, ...hold(90), rootPitch: 2, hipFlex_0: 2, knee_0: 2, ankle_0: 0, hipFlex_1: 40, knee_1: 70, ankle_1: 0, shFlex: 4, elbow: 6 },
+    [0, 0.5], [DB, { kind: "bench", position: [0, 0.22, 0.25], size: [0.5, 0.44, 0.45] }]),
+  rep("hangingraise", "Relevés de jambes suspendu", 2.8, { anchor: "hands", anchorTarget: [0, 2.3, 0] },
+    { ...stand, ...hold(165), shFlex: 174, shAbd: 16, elbow: 0, hipFlex: 4, knee: 4 },
+    { ...stand, ...hold(165), rootPitch: -12, shFlex: 162, shAbd: 16, elbow: 0, hipFlex: 100, knee: 10 },
+    [0, 0.5], [{ kind: "pullupBar", position: [0, 2.3, 0] }]),
+  {
+    id: "deadbug", name: "Dead bug", duration: 5, anchor: null, rootPos: [0, 0.11, 0], concentric: null, props: [MAT],
+    keys: [
+      { t: 0, pose: { ...FLOOR, shFlex: 90, shAbd: 4, hipFlex: 90, knee: 90, ankle: 0 } },
+      { t: 0.25, pose: { ...FLOOR, shFlex: 90, shFlex_0: 172, shAbd: 4, hipFlex: 90, knee: 90, hipFlex_1: 4, knee_1: 4, ankle: 0 } },
+      { t: 0.5, pose: { ...FLOOR, shFlex: 90, shAbd: 4, hipFlex: 90, knee: 90, ankle: 0 } },
+      { t: 0.75, pose: { ...FLOOR, shFlex: 90, shFlex_1: 172, shAbd: 4, hipFlex: 90, knee: 90, hipFlex_0: 4, knee_0: 4, ankle: 0 } },
+      { t: 1, pose: { ...FLOOR, shFlex: 90, shAbd: 4, hipFlex: 90, knee: 90, ankle: 0 } },
+    ],
+  },
+  {
+    id: "heeltaps", name: "Heel taps", duration: 2.6, anchor: null, rootPos: [0, 0.11, 0], concentric: null, props: [MAT],
+    keys: [
+      { t: 0, pose: { ...FLOOR, spine: 30, neck: 10, hipFlex: 45, knee: 100, ankle: -20, hipAbd: 10, shFlex: 8, shAbd: 10 } },
+      { t: 0.25, pose: { ...FLOOR, spine: 30, neck: 10, lean: -18, hipFlex: 45, knee: 100, ankle: -20, hipAbd: 10, shFlex: 8, shAbd: 10 } },
+      { t: 0.5, pose: { ...FLOOR, spine: 30, neck: 10, hipFlex: 45, knee: 100, ankle: -20, hipAbd: 10, shFlex: 8, shAbd: 10 } },
+      { t: 0.75, pose: { ...FLOOR, spine: 30, neck: 10, lean: 18, hipFlex: 45, knee: 100, ankle: -20, hipAbd: 10, shFlex: 8, shAbd: 10 } },
+      { t: 1, pose: { ...FLOOR, spine: 30, neck: 10, hipFlex: 45, knee: 100, ankle: -20, hipAbd: 10, shFlex: 8, shAbd: 10 } },
+    ],
+  },
+  {
+    id: "russiantwist", name: "Russian twist", duration: 2.6, anchor: null, rootPos: [0, 0.13, 0], concentric: null, props: [MAT],
+    keys: [
+      { t: 0, pose: { ...stand, rootPitch: -42, spine: 10, hipFlex: 88, knee: 100, ankle: -30, hipAbd: 8, shFlex: 50, shAbd: 4, elbow: 70, grip: 60 } },
+      { t: 0.25, pose: { ...stand, rootPitch: -42, spine: 10, twist: 40, hipFlex: 88, knee: 100, ankle: -30, hipAbd: 8, shFlex: 50, shAbd: 4, elbow: 70, grip: 60 } },
+      { t: 0.5, pose: { ...stand, rootPitch: -42, spine: 10, hipFlex: 88, knee: 100, ankle: -30, hipAbd: 8, shFlex: 50, shAbd: 4, elbow: 70, grip: 60 } },
+      { t: 0.75, pose: { ...stand, rootPitch: -42, spine: 10, twist: -40, hipFlex: 88, knee: 100, ankle: -30, hipAbd: 8, shFlex: 50, shAbd: 4, elbow: 70, grip: 60 } },
+      { t: 1, pose: { ...stand, rootPitch: -42, spine: 10, hipFlex: 88, knee: 100, ankle: -30, hipAbd: 8, shFlex: 50, shAbd: 4, elbow: 70, grip: 60 } },
+    ],
+  },
+  rep("suitcasecrunch", "Suitcase crunch", 2.6, { anchor: null, rootPos: [0, 0.12, 0] },
+    { ...FLOOR, rootPitch: -86, hipFlex: 14, knee: 6, ankle: -20, shFlex: 168, shAbd: 14, elbow: 6 },
+    { ...FLOOR, rootPitch: -62, spine: 40, neck: 10, hipFlex: 120, knee: 110, ankle: -20, shFlex: 80, shAbd: 14, elbow: 6 },
+    [0, 0.5], [MAT]),
+  rep("shrug", "Shrugs haltères", 2.2, { anchor: "feet", anchorTarget: [0, 0, 0] },
+    { ...stand, ...hold(90), shFlex: 2, shAbd: 6, elbow: 2 },
+    { ...stand, ...hold(90), shFlex: 2, shAbd: 6, elbow: 2, shrug: 6 },
+    [0, 0.5], [DB]),
+);
+
+// Cadrage : corps bas (dips sur chaise) ou haut (debout sur le banc).
+const CAM: Record<string, [number, number, number]> = { benchdips: [0, 0.55, 0.15], stepup: [0, 1.1, 0.15] };
+for (const a of animations) if (CAM[a.id]) a.camTarget = CAM[a.id];
+
 // ───── Machines (modélisation générique, côté droit = x positif) ─────
 const SIDE: [number, number, number] = [0.68, 0, -0.35];
 const MACHINES: Record<string, MachineSpec> = {
@@ -445,6 +678,21 @@ const MACHINES: Record<string, MachineSpec> = {
     { pos: [-0.33, 0.42, 0.02], size: [0.05, 0.84, 0.05] }, { pos: [0.33, 0.42, 0.02], size: [0.05, 0.84, 0.05] },
     { pos: [-0.33, 0.97, 0.92], size: [0.05, 1.94, 0.05] }, { pos: [0.33, 0.97, 0.92], size: [0.05, 1.94, 0.05] },
     { pos: [0, 0.03, 0.4], size: [0.8, 0.06, 1.6] }] },
+  // Ektyron
+  smithincline: { label: "Smith machine — barre guidée", frame: [{ pos: [-0.62, 1.05, -0.12], size: [0.06, 2.1, 0.06] }, { pos: [0.62, 1.05, -0.12], size: [0.06, 2.1, 0.06] }, { pos: [0, 2.12, -0.12], size: [1.3, 0.06, 0.06] }] },
+  chestrow: { label: "Rowing machine, poitrine appuyée", stacks: [SIDE], levers: [{ pivot: [-0.2, 1.35, 0.75], to: "hand0" }, { pivot: [0.2, 1.35, 0.75], to: "hand1" }], frame: [{ pos: [0, 0.98, 0.32], size: [0.4, 0.5, 0.08], rot: [-0.2, 0, 0], pad: true }] },
+  reversefly: { label: "Pec deck en inversé (oiseau machine)", stacks: [SIDE], levers: [{ pivot: [-0.17, 1.4, 0.62], to: "hand0" }, { pivot: [0.17, 1.4, 0.62], to: "hand1" }], frame: [{ pos: [0, 0.98, 0.26], size: [0.4, 0.55, 0.08], pad: true }] },
+  widerow: { label: "Poulie basse, barre large", stacks: [[0, 0, 1.2]], cables: [{ from: "hands", via: [0, 0.95, 1.1] }], frame: [{ pos: [0, 0.28, 0.93], size: [0.5, 0.3, 0.04], rot: [0.43, 0, 0], pad: true }] },
+  facepull: { label: "Poulie haute, corde", stacks: [[0, 0, 1.4]], cables: [{ from: "hands", via: [0, 1.7, 1.3] }] },
+  cablecurlback: { label: "Poulie basse derrière soi", stacks: [[0, 0, -0.6]], cables: [{ from: "hands", via: [0, 0.12, -0.5] }] },
+  ropehammer: { label: "Poulie basse, corde", stacks: [[0, 0, 0.6]], cables: [{ from: "hands", via: [0, 0.12, 0.5] }] },
+  overheadcable: { label: "Poulie basse derrière soi, corde", stacks: [[0, 0, -0.7]], cables: [{ from: "hands", via: [0, 0.4, -0.6] }] },
+  cablelateral: { label: "Poulie basse, côté opposé", stacks: [[-0.55, 0, 0]], cables: [{ from: "hand1", via: [-0.45, 0.12, 0] }] },
+  onearmpushdown: { label: "Poulie haute, poignée", stacks: [[0.15, 0, 0.55]], cables: [{ from: "hand1", via: [0.15, 2.15, 0.45] }] },
+  cablecrunch: { label: "Poulie haute, corde", stacks: [[0, 0, 0.75]], cables: [{ from: "hands", via: [0, 2.1, 0.65] }] },
+  cablekickback: { label: "Poulie basse, sangle de cheville", stacks: [[0.1, 0, 0.75]], cables: [{ from: "shin1", via: [0.1, 0.12, 0.65] }], frame: [{ pos: [0, 1.08, 0.74], size: [0.6, 0.05, 0.05] }, { pos: [-0.3, 0.55, 0.74], size: [0.05, 1.1, 0.05] }, { pos: [0.3, 0.55, 0.74], size: [0.05, 1.1, 0.05] }] },
+  leanabduction: { label: "Machine abducteurs, buste penché", stacks: [SIDE], levers: [{ pivot: [-0.08, 0.37, 0.12], to: "shin0" }, { pivot: [0.08, 0.37, 0.12], to: "shin1" }] },
+  seatedcalf: { label: "Mollets assis (seated calf)", frame: [{ pos: [0, 0.03, 0.6], size: [0.5, 0.06, 0.22], pad: true }] },
   hacksquat: { label: "Hack squat", frame: [{ pos: [-0.28, 1.0, -0.32], size: [0.05, 2.0, 0.05], rot: [-0.12, 0, 0] }, { pos: [0.28, 1.0, -0.32], size: [0.05, 2.0, 0.05], rot: [-0.12, 0, 0] }, { pos: [0, 0.03, 0.05], size: [0.7, 0.06, 0.5] }] },
 };
 for (const a of animations) {
@@ -466,12 +714,17 @@ export function poseAt(anim: Animation, t: number): Required<Pose> {
   const a = keys[i];
   const b = keys[i + 1];
   const u = ease(Math.min(1, Math.max(0, (t - a.t) / (b.t - a.t || 1))));
-  const names: JointName[] = ["rootPitch", "spine", "neck", "shFlex", "shAbd", "elbow", "hipFlex", "hipAbd", "knee", "ankle", "shHor", "pron", "grip"];
+  const names: JointName[] = ["rootPitch", "spine", "neck", "shFlex", "shAbd", "elbow", "hipFlex", "hipAbd", "knee", "ankle", "shHor", "pron", "grip", "twist", "lean", "shrug"];
   const out = {} as Required<Pose>;
   for (const n of names) {
     const va = a.pose[n] ?? 0;
     const vb = b.pose[n] ?? 0;
     out[n] = va + (vb - va) * u;
+    for (const i of [0, 1] as const) {
+      const k = `${n}_${i}` as const;
+      const sa = a.pose[k] ?? va, sb = b.pose[k] ?? vb;
+      out[k] = sa + (sb - sa) * u;
+    }
   }
   return out;
 }

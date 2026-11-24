@@ -372,6 +372,11 @@ function propObject(p: Prop): THREE.Object3D {
       add(new THREE.CylinderGeometry(0.014, 0.014, 0.16, 10), steel, [0, 0, 0], [0, 0, Math.PI / 2]);
       for (const s of [-1, 1]) add(new THREE.CylinderGeometry(0.05, 0.05, 0.05, 16), accent, [0.08 * s, 0, 0], [0, 0, Math.PI / 2]);
       break;
+    case "dumbbell":
+      // une seule haltère tenue verticalement à deux mains (goblet, extension derrière la tête)
+      add(new THREE.CylinderGeometry(0.016, 0.016, 0.2, 10), steel, [0, 0, 0]);
+      for (const s of [-1, 1]) add(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 16), accent, [0, 0.1 * s, 0]);
+      break;
     case "latBar":
       bar(1.1);
       break;
@@ -463,7 +468,7 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
       // Avec une machine modélisée, ses poignées remplacent les petites poignées génériques.
       anim.props.filter((p) => !(anim.machine && p.kind === "handles")).map((p) => {
         const obj = propObject(p);
-        const extra = p.kind === "dumbbells" ? propObject(p) : null;
+        const extra = p.kind === "dumbbells" && p.attach === "hands" ? propObject(p) : null;
         if (!p.attach) {
           obj.position.set(...(p.position ?? [0, 0, 0]));
           if (p.rotation) obj.rotation.set(...p.rotation);
@@ -571,12 +576,20 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
     const r = rig;
     r.root.position.set(0, 0, 0);
     r.root.rotation.set(D(p.rootPitch), 0, 0);
-    r.spine.rotation.x = D(p.spine * 0.6);
-    r.chest.rotation.x = D(p.spine * 0.4);
+    // twist = rotation du buste (axe vertical du tronc), lean = inclinaison sur le côté.
+    r.spine.rotation.set(D(p.spine * 0.6), D(p.twist * 0.5), D(p.lean * 0.5));
+    r.chest.rotation.set(D(p.spine * 0.4), D(p.twist * 0.5), D(p.lean * 0.5));
     r.neck.rotation.x = D(p.neck);
+    const p0 = p;
     [0, 1].forEach((i) => {
       const s = i === 0 ? -1 : 1;
+      // Valeurs de ce côté (surcharges « _0 » / « _1 » pour les exercices unilatéraux).
+      const q1 = p0 as unknown as Record<string, number>;
+      const p = new Proxy(p0, { get: (o, k: string) => q1[`${k}_${i}`] ?? (o as unknown as Record<string, number>)[k] }) as typeof p0;
       r.sh[i].rotation.set(-D(p.shFlex), 0, D(p.shAbd - restAbd) * s);
+      // Haussement d'épaules (shrug, en cm) : l'épaule monte le long du tronc.
+      const y0 = (r.sh[i].userData.y0 ??= r.sh[i].position.y) as number;
+      r.sh[i].position.y = y0 + p.shrug / 100;
       if (p.shHor) r.sh[i].quaternion.premultiply(qH.setFromAxisAngle(Y_AXIS, D(p.shHor) * s));
       r.el[i].rotation.set(-D(p.elbow), 0, 0);
       // Pronation répartie coude / poignet pour éviter l'effet « papillote » de la peau à un seul endroit.
@@ -608,10 +621,14 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
           so.add(o);
           return o;
         }) as [THREE.Object3D, THREE.Object3D];
-      const pts = anim.anchor === "feet" ? r.sole : anim.anchor === "toes" ? r.toes! : r.hand;
-      pts[0].getWorldPosition(v1);
-      pts[1].getWorldPosition(v2);
-      v1.add(v2).multiplyScalar(0.5);
+      const one = { foot0: r.sole[0], foot1: r.sole[1], hand0: r.hand[0], hand1: r.hand[1] }[anim.anchor as string];
+      if (one) one.getWorldPosition(v1);
+      else {
+        const pts = anim.anchor === "feet" ? r.sole : anim.anchor === "toes" ? r.toes! : r.hand;
+        pts[0].getWorldPosition(v1);
+        pts[1].getWorldPosition(v2);
+        v1.add(v2).multiplyScalar(0.5);
+      }
       const target = new THREE.Vector3(...(anim.anchorTarget ?? [0, 0, 0]));
       r.root.position.copy(target.sub(v1));
     } else if (anim.rootPos) {
@@ -627,7 +644,9 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
     }
     // Accessoires accrochés
     for (const { p, obj, extra } of props) {
-      if (p.attach === "hands") {
+      if (p.attach === "hand0" || p.attach === "hand1") {
+        r.hand[p.attach === "hand0" ? 0 : 1].getWorldPosition(obj.position);
+      } else if (p.attach === "hands") {
         r.hand[0].getWorldPosition(v1);
         r.hand[1].getWorldPosition(v2);
         if (extra) {
