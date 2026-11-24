@@ -26,6 +26,10 @@ interface Rig {
   sh: [THREE.Object3D, THREE.Object3D];
   el: [THREE.Object3D, THREE.Object3D];
   hand: [THREE.Object3D, THREE.Object3D];
+  /** Phalanges [proximale, distale] de chaque main (modèle anatomique seulement). */
+  fingers?: [THREE.Object3D, THREE.Object3D][];
+  /** Avant-pied (articulation des orteils), créé à la demande pour l'ancrage « toes ». */
+  toes?: [THREE.Object3D, THREE.Object3D];
   hip: [THREE.Object3D, THREE.Object3D];
   kn: [THREE.Object3D, THREE.Object3D];
   an: [THREE.Object3D, THREE.Object3D];
@@ -84,6 +88,9 @@ function capsule(r: number, len: number, mat: THREE.Material, y = -len / 2 - r) 
   m.castShadow = true;
   return m;
 }
+
+/** Avant-pied : distance devant le point de plante (pivot des mollets, talons qui montent). */
+const TOE_FWD = 0.08;
 
 function buildRig(): Rig {
   const body = new THREE.MeshStandardMaterial({ color: "#5b6b82", roughness: 0.55, metalness: 0.15, transparent: true });
@@ -309,7 +316,7 @@ function buildAnatomyRig(scene: THREE.Object3D): Rig {
   // Points de contact : paume (sous le poignet) et plante du pied.
   const hand = [0, 1].map((i) => {
     const h = new THREE.Object3D();
-    h.position.set(0, -0.08, 0.01);
+    h.position.set(0, -0.085, 0.03);
     b[i === 0 ? "wr0" : "wr1"].add(h);
     return h;
   }) as [THREE.Object3D, THREE.Object3D];
@@ -327,7 +334,7 @@ function buildAnatomyRig(scene: THREE.Object3D): Rig {
 
   return {
     root: b.root, spine: b.spine, chest: b.chest, neck: b.neck,
-    sh: [b.sh0, b.sh1], el: [b.el0, b.el1], hand,
+    sh: [b.sh0, b.sh1], el: [b.el0, b.el1], hand, fingers: [[b.fp0, b.fd0], [b.fp1, b.fd1]],
     hip: [b.hip0, b.hip1], kn: [b.kn0, b.kn1], an: [b.an0, b.an1], sole: soles,
     overlays,
     body: new THREE.MeshStandardMaterial(),
@@ -582,6 +589,11 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
         if (wr && wr !== r.el[i]) wr.quaternion.identity();
       }
       r.hip[i].rotation.set(-D(p.hipFlex), 0, D(p.hipAbd) * s);
+      // Doigts qui se referment vers la paume (grip = flexion des jointures, en degrés).
+      if (r.fingers) {
+        r.fingers[i][0].rotation.set(-D(p.grip), 0, 0);
+        r.fingers[i][1].rotation.set(-D(p.grip * 1.15), 0, 0);
+      }
       r.kn[i].rotation.set(D(p.knee), 0, 0);
       r.an[i].rotation.set(-D(p.ankle), 0, 0);
     });
@@ -589,7 +601,14 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
 
     // Ancrage : garder les pieds au sol ou les mains sur la barre.
     if (anim.anchor) {
-      const pts = anim.anchor === "feet" ? r.sole : r.hand;
+      if (anim.anchor === "toes" && !r.toes)
+        r.toes = r.sole.map((so) => {
+          const o = new THREE.Object3D();
+          o.position.set(0, 0, TOE_FWD);
+          so.add(o);
+          return o;
+        }) as [THREE.Object3D, THREE.Object3D];
+      const pts = anim.anchor === "feet" ? r.sole : anim.anchor === "toes" ? r.toes! : r.hand;
       pts[0].getWorldPosition(v1);
       pts[1].getWorldPosition(v2);
       v1.add(v2).multiplyScalar(0.5);
@@ -604,7 +623,7 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
     const W = window as unknown as { A3D_PROBE?: Record<string, number[]> };
     if (W.A3D_PROBE) {
       const g = (o: THREE.Object3D) => o.getWorldPosition(new THREE.Vector3()).toArray().map((x) => +x.toFixed(3));
-      W.A3D_PROBE = { id: anim.id as unknown as number[], t: [t], sole0: g(r.sole[0]), sole1: g(r.sole[1]), hand0: g(r.hand[0]), hand1: g(r.hand[1]), root: g(r.root), neck: g(r.neck), kn0: g(r.kn[0]), an0: g(r.an[0]), el0: g(r.el[0]) };
+      W.A3D_PROBE = { id: anim.id as unknown as number[], t: [t], sole0: g(r.sole[0]), sole1: g(r.sole[1]), toe0: g(r.toes ? r.toes[0] : r.sole[0]), hand0: g(r.hand[0]), hand1: g(r.hand[1]), root: g(r.root), neck: g(r.neck), kn0: g(r.kn[0]), an0: g(r.an[0]), el0: g(r.el[0]) };
     }
     // Accessoires accrochés
     for (const { p, obj, extra } of props) {
@@ -621,9 +640,15 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
         src[1].getWorldPosition(v2);
         obj.position.copy(v1).add(v2).multiplyScalar(0.5);
         if (p.attach === "feet") {
-          r.an[0].getWorldQuaternion(q);
-          obj.quaternion.copy(q);
-          obj.translateY(-0.03);
+          if (p.rotation) {
+            // Inclinaison fixe (plaque de presse sur ses rails) : la plaque reste parallèle à elle-même, juste derrière les plantes.
+            obj.rotation.set(...p.rotation);
+            obj.translateY(0.035);
+          } else {
+            r.an[0].getWorldQuaternion(q);
+            obj.quaternion.copy(q);
+            obj.translateY(-0.03);
+          }
         }
       }
     }

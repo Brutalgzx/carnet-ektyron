@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:27,d:"24/11",t:"✊ Mains, mollets et presse en 3D",x:[
+  "Les doigts se referment maintenant autour de la barre, des poignées et des haltères (main ouverte à plat pour les pompes).",
+  "Mollets : le corps monte de 8 cm sur la pointe des pieds, talons qui décollent (avant : 2 cm).",
+  "Presse à cuisses : la plaque reste perpendiculaire aux rails et les jambes poussent dans l'axe de la machine ; dossier plus long et plus incliné."]},
  {id:26,d:"24/11",t:"🧍 Fiches 3D corrigées",x:[
   "La page défile normalement même quand ton doigt part de la scène 3D (tourner la scène : glisser à l'horizontale), et elle ne saute plus pendant le chargement.",
   "Prises de main réalistes : pronation (mains par-dessus) pour tractions, muscle-up, rowings, développés et pompes, prise neutre pour les dips et élévations, supination pour les curls.",

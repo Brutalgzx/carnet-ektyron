@@ -72,7 +72,7 @@ function Player({ exId, tech, opts = {} }: { exId: string; tech: boolean; opts?:
   }, [anim]);
 
   if (!anim) return null;
-  const target = cam.focus ?? (anim.anchor === "hands" ? TARGET_HANDS : TARGET_BODY);
+  const target = cam.focus ?? anim.camTarget ?? (anim.anchor === "hands" ? TARGET_HANDS : TARGET_BODY);
   const focusKey = String(target);
 
   return (

@@ -14,8 +14,9 @@
 //  shHor     : abduction horizontale d'épaule, bras à l'horizontale (+ = bras ouverts vers l'extérieur)
 //  pron      : rotation de l'avant-bras depuis la position anatomique (0 = supination, paumes vers l'avant bras le long du corps ;
 //              90 = prise neutre, paumes face à face ; 170 = pronation, prise « dessus » sur une barre)
+//  grip      : fermeture des doigts en degrés aux jointures (0 = main ouverte à plat, ~85 = main fermée sur une barre)
 
-export type JointName = "rootPitch" | "spine" | "neck" | "shFlex" | "shAbd" | "elbow" | "hipFlex" | "hipAbd" | "knee" | "ankle" | "shHor" | "pron";
+export type JointName = "rootPitch" | "spine" | "neck" | "shFlex" | "shAbd" | "elbow" | "hipFlex" | "hipAbd" | "knee" | "ankle" | "shHor" | "pron" | "grip";
 export type Pose = Partial<Record<JointName, number>>;
 
 export type PropKind = "bench" | "barbell" | "dumbbells" | "pullupBar" | "parallelBars" | "seat" | "backrest" | "legPad" | "sled" | "latBar" | "handles" | "mat" | "rack" | "kettlebell";
@@ -45,8 +46,11 @@ export interface Animation {
   id: string;
   name: string;
   duration: number; // secondes pour une répétition complète à vitesse normale
-  anchor: "feet" | "hands" | null;
+  /** feet = milieu de la plante au sol ; toes = avant-pied (le talon peut monter) ; hands = mains sur la barre. */
+  anchor: "feet" | "toes" | "hands" | null;
   anchorTarget?: [number, number, number];
+  /** Point visé par la caméra (sinon : mains pour les suspensions, bassin sinon). */
+  camTarget?: [number, number, number];
   rootPos?: [number, number, number];
   keys: { t: number; pose: Pose }[];
   /** Plage de temps (0–1) de la phase concentrique ; le reste est excentrique. null = isométrique. */
@@ -181,19 +185,22 @@ export const animations: Animation[] = [
   {
     id: "legpress",
     name: "Presse à jambes",
+    camTarget: [0, 1.0, 0.25],
     duration: 3.2,
     anchor: null,
     rootPos: [0, 0.5, 0],
     keys: [
-      { t: 0, pose: { ...seated, rootPitch: -48, hipFlex: 62, knee: 12, ankle: -10, hipAbd: 10, shFlex: 30, elbow: 20, shAbd: 25 } },
-      { t: 0.5, pose: { ...seated, rootPitch: -48, hipFlex: 122, knee: 100, ankle: 15, hipAbd: 14, shFlex: 30, elbow: 20, shAbd: 25 } },
-      { t: 1, pose: { ...seated, rootPitch: -48, hipFlex: 62, knee: 12, ankle: -10, hipAbd: 10, shFlex: 30, elbow: 20, shAbd: 25 } },
+      // Angles calculés pour que les pieds glissent dans l'axe des rails (50° au-dessus de l'horizontale), plante à plat sur la plaque.
+      { t: 0, pose: { ...seated, rootPitch: -55, hipFlex: 103, knee: 14, ankle: -3, hipAbd: 10, shFlex: 30, elbow: 20, shAbd: 25 } },
+      { t: 0.5, pose: { ...seated, rootPitch: -55, hipFlex: 141, knee: 86, ankle: 30, hipAbd: 14, shFlex: 30, elbow: 20, shAbd: 25 } },
+      { t: 1, pose: { ...seated, rootPitch: -55, hipFlex: 103, knee: 14, ankle: -3, hipAbd: 10, shFlex: 30, elbow: 20, shAbd: 25 } },
     ],
     concentric: [0.5, 1],
     props: [
-      { kind: "backrest", position: [0, 0.75, -0.35], rotation: [-0.84, 0, 0] },
-      { kind: "seat", position: [0, 0.25, 0.05] },
-      { kind: "sled", attach: "feet" },
+      { kind: "backrest", position: [0, 0.57, -0.31], rotation: [-0.96, 0, 0], size: [0.42, 0.85, 0.08] },
+      { kind: "seat", position: [0, 0.25, -0.06] },
+      // Plaque toujours perpendiculaire aux rails (même inclinaison), posée sous les pieds.
+      { kind: "sled", attach: "feet", rotation: [0.686, 0, 0] },
     ],
   },
   {
@@ -363,9 +370,9 @@ export const animations: Animation[] = [
     { ...seated, rootPitch: -10, hipAbd: 40, shFlex: 15, elbow: 20, shAbd: 25 },
     { ...seated, rootPitch: -10, hipAbd: 4, shFlex: 15, elbow: 20, shAbd: 25 },
     [0, 0.5], [SEAT, { kind: "backrest", position: [0, 0.93, -0.22] }]),
-  rep("calfraise", "Extension mollets", 2, { anchor: "feet", anchorTarget: [0, 0.06, 0] },
+  rep("calfraise", "Extension mollets", 2, { anchor: "toes", anchorTarget: [0, 0.06, 0.08] },
     { ...stand, ankle: 8, shAbd: 20, elbow: 30 },
-    { ...stand, ankle: -32, shAbd: 20, elbow: 30 },
+    { ...stand, ankle: -39, shAbd: 20, elbow: 30 },
     [0, 0.5], []),
   rep("backext", "Extension lombaire", 3, { anchor: "feet", anchorTarget: [0, 0, -0.55] },
     { ...stand, rootPitch: 120, hipFlex: 82, knee: 4, ankle: -38, shFlex: 10, elbow: 120, shAbd: 50 },
@@ -432,7 +439,12 @@ const MACHINES: Record<string, MachineSpec> = {
   pulldown: { label: "Tirage vertical — lat pulldown", stacks: [[0, 0, -0.5]], cables: [{ from: "hands", via: [0, 2.3, 0.1] }], frame: [{ pos: [0, 2.32, -0.2], size: [0.06, 0.06, 0.7] }] },
   pushdown: { label: "Poulie haute — extension triceps", stacks: [[0, 0, 0.55]], cables: [{ from: "hands", via: [0, 2.15, 0.45] }] },
   cablefly: { label: "Vis-à-vis — double poulie", stacks: [[-0.95, 0, -0.1], [0.95, 0, -0.1]], cables: [{ from: "hand0", via: [-0.85, 1.95, -0.03], stack: 0 }, { from: "hand1", via: [0.85, 1.95, -0.03], stack: 1 }] },
-  legpress: { label: "Presse à cuisses inclinée 45°", frame: [{ pos: [-0.33, 0.95, 0.95], size: [0.05, 1.42, 0.05], rot: [0.686, 0, 0] }, { pos: [0.33, 0.95, 0.95], size: [0.05, 1.42, 0.05], rot: [0.686, 0, 0] }, { pos: [0, 0.03, 0.4], size: [0.8, 0.06, 1.6] }] },
+  // Rails dans l'axe de la trajectoire des pieds (plaque à 3 cm sous les plantes), montants jusqu'au sol.
+  legpress: { label: "Presse à cuisses inclinée 45°", frame: [
+    { pos: [-0.33, 1.39, 0.47], size: [0.05, 1.42, 0.05], rot: [0.686, 0, 0] }, { pos: [0.33, 1.39, 0.47], size: [0.05, 1.42, 0.05], rot: [0.686, 0, 0] },
+    { pos: [-0.33, 0.42, 0.02], size: [0.05, 0.84, 0.05] }, { pos: [0.33, 0.42, 0.02], size: [0.05, 0.84, 0.05] },
+    { pos: [-0.33, 0.97, 0.92], size: [0.05, 1.94, 0.05] }, { pos: [0.33, 0.97, 0.92], size: [0.05, 1.94, 0.05] },
+    { pos: [0, 0.03, 0.4], size: [0.8, 0.06, 1.6] }] },
   hacksquat: { label: "Hack squat", frame: [{ pos: [-0.28, 1.0, -0.32], size: [0.05, 2.0, 0.05], rot: [-0.12, 0, 0] }, { pos: [0.28, 1.0, -0.32], size: [0.05, 2.0, 0.05], rot: [-0.12, 0, 0] }, { pos: [0, 0.03, 0.05], size: [0.7, 0.06, 0.5] }] },
 };
 for (const a of animations) {
@@ -454,7 +466,7 @@ export function poseAt(anim: Animation, t: number): Required<Pose> {
   const a = keys[i];
   const b = keys[i + 1];
   const u = ease(Math.min(1, Math.max(0, (t - a.t) / (b.t - a.t || 1))));
-  const names: JointName[] = ["rootPitch", "spine", "neck", "shFlex", "shAbd", "elbow", "hipFlex", "hipAbd", "knee", "ankle", "shHor", "pron"];
+  const names: JointName[] = ["rootPitch", "spine", "neck", "shFlex", "shAbd", "elbow", "hipFlex", "hipAbd", "knee", "ankle", "shHor", "pron", "grip"];
   const out = {} as Required<Pose>;
   for (const n of names) {
     const va = a.pose[n] ?? 0;
@@ -548,8 +560,13 @@ const GRIP: Record<string, number> = {
   legext: N, legpress: N, plank: N, dips: N, pecdeck: N, cablefly: N, seatedrow: N, lateralraise: N, lateralraisemachine: N,
   tricepsmachine: N, hacksquat: N, seatedlegcurl: N, lyinglegcurl: N, hipabduction: N, hipadduction: N, calfraise: N, backext: N, abcrunch: N, lsit: N, airsquat: N,
 };
+// Fermeture des mains : fermées sur barre / poignées / haltères, ouvertes à plat au sol, détendues sinon.
+const OPEN = new Set(["pushup", "hspu"]);
+const HOLD = new Set(["squat", "bench", "chestpress", "pulldown", "curl", "shoulderpress", "deadlift", "pullup", "dips", "pecdeck", "cablefly", "seatedrow",
+  "barbellrow", "invertedrow", "shoulderpressseated", "lateralraise", "preachercurl", "tricepsmachine", "pushdown", "hacksquat", "legext", "legpress",
+  "seatedlegcurl", "lyinglegcurl", "hipthrust", "hipabduction", "hipadduction", "abcrunch", "inclinepress", "kbswing", "frontlever", "muscleup"]);
 for (const a of animations) {
   const g = GRIP[a.id];
-  if (g === undefined) continue;
-  a.keys = a.keys.map((k) => ({ t: k.t, pose: { pron: g, ...k.pose } }));
+  const c = OPEN.has(a.id) ? 0 : HOLD.has(a.id) ? 85 : a.id === "plank" ? 70 : 25;
+  a.keys = a.keys.map((k) => ({ t: k.t, pose: { ...(g === undefined ? {} : { pron: g }), grip: c, ...k.pose } }));
 }

@@ -12,6 +12,8 @@ export const BONES = [
   "root", "spine", "chest", "neck",
   "sh0", "el0", "wr0", "sh1", "el1", "wr1",
   "hip0", "kn0", "an0", "hip1", "kn1", "an1",
+  // Doigts : phalange proximale (articulation des jointures) et distale (milieu des doigts), pour fermer la main sur une barre.
+  "fp0", "fd0", "fp1", "fd1",
 ] as const;
 type BoneName = (typeof BONES)[number];
 const IDX = Object.fromEntries(BONES.map((b, i) => [b, i])) as Record<BoneName, number>;
@@ -57,19 +59,24 @@ export function buildSegments(J: Joints) {
     sh1: v("shoulder_" + side(1)), el1: v("elbow_" + side(1)), wr1: v("wrist_" + side(1)),
     hip0: v("hip_" + side(0)), kn0: v("knee_" + side(0)), an0: v("ankle_" + side(0)),
     hip1: v("hip_" + side(1)), kn1: v("knee_" + side(1)), an1: v("ankle_" + side(1)),
-  };
-  const down = (p: THREE.Vector3, d: number) => p.clone().add(new THREE.Vector3(0, -d, 0));
+  } as Record<BoneName, THREE.Vector3>;
+  // Main dans le prolongement de l'avant-bras : jointures à 10 cm du poignet, milieu des doigts à 14,5 cm, bout à 19 cm.
+  const handAxis = (s: 0 | 1) => pos[`wr${s}` as BoneName].clone().sub(pos[`el${s}` as BoneName]).normalize();
+  const along = (s: 0 | 1, d: number) => pos[`wr${s}` as BoneName].clone().addScaledVector(handAxis(s), d);
+  pos.fp0 = along(0, 0.1); pos.fd0 = along(0, 0.145); pos.fp1 = along(1, 0.1); pos.fd1 = along(1, 0.145);
   const seg: Record<BoneName, Seg> = {
     root: { a: hipMid, b: L5, r: 0.11 },
     spine: { a: L5, b: T12, r: 0.12 },
     chest: { a: T12, b: C7, r: 0.13 },
     neck: { a: C7, b: C7.clone().add(new THREE.Vector3(0, 0.24, 0.02)), r: 0.06 },
-    sh0: { a: pos.sh0, b: pos.el0, r: 0.045 }, el0: { a: pos.el0, b: pos.wr0, r: 0.035 }, wr0: { a: pos.wr0, b: down(pos.wr0, 0.17), r: 0.03 },
-    sh1: { a: pos.sh1, b: pos.el1, r: 0.045 }, el1: { a: pos.el1, b: pos.wr1, r: 0.035 }, wr1: { a: pos.wr1, b: down(pos.wr1, 0.17), r: 0.03 },
+    sh0: { a: pos.sh0, b: pos.el0, r: 0.045 }, el0: { a: pos.el0, b: pos.wr0, r: 0.035 }, wr0: { a: pos.wr0, b: pos.fp0, r: 0.03 },
+    sh1: { a: pos.sh1, b: pos.el1, r: 0.045 }, el1: { a: pos.el1, b: pos.wr1, r: 0.035 }, wr1: { a: pos.wr1, b: pos.fp1, r: 0.03 },
     hip0: { a: pos.hip0, b: pos.kn0, r: 0.07 }, kn0: { a: pos.kn0, b: pos.an0, r: 0.05 },
     an0: { a: pos.an0, b: pos.an0.clone().add(new THREE.Vector3(0, -0.05, 0.15)), r: 0.04 },
     hip1: { a: pos.hip1, b: pos.kn1, r: 0.07 }, kn1: { a: pos.kn1, b: pos.an1, r: 0.05 },
     an1: { a: pos.an1, b: pos.an1.clone().add(new THREE.Vector3(0, -0.05, 0.15)), r: 0.04 },
+    fp0: { a: pos.fp0, b: pos.fd0, r: 0.008 }, fd0: { a: pos.fd0, b: along(0, 0.19), r: 0.007 },
+    fp1: { a: pos.fp1, b: pos.fd1, r: 0.008 }, fd1: { a: pos.fd1, b: along(1, 0.19), r: 0.007 },
   };
   return { pos, seg, sole: [new THREE.Vector3(...J["sole_" + side(0)]), new THREE.Vector3(...J["sole_" + side(1)])] };
 }
@@ -92,7 +99,7 @@ function armX(seg: Record<BoneName, Seg>, side: 0 | 1, y: number) {
   return y >= e.y ? lerp(a, e) : lerp(e, w);
 }
 
-const LIMB = ["sh", "el", "wr", "hip", "kn", "an"];
+const LIMB = ["sh", "el", "wr", "fp", "fd", "hip", "kn", "an"];
 
 /** Ajoute skinIndex / skinWeight à une géométrie (calcul mis en cache sur la géométrie). */
 export function skinGeometry(
@@ -130,7 +137,7 @@ export function skinGeometry(
       if (kind === "skeleton") {
         // Os du tronc (côtes, sternum, clavicule, omoplate, bassin) : jamais rattachés au bras
         // ni à la cuisse, sinon la cage thoracique s'étire avec le mouvement du bras.
-        if ((limb === "sh" || limb === "el" || limb === "wr") && Math.abs(p.x) < armX(seg, vSide, p.y) - 0.04) return false;
+        if ((limb === "sh" || limb === "el" || limb === "wr" || limb === "fp" || limb === "fd") && Math.abs(p.x) < armX(seg, vSide, p.y) - 0.04) return false;
         if (limb === "hip" && p.y > seg[`hip${vSide}` as BoneName].a.y + 0.01) return false;
       }
       return true;
@@ -183,6 +190,7 @@ export function buildBones(pos: Record<BoneName, THREE.Vector3>) {
     spine: "root", chest: "spine", neck: "chest",
     sh0: "chest", el0: "sh0", wr0: "el0", sh1: "chest", el1: "sh1", wr1: "el1",
     hip0: "root", kn0: "hip0", an0: "kn0", hip1: "root", kn1: "hip1", an1: "kn1",
+    fp0: "wr0", fd0: "fp0", fp1: "wr1", fd1: "fp1",
   };
   for (const b of BONES) {
     const par = parent[b];
@@ -201,7 +209,7 @@ export function buildBones(pos: Record<BoneName, THREE.Vector3>) {
  * Sous le niveau des aisselles, un point appartient SOIT au bras, SOIT au reste du corps
  * (pas de mélange) : évite les « toiles » entre le bras et le flanc ou entre la main et la hanche.
  */
-const ARM = new Set(["sh0", "el0", "wr0", "sh1", "el1", "wr1"].map((b) => BONES.indexOf(b as BoneName)));
+const ARM = new Set(["sh0", "el0", "wr0", "sh1", "el1", "wr1", "fp0", "fd0", "fp1", "fd1"].map((b) => BONES.indexOf(b as BoneName)));
 
 export function transferSkinWeights(target: THREE.BufferGeometry, sources: THREE.BufferGeometry[], armpitY: number) {
   if (target.getAttribute("skinIndex")) return;

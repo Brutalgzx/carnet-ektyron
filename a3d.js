@@ -15,7 +15,7 @@ function a3dOf(id,a){return A3D_MAP[id]||A3D_MAP[a]||null}
  const ok=(()=>{try{const c=document.createElement("canvas");return !!(window.WebGLRenderingContext&&(c.getContext("webgl2")||c.getContext("webgl")))}catch(e){return false}})();
  if(!ok){window.A3D_OFF=true;return}
  let eng=null,loading=null,cur=null,stop=null;const vis=new Map();
- const load=()=>eng?Promise.resolve(eng):loading||(loading=new Promise((res,rej)=>{const s=document.createElement("script");s.src="atlas3d/atlas3d.js?v=3";
+ const load=()=>eng?Promise.resolve(eng):loading||(loading=new Promise((res,rej)=>{const s=document.createElement("script");s.src="atlas3d/atlas3d.js?v=4";
   s.onload=()=>window.A3D_ENGINE?res(eng=window.A3D_ENGINE):rej();s.onerror=rej;document.head.appendChild(s)}));
  const fallback=el=>{const v=el.dataset.v;el.outerHTML=v?`<video class="anim anim-v${el.classList.contains("g-anim")?" g-anim":""}" data-src="renders/${v}.mp4?v=${v==="rowu"?2:1}" muted loop playsinline preload="none"></video>`:""};
  /* Emplacement au repos = même gabarit que le lecteur (scène + barre de boutons + crédit) : la hauteur ne change pas au montage, la page ne saute pas. */
