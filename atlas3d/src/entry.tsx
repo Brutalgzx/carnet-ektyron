@@ -128,7 +128,70 @@ function Player({ exId, tech, opts = {} }: { exId: string; tech: boolean; opts?:
   );
 }
 
+// ───── Vue anatomique (onglet Corps) : corps debout, muscles d'un groupe allumés ─────
+const STAND_ANIM = {
+  id: "stand", name: "Debout", duration: 4, anchor: "feet" as const, anchorTarget: [0, 0, 0] as [number, number, number],
+  keys: [{ t: 0, pose: { shAbd: 8, elbow: 10, hipAbd: 3, knee: 2, grip: 25 } }, { t: 1, pose: { shAbd: 8, elbow: 10, hipAbd: 3, knee: 2, grip: 25 } }],
+  concentric: null, props: [],
+};
+const ANAT_VIEWS: Record<string, [number, number, number]> = { face: [0, 1.0, 3.2], profil: [3.2, 1.0, 0], dos: [0, 1.0, -3.2], "3/4": [2.3, 1.2, 2.3] };
+
+function AnatomyView({ ctl }: { ctl: { set?: (r: MuscleRoles) => void } }) {
+  const [roles, setRoles] = useState<MuscleRoles>({});
+  const [view, setView] = useState("face");
+  const [nonce, setNonce] = useState(0);
+  const timeRef = useRef(0);
+  ctl.set = (r) => setRoles(r);
+  return (
+    <div className="a3d-box">
+      <div className="a3d-stage">
+        <Canvas shadows camera={{ position: ANAT_VIEWS.face, fov: 40 }} dpr={[1, 2]}>
+          <color attach="background" args={["#05070B"]} />
+          <hemisphereLight args={["#ffe2c4", "#0f172a", 0.75]} />
+          <directionalLight position={[3, 5, 4]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} />
+          <directionalLight position={[-4, 3, -3]} intensity={0.55} color="#ff8a3d" />
+          <Suspense fallback={null}>
+            <Mannequin anim={STAND_ANIM} timeRef={timeRef} anatomy roles={roles} />
+          </Suspense>
+          <ContactShadows position={[0, 0.002, 0]} opacity={0.5} blur={2.5} scale={6} />
+          <OrbitControls makeDefault enablePan={false} minDistance={1.2} maxDistance={6} target={[0, 0.95, 0]} />
+          <AnatCam pos={ANAT_VIEWS[view]} nonce={nonce} />
+        </Canvas>
+        <div className="a3d-leg">
+          {(["principal"] as const).map((r) => (
+            <span key={r}><i style={{ background: ROLE_COLORS[r] }} />groupe choisi</span>
+          ))}
+        </div>
+      </div>
+      <div className="a3d-ctl">
+        {Object.keys(ANAT_VIEWS).map((v) => (
+          <button key={v} className={view === v ? "on" : ""} onClick={() => { setView(v); setNonce((n) => n + 1); }}>{v}</button>
+        ))}
+      </div>
+      <div className="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div>
+    </div>
+  );
+}
+function AnatCam({ pos, nonce }: { pos: [number, number, number]; nonce: number }) {
+  const { camera, controls } = useThree() as unknown as { camera: THREE.PerspectiveCamera; controls: { target: THREE.Vector3; update: () => void } | null };
+  useEffect(() => {
+    camera.position.set(...pos);
+    if (controls) { controls.target.set(0, 0.95, 0); controls.update(); }
+  }, [pos, nonce, camera, controls]);
+  return null;
+}
+
 (window as unknown as { A3D_ENGINE: unknown }).A3D_ENGINE = {
+  /** Onglet Corps : mannequin anatomique debout ; set(roles) allume les muscles (id → principal / secondaire). */
+  anatomy(el: HTMLElement, roles: MuscleRoles = {}) {
+    const root = createRoot(el);
+    const ctl: { set?: (r: MuscleRoles) => void } = {};
+    root.render(<AnatomyView ctl={ctl} />);
+    let pending: MuscleRoles | null = roles;
+    const set = (r: MuscleRoles) => { if (ctl.set) ctl.set(r); else pending = r; };
+    const iv = setInterval(() => { if (ctl.set && pending) { ctl.set(pending); pending = null; clearInterval(iv); } }, 50);
+    return { stop: () => { clearInterval(iv); root.unmount(); }, set };
+  },
   anims: animations.map((a) => a.id),
   mount(el: HTMLElement, exId: string, tech = true, opts: Opts = {}) {
     const root = createRoot(el);

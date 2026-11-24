@@ -33,6 +33,7 @@ function vCorps(){const p=PROF,S=avState(),now=avEstimate(false),go=p.tw!=null?a
   :`${fr(curWeight(),1)} kg · environ ${pct(now.bf)} de masse grasse.`;
  return back+`<div class="card stack av-card"><div class="av-view" id="av-view"><canvas id="av-cv" aria-label="Avatar 3D : glisse pour le faire tourner"></canvas><div class="av-load small muted" id="av-load">Chargement de l'avatar…</div></div>
   ${seg}<p class="small muted" style="margin:0" id="av-info">${info}</p></div>
+ ${an3dCard()}
  <div class="card stack"><div class="row"><div class="lab sp">Muscles</div><button class="lnk small" id="av-reset">${go?"Revenir à l'objectif":"Revenir à aujourd'hui"}</button></div>
   ${AV_M.map(([k,l,e])=>`<div class="sl av-sl"><div class="row"><label for="av-${k}" class="sp">${e} ${l}</label><b id="avv-${k}">${S.v[k]}</b></div><input type="range" id="av-${k}" data-avm="${k}" min="0" max="100" step="1" value="${S.v[k]}"></div>`).join("")}
   <p class="small muted" style="margin:0">Estimation à partir de ta taille, ton âge, ton poids et ton niveau : la génétique, le sommeil et la régularité changent beaucoup le résultat. Pas un avis médical.</p></div>`}
@@ -54,7 +55,7 @@ function avParse(buf){const dv=new DataView(buf),u=o=>dv.getUint32(o,1),nv=u(4),
   const f=new Float32Array(n*3);let mx=0;for(let i=0;i<n*3;i++){f[i]=d[i]*sc}for(let i=0;i<n;i++)mx=Math.max(mx,Math.hypot(f[i*3],f[i*3+1],f[i*3+2]));D.push({ids,f,mx})}
  return{nv,P,body:all.subarray(0,tb*3),shorts:all.subarray(tb*3,(tb+ts)*3),eyes:all.subarray((tb+ts)*3),D,h:sz[1]}}
 
-function corpsMount(){const cv=$("#av-cv");if(!cv)return;const sex=PROF.sex==="f"?"f":"m";
+function corpsMount(){if(AN.on&&$("#an3d"))an3dMount();else an3dStop();const cv=$("#av-cv");if(!cv)return;const sex=PROF.sex==="f"?"f":"m";
  Promise.all([avLoadThree(),avLoadBin(sex)]).then(([,M])=>{if(!document.body.contains(cv))return;avBuild(cv,M,sex);$("#av-load")?.remove()})
   .catch(()=>{const l=$("#av-load");if(l)l.textContent="Avatar indisponible hors ligne. Reviens avec du réseau."})}
 
@@ -105,3 +106,24 @@ document.addEventListener("change",e=>{if(e.target.dataset&&e.target.dataset.avm
 document.addEventListener("click",e=>{const b=e.target.closest("[data-av],#av-reset");if(!b||!AVS)return;
  if(b.id==="av-reset"){avSet(PROF.tw!=null?"goal":"now");render();return}
  avSet(b.dataset.av);render()});
+
+/* Anatomie 3D (moteur Atlas) : mannequin anatomique, le groupe choisi s'allume. Monté seulement sur demande (une scène WebGL de plus). */
+const A3D_GROUPS={pecs:["grand-pectoral","petit-pectoral"],dos:["grand-dorsal","grand-rond","rhomboides","erecteurs-rachis"],epaules:["deltoide-anterieur","deltoide-moyen","deltoide-posterieur","supra-epineux","infra-epineux","petit-rond"],bras:["biceps-brachial","brachial","triceps-brachial","brachio-radial"],abdos:["grand-droit","oblique-externe"],trapezes:["trapeze"],jambes:["droit-femoral","vaste-lateral","vaste-medial","vaste-intermediaire","biceps-femoral","semi-tendineux","semi-membraneux","grand-adducteur","sartorius"],fessiers:["grand-fessier","moyen-fessier","tenseur-fascia-lata"],mollets:["gastrocnemien","soleaire","fibulaires"]};
+const AN={on:false,g:null,h:null,el:null,iv:0};
+function anGroups(){const pr=(PROF.prio||[]).filter(k=>A3D_GROUPS[k]);return AN.g==="prio"||!AN.g?pr:[AN.g]}
+function anRoles(){const r={};for(const k of anGroups())for(const id of A3D_GROUPS[k])r[id]="principal";return r}
+function an3dCard(){const pr=(PROF.prio||[]).some(k=>A3D_GROUPS[k]),g=AN.g||(pr?"prio":"pecs");AN.g=g;
+ const chip=(k,l)=>`<button data-ang="${k}" aria-pressed="${g===k}">${l}</button>`;
+ return `<div class="card stack"><div class="lab">Anatomie 3D</div>
+  <div class="an-chips">${(pr?chip("prio","⭐ Mes priorités"):"")+AV_M.filter(([k])=>A3D_GROUPS[k]).map(([k,l,e])=>chip(k,e+" "+l)).join("")}</div>
+  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle" id="an-go">◐ Toucher pour afficher l'anatomie 3D</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
+  <p class="small muted" style="margin:0">Glisse sur le mannequin pour le tourner. Le groupe choisi s'allume en rouge.</p></div>`}
+function an3dStop(){clearInterval(AN.iv);if(AN.h){try{AN.h.stop()}catch(e){}}AN.h=null;AN.el=null}
+function an3dMount(){const el=$("#an3d");if(!el)return;an3dStop();
+ if(!window.a3dAnatomy){const i=$("#an-go");if(i)i.textContent="Anatomie 3D indisponible sur cet appareil.";return}
+ AN.on=true;AN.el=el;const i=$("#an-go");if(i)i.textContent="Chargement 3D…";
+ window.a3dAnatomy(el,anRoles()).then(h=>{if(AN.el!==el||!el.isConnected){h.stop();return}AN.h=h;
+  AN.iv=setInterval(()=>{if(!el.isConnected)an3dStop()},1500)}).catch(()=>{const i=$("#an-go");if(i)i.textContent="Anatomie 3D indisponible hors ligne. Reviens avec du réseau."})}
+document.addEventListener("click",e=>{const c=e.target.closest("[data-ang]");
+ if(c){AN.g=c.dataset.ang;document.querySelectorAll("[data-ang]").forEach(b=>b.setAttribute("aria-pressed",b===c));if(AN.h)AN.h.set(anRoles());else an3dMount();return}
+ if(e.target.closest("#an-go"))an3dMount()});

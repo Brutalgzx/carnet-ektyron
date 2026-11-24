@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:29,d:"24/11",t:"🫀 Anatomie 3D dans Corps",x:[
+  "L'onglet Corps a une nouvelle carte : le mannequin anatomique 3D, muscle par muscle.",
+  "Choisis un groupe (pecs, dos, jambes…) ou « Mes priorités » : les muscles concernés s'allument.",
+  "Glisse pour le tourner, ou choisis la vue face, profil, dos ou 3/4."]},
  {id:28,d:"24/11",t:"⚖️ Corriger une pesée",x:[
   "Dans le suivi du poids, « Corriger une pesée » liste tes dernières pesées : touche « Modifier » pour changer le chiffre, ou ✕ pour la supprimer.",
   "Si une pesée faite après manger avait fait changer tes calories, la correction annule ce changement : tu reviens à ton plan d'avant.",

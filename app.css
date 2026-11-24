@@ -288,3 +288,7 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 .a3d-tech ul{margin:2px 0 6px;padding-left:18px}.a3d-tech small{display:block;color:#8a93a3;font-size:11px;margin-top:6px}
 .a3d-ghost{pointer-events:none;opacity:.35}
 .a3d-cred{padding:0 8px 6px;background:#0b0f17;color:#6b7280;font-size:10px;text-align:center}
+.an3d{background:#05070B;overflow:hidden;position:relative;border-radius:14px}
+.an-chips{display:flex;flex-wrap:wrap;gap:6px}
+.an-chips button{min-height:32px;padding:4px 10px;border-radius:999px;border:1px solid var(--line,rgba(255,255,255,.14));background:transparent;color:inherit;font:inherit;font-size:13px}
+.an-chips button[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
