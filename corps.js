@@ -139,11 +139,13 @@ function vAnat(){const pr=(PROF.prio||[]).some(k=>A3D_GROUPS[k]);if(AN.g==null&&
  return `<div class="card stack">
   <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle">Chargement 3D…</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
   <div id="an-info" class="an-info">${anInfo()}</div></div>
- <div class="card stack"><div class="lab">Groupes</div><div class="an-chips">${(pr?chip("prio","⭐ Mes priorités"):"")+AV_M.filter(([k])=>A3D_GROUPS[k]).map(([k])=>chip(k,anLab(k))).join("")}</div></div>`}
+ <div class="card stack"><div class="row"><div class="lab sp">Groupes</div><button class="lnk small" id="an-reset">↺ Réinitialiser</button></div><div class="an-chips">${(pr?chip("prio","⭐ Mes priorités"):"")+AV_M.filter(([k])=>A3D_GROUPS[k]).map(([k])=>chip(k,anLab(k))).join("")}</div></div>`}
 function anRefresh(){if(AN.h)AN.h.set(anRoles());const i=$("#an-info");if(i)i.innerHTML=anInfo();document.querySelectorAll("[data-ang]").forEach(b=>b.setAttribute("aria-pressed",!AN.sel&&b.dataset.ang===AN.g))}
 function an3dStop(){clearInterval(AN.iv);if(AN.h){try{AN.h.stop()}catch(e){}}AN.h=null;AN.el=null}
 function anatMount(){const el=$("#an3d");if(!el)return;an3dStop();const idle=t=>{const i=el.querySelector(".a3d-idle");if(i)i.textContent=t};
  if(!window.a3dAnatomy)return idle("Anatomie 3D indisponible sur cet appareil.");
  AN.el=el;window.a3dAnatomy(el,anRoles(),id=>{AN.sel=id;anRefresh()}).then(h=>{if(AN.el!==el||!el.isConnected){h.stop();return}AN.h=h;
   AN.iv=setInterval(()=>{if(!el.isConnected)an3dStop()},1500)}).catch(()=>idle("Anatomie 3D indisponible hors ligne. Reviens avec du réseau."))}
+/* Réinitialiser : plus de muscle choisi, groupe par défaut, mannequin remonté de face. */
+document.addEventListener("click",e=>{if(!e.target.closest("#an-reset"))return;AN.sel=null;AN.g=(PROF.prio||[]).some(k=>A3D_GROUPS[k])?"prio":"pecs";anRefresh();anatMount()});
 document.addEventListener("click",e=>{const c=e.target.closest("[data-ang]");if(!c)return;AN.g=c.dataset.ang;AN.sel=null;anRefresh()});

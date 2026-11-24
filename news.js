@@ -2,6 +2,8 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:33,d:"24/11",t:"↺ Réinitialiser l'anatomie",x:[
+  "Onglet Anatomie : le bouton « ↺ Réinitialiser » efface le muscle choisi, revient à tes priorités et remet le mannequin de face."]},
  {id:32,d:"24/11",t:"🧍 Tous les exercices en 3D",x:[
   "Les 77 exercices du coach ont maintenant leur démonstration 3D : 35 nouveaux (fentes bulgares, soulevé roumain, face pull, dead bug, russian twist…) et 12 refaits à l'identique au lieu d'une animation approchée.",
   "Chacun a sa fiche Technique : départ, mouvement, respiration, amplitude, erreurs fréquentes et sécurité.",
