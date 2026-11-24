@@ -11,16 +11,22 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  # Deux jobs (schéma officiel) : l'artefact envoyé par « build » est visible quand « deploy » démarre.
+  # En un seul job, deploy-pages ne trouvait parfois pas l'artefact (« No artifacts named github-pages »).
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.d.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
       - id: d
         uses: actions/deploy-pages@v4
