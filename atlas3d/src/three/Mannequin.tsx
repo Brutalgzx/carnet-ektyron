@@ -682,6 +682,9 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
       pts.shin1 = r.an[1].getWorldPosition(new THREE.Vector3());
       pts.shins = pts.shin0.clone().add(pts.shin1).multiplyScalar(0.5);
       pts.feet = r.sole[0].getWorldPosition(new THREE.Vector3()).add(r.sole[1].getWorldPosition(new THREE.Vector3())).multiplyScalar(0.5);
+      pts.root = r.root.getWorldPosition(new THREE.Vector3());
+      pts.neck = r.neck.getWorldPosition(new THREE.Vector3());
+      pts.knees = r.kn[0].getWorldPosition(new THREE.Vector3()).add(r.kn[1].getWorldPosition(new THREE.Vector3())).multiplyScalar(0.5);
       // Progression du mouvement (0 → 1 → 0) ; les plaques montent pendant la phase d'effort.
       const e = (x: number) => x * x * (3 - 2 * x);
       const prog = t < 0.5 ? e(t / 0.5) : e((1 - t) / 0.5);

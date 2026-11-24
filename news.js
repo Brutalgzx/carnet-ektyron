@@ -2,6 +2,11 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:39,d:"24/11",t:"🏋️ Machines 3D plus réalistes, animations sans attente",x:[
+  "Le hack squat ressemble enfin au vrai : rails inclinés à 45°, chariot avec dossier et épaulières, disques sur les côtés, plateforme de pieds inclinée.",
+  "Leg extension et leg curl : le rouleau est bien placé (devant les tibias pour l'extension, derrière les chevilles pour le curl), un coussin bloque les cuisses au leg curl assis, plus rien ne traverse la machine.",
+  "Presse à cuisses, Smith, poulies, tirage vertical : montants, poulies à gorge, rails réglables, piles de poids et disques redessinés.",
+  "Les animations se préparent en avance : quand tu fais défiler les exercices, elles tournent déjà en arrivant à l'écran."]},
  {id:38,d:"24/11",t:"＋ Ajouter un exercice à ta séance depuis l'Anatomie",x:[
   "Sous chaque exercice d'un muscle, « ＋ Ajouter à une séance » : choisis le jour de ta semaine, puis sa place parmi les exercices (en premier, entre deux, en dernier).",
   "La séance est enregistrée comme modifiée par toi ; « remettre la séance du coach » dans l'onglet Séances annule."]},

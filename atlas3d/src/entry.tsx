@@ -54,7 +54,7 @@ function rolesOf(exId: string): MuscleRoles {
 
 export interface Opts { duo?: boolean; bad?: boolean; t?: number; view?: View; paused?: boolean; anatomy?: boolean; snap?: boolean; ctl?: { set?: (t: number, v: View, dist?: number, focus?: [number, number, number]) => void } }
 
-function Player({ exId, tech, opts = {} }: { exId: string; tech: boolean; opts?: Opts }) {
+function Player({ exId, tech, opts = {}, active = true }: { exId: string; tech: boolean; opts?: Opts; active?: boolean }) {
   const ex = exerciseById[exId];
   const anim = ex?.animation ? animationById[ex.animation] : animationById[exId];
   const roles = useRef(rolesOf(exId)).current;
@@ -86,7 +86,7 @@ function Player({ exId, tech, opts = {} }: { exId: string; tech: boolean; opts?:
   return (
     <div className="a3d-box">
       <div className="a3d-stage">
-        <Canvas shadows camera={{ position: VIEWS[opts.view ?? "3/4"], fov: 40 }} dpr={[1, 2]} gl={{ preserveDrawingBuffer: !!opts.snap }}>
+        <Canvas frameloop={active ? "always" : "never"} shadows camera={{ position: VIEWS[opts.view ?? "3/4"], fov: 40 }} dpr={[1, 2]} gl={{ preserveDrawingBuffer: !!opts.snap }}>
           <color attach="background" args={["#05070B"]} />
           <hemisphereLight args={["#ffe2c4", "#0f172a", 0.75]} />
           <directionalLight position={[3, 5, 4]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]} />
@@ -97,7 +97,7 @@ function Player({ exId, tech, opts = {} }: { exId: string; tech: boolean; opts?:
           </Suspense>
           <ContactShadows position={[0, 0.002, 0]} opacity={0.5} blur={2.5} scale={6} />
           <OrbitControls makeDefault enablePan={false} minDistance={opts.snap ? 0.2 : 1.5} maxDistance={7} target={target} />
-          <CameraRig key={focusKey} view={view} nonce={nonce} target={target} dist={cam.dist} />
+          <CameraRig key={focusKey} view={view} nonce={nonce} target={target} dist={cam.dist * (anim.camDist ?? 1)} />
         </Canvas>
         {duo && <div className={"a3d-duo " + (bad ? "ko" : "ok")}>{bad ? "✗ À éviter : " + faultOf(anim).label : "✓ Bon geste"}</div>}
         <div className={"a3d-phase a3d-" + (phase === "concentrique" ? "con" : phase === "excentrique" ? "exc" : "iso")}>{phase}</div>
@@ -237,9 +237,13 @@ function AnatCam({ pos, nonce }: { pos: [number, number, number]; nonce: number 
   anims: animations.map((a) => a.id),
   mount(el: HTMLElement, exId: string, tech = true, opts: Opts = {}) {
     const root = createRoot(el);
-    root.render(<Player exId={exId} tech={tech} opts={opts} />);
+    let id = exId, on = true;
+    const draw = () => root.render(<Player exId={id} tech={tech} opts={opts} active={on} />);
+    draw();
     const stop = () => root.unmount();
-    stop.show = (id: string) => root.render(<Player exId={id} tech={tech} opts={opts} />);
+    stop.show = (x: string) => { id = x; draw(); };
+    /** Scène gardée en vie hors écran : rendu suspendu (false) / relancé (true), sans rien recharger. */
+    stop.active = (b: boolean) => { if (b !== on) { on = b; draw(); } };
     return stop;
   },
 };

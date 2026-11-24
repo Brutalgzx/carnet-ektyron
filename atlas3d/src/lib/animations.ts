@@ -31,10 +31,12 @@ export interface Prop {
   size?: [number, number, number];
 }
 
-export type BodyPoint = "hands" | "hand0" | "hand1" | "shins" | "shin0" | "shin1" | "feet";
+export type BodyPoint = "hands" | "hand0" | "hand1" | "shins" | "shin0" | "shin1" | "feet" | "root" | "neck" | "knees";
 /** Machine générique : colonnes de poids, leviers (pivot → partie du corps), câbles (corps → poulie → colonne). */
 export interface MachineSpec {
   label?: string;
+  /** Machine dessinée sur mesure (sinon : modèle générique). */
+  kind?: "hack" | "legext" | "legcurl" | "lyingcurl" | "legpress" | "smith" | "pulldown";
   seat?: boolean;
   stacks?: [number, number, number][];
   levers?: { pivot: [number, number, number]; to: BodyPoint; stack?: number }[];
@@ -52,6 +54,8 @@ export interface Animation {
   anchorTarget?: [number, number, number];
   /** Point visé par la caméra (sinon : mains pour les suspensions, bassin sinon). */
   camTarget?: [number, number, number];
+  /** Recul de la caméra (grosses machines). */
+  camDist?: number;
   rootPos?: [number, number, number];
   keys: { t: number; pose: Pose }[];
   /** Plage de temps (0–1) de la phase concentrique ; le reste est excentrique. null = isométrique. */
@@ -63,6 +67,7 @@ export interface Animation {
 const stand: Pose = { rootPitch: 0, spine: 0, neck: 0, shFlex: 0, shAbd: 6, elbow: 8, hipFlex: 0, hipAbd: 3, knee: 2, ankle: 0 };
 const seated: Pose = { ...stand, hipFlex: 90, knee: 90, ankle: 0 };
 
+const HK_A0 = -20, HK_A1 = 20;
 const squatTop: Pose = { ...stand, rootPitch: 4, hipFlex: 4, knee: 4, hipAbd: 8 };
 const squatBottom: Pose = { ...stand, rootPitch: 42, spine: 4, hipFlex: 128, knee: 118, ankle: 30, hipAbd: 14 };
 const barArms: Pose = { shFlex: -25, shAbd: 72, elbow: 110 };
@@ -180,7 +185,6 @@ export const animations: Animation[] = [
     props: [
       { kind: "seat", position: [0, 0.28, 0.12] },
       { kind: "backrest", position: [0, 0.95, -0.2] },
-      { kind: "legPad", attach: "shins" },
     ],
   },
   {
@@ -200,8 +204,6 @@ export const animations: Animation[] = [
     props: [
       { kind: "backrest", position: [0, 0.57, -0.31], rotation: [-0.96, 0, 0], size: [0.42, 0.85, 0.08] },
       { kind: "seat", position: [0, 0.25, -0.06] },
-      // Plaque toujours perpendiculaire aux rails (même inclinaison), posée sous les pieds.
-      { kind: "sled", attach: "feet", rotation: [0.686, 0, 0] },
     ],
   },
   {
@@ -347,18 +349,19 @@ export const animations: Animation[] = [
     { ...stand, rootPitch: 10, hipFlex: 6, knee: 8, shFlex: 8, shAbd: 4, elbow: 100 },
     { ...stand, rootPitch: 10, hipFlex: 6, knee: 8, shFlex: 2, shAbd: 4, elbow: 4 },
     [0, 0.5], [{ kind: "handles", attach: "hands" }], [0, 2.2, 0.32]),
-  rep("hacksquat", "Hack squat", 3.2, { anchor: "feet", anchorTarget: [0, 0, 0] },
-    { ...squatTop, rootPitch: -6, shFlex: 0, shAbd: 30, elbow: 120 },
-    { ...squatBottom, rootPitch: 8, spine: 0, hipFlex: 108, knee: 112, ankle: 26, shAbd: 30, elbow: 120 },
-    [0.5, 1], [{ kind: "backrest", attach: "chest", position: [0, 0.02, -0.16] }]),
+  // Dos plaqué sur le chariot (rails à 45°) : buste fixe, le bassin glisse dans l'axe des rails, pieds sur la plateforme inclinée.
+  rep("hacksquat", "Hack squat", 3.2, { anchor: "feet", anchorTarget: [0, 0.2, 0] },
+    { ...stand, rootPitch: -45, hipFlex: 27, knee: 24, ankle: HK_A0, hipAbd: 10, shFlex: 0, shAbd: 30, elbow: 120 },
+    { ...stand, rootPitch: -45, hipFlex: 78, knee: 116, ankle: HK_A1, hipAbd: 16, shFlex: 0, shAbd: 30, elbow: 120 },
+    [0.5, 1], []),
   rep("seatedlegcurl", "Leg curl assis", 2.6, { anchor: null, rootPos: [0, 0.62, 0] },
     { ...seated, rootPitch: -8, hipFlex: 98, knee: 4, shFlex: 20, elbow: 25, shAbd: 20 },
     { ...seated, rootPitch: -8, hipFlex: 98, knee: 105, shFlex: 20, elbow: 25, shAbd: 20 },
-    [0, 0.5], [SEAT, { kind: "backrest", position: [0, 0.95, -0.2] }, { kind: "legPad", attach: "shins" }]),
+    [0, 0.5], [SEAT, { kind: "backrest", position: [0, 0.95, -0.2] }]),
   rep("lyinglegcurl", "Leg curl allongé", 2.6, { anchor: null, rootPos: [0, 0.7, -0.1] },
     { ...stand, rootPitch: 90, shFlex: 150, shAbd: 20, elbow: 40, knee: 4 },
     { ...stand, rootPitch: 90, shFlex: 150, shAbd: 20, elbow: 40, knee: 110 },
-    [0, 0.5], [{ kind: "bench", position: [0, 0.3, 0.2], size: [0.32, 0.6, 1.4] }, { kind: "legPad", attach: "shins" }]),
+    [0, 0.5], [{ kind: "bench", position: [0, 0.3, 0.2], size: [0.32, 0.6, 1.4] }]),
   rep("hipthrust", "Hip thrust", 2.8, { anchor: "feet", anchorTarget: [0, 0, 0] },
     { ...stand, rootPitch: -73, hipFlex: 38, knee: 103, ankle: -9, hipAbd: 12, shFlex: 18, shAbd: 22, elbow: 25 },
     { ...stand, rootPitch: -88, hipFlex: 2, knee: 88, ankle: -4, hipAbd: 12, shFlex: 18, shAbd: 22, elbow: 25 },
@@ -640,8 +643,10 @@ animations.push(
 );
 
 // Cadrage : corps bas (dips sur chaise) ou haut (debout sur le banc).
-const CAM: Record<string, [number, number, number]> = { benchdips: [0, 0.55, 0.15], stepup: [0, 1.1, 0.15] };
+const CAM: Record<string, [number, number, number]> = { benchdips: [0, 0.55, 0.15], stepup: [0, 1.1, 0.15], hacksquat: [0, 0.9, -0.6] };
 for (const a of animations) if (CAM[a.id]) a.camTarget = CAM[a.id];
+const CAMD: Record<string, number> = { hacksquat: 1.6, legpress: 1.2, smithincline: 1.15, pulldown: 1.25, lyinglegcurl: 1.15, cablefly: 1.3, seatedrow: 1.2, widerow: 1.2 };
+for (const a of animations) if (CAMD[a.id]) a.camDist = CAMD[a.id];
 
 // ───── Machines (modélisation générique, côté droit = x positif) ─────
 const SIDE: [number, number, number] = [0.68, 0, -0.35];
@@ -653,9 +658,9 @@ const MACHINES: Record<string, MachineSpec> = {
   preachercurl: { label: "Curl au pupitre guidé", stacks: [SIDE], levers: [{ pivot: [0, 1.02, 0.42], to: "hands" }], frame: [{ pos: [0, 0.95, 0.33], size: [0.46, 0.05, 0.3], rot: [-0.7, 0, 0], pad: true }, { pos: [0, 0.48, 0.42], size: [0.05, 0.9, 0.05] }] },
   tricepsmachine: { label: "Machine extension triceps", stacks: [SIDE], levers: [{ pivot: [0, 1.05, 0.4], to: "hands" }] },
   abcrunch: { label: "Machine crunch abdominal", stacks: [SIDE], levers: [{ pivot: [0, 1.25, -0.25], to: "hands" }] },
-  legext: { label: "Leg extension — machine quadriceps", stacks: [SIDE], levers: [{ pivot: [0, 0.58, 0.46], to: "shins" }] },
-  seatedlegcurl: { label: "Leg curl assis — ischio-jambiers", stacks: [SIDE], levers: [{ pivot: [0, 0.58, 0.46], to: "shins" }], frame: [{ pos: [0, 0.74, 0.3], size: [0.42, 0.06, 0.12], pad: true }] },
-  lyinglegcurl: { label: "Leg curl allongé", seat: false, stacks: [[0.68, 0, -0.2]], levers: [{ pivot: [0, 0.6, -0.62], to: "shins" }] },
+  legext: { kind: "legext", label: "Leg extension — machine quadriceps", stacks: [SIDE], levers: [{ pivot: [0, 0.58, 0.46], to: "shins" }] },
+  seatedlegcurl: { kind: "legcurl", label: "Leg curl assis — ischio-jambiers", stacks: [SIDE], levers: [{ pivot: [0, 0.58, 0.46], to: "shins" }] },
+  lyinglegcurl: { kind: "lyingcurl", label: "Leg curl allongé", seat: false, stacks: [[0.68, 0, -0.2]], levers: [{ pivot: [0, 0.6, -0.62], to: "shins" }] },
   hipabduction: { label: "Machine abducteurs", stacks: [SIDE], levers: [{ pivot: [-0.08, 0.52, 0.12], to: "shin0" }, { pivot: [0.08, 0.52, 0.12], to: "shin1" }] },
   hipadduction: { label: "Machine adducteurs", stacks: [SIDE], levers: [{ pivot: [-0.08, 0.52, 0.12], to: "shin0" }, { pivot: [0.08, 0.52, 0.12], to: "shin1" }] },
   backext: { label: "Banc à lombaires (chaise romaine 45°)", frame: [
@@ -669,17 +674,17 @@ const MACHINES: Record<string, MachineSpec> = {
     { pos: [-0.17, 1.5, -0.02], size: [0.14, 0.06, 0.22], pad: true }, { pos: [0.17, 1.5, -0.02], size: [0.14, 0.06, 0.22], pad: true },
     { pos: [0, 1.5, -0.16], size: [0.5, 0.05, 0.05] }, { pos: [0, 0.78, -0.2], size: [0.06, 1.5, 0.06] }] },
   seatedrow: { label: "Tirage horizontal — poulie basse", stacks: [[0, 0, 1.2]], cables: [{ from: "hands", via: [0, 0.95, 1.1] }], frame: [{ pos: [0, 0.28, 0.93], size: [0.5, 0.3, 0.04], rot: [0.43, 0, 0], pad: true }, { pos: [0, 0.07, 0.95], size: [0.06, 0.14, 0.06] }, { pos: [0, 0.03, 0.55], size: [0.08, 0.06, 1.3] }] },
-  pulldown: { label: "Tirage vertical — lat pulldown", stacks: [[0, 0, -0.5]], cables: [{ from: "hands", via: [0, 2.3, 0.1] }], frame: [{ pos: [0, 2.32, -0.2], size: [0.06, 0.06, 0.7] }] },
+  pulldown: { kind: "pulldown", label: "Tirage vertical — lat pulldown", stacks: [[0, 0, -0.5]], cables: [{ from: "hands", via: [0, 2.3, 0.1] }], frame: [{ pos: [0, 2.32, -0.2], size: [0.06, 0.06, 0.7] }] },
   pushdown: { label: "Poulie haute — extension triceps", stacks: [[0, 0, 0.55]], cables: [{ from: "hands", via: [0, 2.15, 0.45] }] },
   cablefly: { label: "Vis-à-vis — double poulie", stacks: [[-0.95, 0, -0.1], [0.95, 0, -0.1]], cables: [{ from: "hand0", via: [-0.85, 1.95, -0.03], stack: 0 }, { from: "hand1", via: [0.85, 1.95, -0.03], stack: 1 }] },
   // Rails dans l'axe de la trajectoire des pieds (plaque à 3 cm sous les plantes), montants jusqu'au sol.
-  legpress: { label: "Presse à cuisses inclinée 45°", frame: [
+  legpress: { kind: "legpress", label: "Presse à cuisses inclinée 45°", frame: [
     { pos: [-0.33, 1.39, 0.47], size: [0.05, 1.42, 0.05], rot: [0.686, 0, 0] }, { pos: [0.33, 1.39, 0.47], size: [0.05, 1.42, 0.05], rot: [0.686, 0, 0] },
     { pos: [-0.33, 0.42, 0.02], size: [0.05, 0.84, 0.05] }, { pos: [0.33, 0.42, 0.02], size: [0.05, 0.84, 0.05] },
     { pos: [-0.33, 0.97, 0.92], size: [0.05, 1.94, 0.05] }, { pos: [0.33, 0.97, 0.92], size: [0.05, 1.94, 0.05] },
     { pos: [0, 0.03, 0.4], size: [0.8, 0.06, 1.6] }] },
   // Ektyron
-  smithincline: { label: "Smith machine — barre guidée", frame: [{ pos: [-0.62, 1.05, -0.12], size: [0.06, 2.1, 0.06] }, { pos: [0.62, 1.05, -0.12], size: [0.06, 2.1, 0.06] }, { pos: [0, 2.12, -0.12], size: [1.3, 0.06, 0.06] }] },
+  smithincline: { kind: "smith", label: "Smith machine — barre guidée", frame: [{ pos: [-0.62, 1.05, -0.12], size: [0.06, 2.1, 0.06] }, { pos: [0.62, 1.05, -0.12], size: [0.06, 2.1, 0.06] }, { pos: [0, 2.12, -0.12], size: [1.3, 0.06, 0.06] }] },
   chestrow: { label: "Rowing machine, poitrine appuyée", stacks: [SIDE], levers: [{ pivot: [-0.2, 1.35, 0.75], to: "hand0" }, { pivot: [0.2, 1.35, 0.75], to: "hand1" }], frame: [{ pos: [0, 0.98, 0.32], size: [0.4, 0.5, 0.08], rot: [-0.2, 0, 0], pad: true }] },
   reversefly: { label: "Pec deck en inversé (oiseau machine)", stacks: [SIDE], levers: [{ pivot: [-0.17, 1.4, 0.62], to: "hand0" }, { pivot: [0.17, 1.4, 0.62], to: "hand1" }], frame: [{ pos: [0, 0.98, 0.26], size: [0.4, 0.55, 0.08], pad: true }] },
   widerow: { label: "Poulie basse, barre large", stacks: [[0, 0, 1.2]], cables: [{ from: "hands", via: [0, 0.95, 1.1] }], frame: [{ pos: [0, 0.28, 0.93], size: [0.5, 0.3, 0.04], rot: [0.43, 0, 0], pad: true }] },
@@ -693,7 +698,7 @@ const MACHINES: Record<string, MachineSpec> = {
   cablekickback: { label: "Poulie basse, sangle de cheville", stacks: [[0.1, 0, 0.75]], cables: [{ from: "shin1", via: [0.1, 0.12, 0.65] }], frame: [{ pos: [0, 1.08, 0.74], size: [0.6, 0.05, 0.05] }, { pos: [-0.3, 0.55, 0.74], size: [0.05, 1.1, 0.05] }, { pos: [0.3, 0.55, 0.74], size: [0.05, 1.1, 0.05] }] },
   leanabduction: { label: "Machine abducteurs, buste penché", stacks: [SIDE], levers: [{ pivot: [-0.08, 0.37, 0.12], to: "shin0" }, { pivot: [0.08, 0.37, 0.12], to: "shin1" }] },
   seatedcalf: { label: "Mollets assis (seated calf)", frame: [{ pos: [0, 0.03, 0.6], size: [0.5, 0.06, 0.22], pad: true }] },
-  hacksquat: { label: "Hack squat", frame: [{ pos: [-0.28, 1.0, -0.32], size: [0.05, 2.0, 0.05], rot: [-0.12, 0, 0] }, { pos: [0.28, 1.0, -0.32], size: [0.05, 2.0, 0.05], rot: [-0.12, 0, 0] }, { pos: [0, 0.03, 0.05], size: [0.7, 0.06, 0.5] }] },
+  hacksquat: { kind: "hack", label: "Hack squat — rails à 45°" },
 };
 for (const a of animations) {
   const m = MACHINES[a.id];
@@ -844,7 +849,7 @@ const F = {
 export const faults: Record<string, Fault> = {
   squat: F.genoux, airsquat: F.genoux, hacksquat: F.genoux, sumosquat: F.genoux, bulgarian: F.genoux, lunges: F.genoux, stepup: F.genoux,
   gobletsquat: F.dos, deadlift: F.dos, rdl: F.dos, dbrdl: F.dos, barbellrow: F.dos, kbswing: F.dos, reardeltfly: F.dos, russiantwist: { label: "Dos rond", c: { spine: 22 } },
-  legpress: { label: "Bassin qui décolle en bas", d: { spine: 22 } },
+  legpress: { kind: "legpress", label: "Bassin qui décolle en bas", d: { spine: 22 } },
   onearmrow: { label: "Tourner le buste pour tirer", d: { twist: 28 } },
   bench: F.coudesOuv, dbbench: F.coudesOuv, inclinepress: F.coudesOuv, smithincline: F.coudesOuv, chestpress: F.coudesOuv,
   pushup: F.creux, declinepushup: F.creux, plank: F.creux, invertedrow: { label: "Bassin qui tombe", c: { hipFlex: 24, spine: 8 } },
@@ -853,7 +858,7 @@ export const faults: Record<string, Fault> = {
   pushdown: { label: "Coudes qui bougent", d: { shFlex: 32 } }, onearmpushdown: { label: "Coudes qui bougent", d: { shFlex: 32 } },
   overheadcable: F.coudesOuv, dbextension: F.coudesOuv, tricepsmachine: F.demi,
   dips: F.tropBas, benchdips: F.tropBas, pullup: F.demi, pikepushup: F.demi, hspu: F.demi, muscleup: F.demi,
-  pulldown: { label: "Se jeter en arrière", d: { rootPitch: -22, hipFlex: -22 } }, seatedrow: { label: "Balancer le buste", d: { rootPitch: -20, hipFlex: -20 } },
+  pulldown: { kind: "pulldown", label: "Se jeter en arrière", d: { rootPitch: -22, hipFlex: -22 } }, seatedrow: { label: "Balancer le buste", d: { rootPitch: -20, hipFlex: -20 } },
   chestrow: F.hausse, widerow: F.hausse, facepull: F.hausse, reversefly: F.hausse, ytw: F.hausse,
   shoulderpress: F.cambre, shoulderpressseated: F.cambre, dbshoulderpress: F.cambre,
   lateralraise: { label: "Élan et épaules qui montent", d: { rootPitch: -10, hipFlex: -10, knee: 10, shrug: 4 } }, cablelateral: F.hausse, lateralraisemachine: F.hausse, leanabduction: F.hausse,

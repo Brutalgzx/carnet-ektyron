@@ -139,7 +139,7 @@ function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN
 function vAnat(){const pr=(PROF.prio||[]).some(k=>A3D_GROUPS[k]);if(AN.g==null&&!AN.sel)AN.g=pr?"prio":"pecs";const g=AN.sel?null:AN.g;
  const chip=(k,l)=>`<button data-ang="${k}" aria-pressed="${g===k}">${l}</button>`;
  return `<div class="card stack">
-  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle">Chargement 3D…</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
+  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle">◐ Anatomie 3D</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
   <div id="an-info" class="an-info">${anInfo()}</div></div>
  <div class="card stack"><div class="row"><div class="lab sp">Groupes</div><button class="lnk small" id="an-reset">↺ Réinitialiser</button></div><div class="an-chips">${(pr?chip("prio","⭐ Mes priorités"):"")+AV_M.filter(([k])=>A3D_GROUPS[k]).map(([k])=>chip(k,anLab(k))).join("")}</div></div>`}
 function anRefresh(){if(AN.h)AN.h.set(anRoles());const i=$("#an-info");if(i)i.innerHTML=anInfo();document.querySelectorAll("[data-ang]").forEach(b=>b.setAttribute("aria-pressed",!AN.sel&&b.dataset.ang===AN.g))}
@@ -155,7 +155,7 @@ document.addEventListener("click",e=>{const c=e.target.closest("[data-ang]");if(
 /* Raccourci Anatomie sur l'Accueil : le même mannequin, toucher un muscle le montre, le bouton mène aux exercices. */
 function anatHome(){if(!window.a3dAnatomy)return "";if(AN.g==null&&!AN.sel)AN.g=(PROF.prio||[]).some(k=>A3D_GROUPS[k])?"prio":"pecs";
  return `<div class="card stack"><div class="row"><div class="lab sp">Anatomie</div><button class="lnk small" data-tab="anat">Ouvrir ›</button></div>
-  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle">Chargement 3D…</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
+  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle">◐ Anatomie 3D</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
   <div id="an-info" class="an-info">${anInfo()}</div></div>`}
 /* Après un nouvel affichage : on remet la scène 3D déjà chargée au lieu de la relancer. */
 function anatKeep(K){const el=$("#an3d");if(!el)return;if(K&&AN.h&&AN.el===K){el.replaceWith(K);AN.h.set(anRoles())}else anatMount()}
