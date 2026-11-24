@@ -121,7 +121,18 @@ const anGroupOf=id=>Object.keys(A3D_GROUPS).find(k=>A3D_GROUPS[k].includes(id))|
 function anRoles(){const r={};if(AN.sel){const g=anGroupOf(AN.sel);if(g)for(const id of A3D_GROUPS[g])r[id]="secondaire";r[AN.sel]="principal";return r}
  const gs=AN.g==="prio"?(PROF.prio||[]).filter(k=>A3D_GROUPS[k]):AN.g?[AN.g]:[];for(const k of gs)for(const id of A3D_GROUPS[k])r[id]="principal";return r}
 const anLab=k=>{const m=AV_M.find(x=>x[0]===k);return m?m[2]+" "+m[1]:k};
-function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN.sel);return `<b>${m[0]}</b>${g?` <span class="muted small">· ${anLab(g)}</span>`:""}<br><span class="small">${m[1]}</span>`}
+/* Muscle 3D → sous-groupes de MUSC (data.js), qui listent les exercices. */
+const A3D_MUSC={"grand-pectoral":["pecs"],"petit-pectoral":["pecs"],"dentele-anterieur":["pecs"],"grand-dorsal":["lats","dos"],"grand-rond":["lats","dos"],"rhomboides":["dos","arr"],"erecteurs-rachis":["lomb"],
+ "deltoide-anterieur":["ant"],"deltoide-moyen":["lat"],"deltoide-posterieur":["arr"],"supra-epineux":["lat"],"infra-epineux":["arr"],"petit-rond":["arr"],"subscapulaire":["arr"],
+ "biceps-brachial":["bic"],"brachial":["bic"],"brachio-radial":["bic"],"triceps-brachial":["tri"],"grand-droit":["abs","core"],"oblique-externe":["obl","core"],"trapeze":["trap"],"ilio-psoas":["abs"],
+ "droit-femoral":["quad"],"vaste-lateral":["quad"],"vaste-medial":["quad"],"vaste-intermediaire":["quad"],"sartorius":["quad"],"biceps-femoral":["isch"],"semi-tendineux":["isch"],"semi-membraneux":["isch"],"grand-adducteur":["add"],
+ "grand-fessier":["fess"],"moyen-fessier":["add","fess"],"tenseur-fascia-lata":["add"],"gastrocnemien":["moll"],"soleaire":["moll"],"fibulaires":["moll"]};
+const EXT={H:"Polyarticulaire lourd",M:"Polyarticulaire",I:"Isolation"};
+function anExos(id){const ids=[...new Set((A3D_MUSC[id]||[]).flatMap(k=>MUSC[k]?MUSC[k][1]:[]))].filter(x=>EX[x]);
+ const ok=x=>typeof pickOk!=="function"||pickOk(x,PROF);return ids.sort((a,b)=>ok(b)-ok(a))
+  .map(x=>`<details class="an-exo"><summary><b>${esc(EX[x][0])}</b>${ok(x)?"":` <span class="small muted">· pas dans ta salle</span>`}</summary><p class="small" style="margin:6px 0 0">${esc(EX[x][5])}</p><p class="small muted" style="margin:4px 0 0">${EXT[EX[x][3]]||""}</p></details>`)}
+function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN.sel),xs=anExos(AN.sel);return `<b>${m[0]}</b>${g?` <span class="muted small">· ${anLab(g)}</span>`:""}<br><span class="small">${m[1]}</span>
+  ${xs.length?`<details class="an-list" open><summary>🏋️ ${xs.length} exercice${xs.length>1?"s":""} qui le cible${xs.length>1?"nt":""}</summary>${xs.join("")}</details>`:`<p class="small muted" style="margin:6px 0 0">Pas d'exercice dédié dans le coach pour ce muscle.</p>`}`}
  return `<span class="small muted">Touche un muscle sur le mannequin pour voir son nom et son rôle. Glisse à l'horizontale pour le tourner.</span>`}
 function vAnat(){const pr=(PROF.prio||[]).some(k=>A3D_GROUPS[k]);if(AN.g==null&&!AN.sel)AN.g=pr?"prio":"pecs";const g=AN.sel?null:AN.g;
  const chip=(k,l)=>`<button data-ang="${k}" aria-pressed="${g===k}">${l}</button>`;
