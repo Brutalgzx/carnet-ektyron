@@ -224,9 +224,9 @@ function foodSheet(slot,d,from){EXF={slot,d,from};const rec=(LS.get("coach-exrec
    x.hidden=!ok||(W.length&&seen.has(id));if(!x.hidden){n++;seen.add(id)}});
   el.querySelectorAll("[data-grp]").forEach(u=>{const v=[...u.children].some(x=>!x.hidden);u.hidden=!v;const l=u.previousElementSibling;if(l&&l.hasAttribute("data-grpl"))l.hidden=!v});$("#food-none").hidden=n>0})}
 let FQ=null;
-function foodQty(id){const x=ALIM.find(a=>a.id===id);if(!x)return;FQ={x,g:x.pg};const f=EXF||{slot:"x"},S=f.from==="n"?[["x","Hors repas"],...mealSlots().map(m=>[m[0],m[1]])]:null;
- pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">${x.e} ${esc(x.n)}</h2><button class="chip" data-exback aria-label="Retour">✕</button></div>
- <p class="small muted" style="margin:0">1 ${esc(x.pu)} = ${fr(x.pg)} g · pour 100 g : ${fr(x.k)} kcal, ${fr(x.P,1)} g protéines, ${fr(x.C,1)} g glucides, ${fr(x.F,1)} g lipides.</p>
+function foodQty(id){const x=typeof id==="object"?id:ALIM.find(a=>a.id===id);if(!x)return;FQ={x,g:x.pg};const f=EXF||{slot:"x"},S=f.from==="n"&&!(typeof OWN!=="undefined"&&OWN)?[["x","Hors repas"],...mealSlots().map(m=>[m[0],m[1]])]:null;
+ pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">${x.e} ${esc(x.n)}</h2><button class="chip" ${typeof OWN!=="undefined"&&OWN?"data-ownback":"data-exback"} aria-label="Retour">✕</button></div>
+ <p class="small muted" style="margin:0">${x.b?esc(x.b)+" · ":""}1 ${esc(x.pu)} = ${fr(x.pg)} g · pour 100 g : ${fr(x.k)} kcal, ${fr(x.P,1)} g protéines, ${fr(x.C,1)} g glucides, ${fr(x.F,1)} g lipides.</p>
  <div class="row" style="gap:8px;justify-content:center"><button class="chip" data-fqp="-0.5" aria-label="Moins">−</button><b class="mono" id="fq-n" style="font-size:22px;min-width:120px;text-align:center"></b><button class="chip" data-fqp="0.5" aria-label="Plus">＋</button></div>
  <label class="small">Ou en grammes<input id="fq-g" class="srch" type="number" inputmode="decimal" min="0" value="${x.pg}"></label>
  <div class="card" id="fq-t" style="text-align:center"></div>

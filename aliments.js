@@ -61,6 +61,15 @@ const ALIM_G=[
 ["Nem",230,8,22,12,50,"nem"],["Samoussa",270,7,26,15,40,"samoussa"],["Maki au saumon",150,5,27,2.5,25,"pièce"],["Sushi au saumon",170,7,26,4,30,"pièce"],["California roll",170,5,24,6,30,"pièce"],
 ["Jambon blanc",115,20,1,3.5,45,"tranche"],["Jambon cru",230,28,0.5,13,20,"tranche"],["Rillettes",400,15,0.5,38,30,"portion"],["Pâté de campagne",300,14,2,26,40,"tranche"],
 ["Saumon fumé",180,22,0,10,40,"2 tranches"],["Surimi",105,8,13,2,50,"3 bâtonnets"]]],
+["Rayon traiteur (tout prêt)","🛒",[
+["Mini wraps poulet (×2)",215,11,24,8,140,"barquette"],["Wrap poulet crudités",205,10,23,8,190,"wrap"],["Wrap thon crudités",195,9,24,7,190,"wrap"],["Wrap végétarien falafel",210,6,27,8,190,"wrap"],
+["Sandwich triangle poulet",230,11,25,9,150,"triangle"],["Sandwich triangle thon",225,10,26,9,150,"triangle"],["Sandwich triangle œuf mayo",245,9,25,12,150,"triangle"],["Club sandwich jambon",240,11,26,10,160,"sandwich"],
+["Salade pâtes poulet (barquette)",160,8,18,6,250,"barquette"],["Salade piémontaise",150,4,13,9,250,"barquette"],["Salade César poulet",150,9,7,9,250,"barquette"],["Taboulé",165,4,24,6,250,"barquette"],
+["Salade lentilles",130,7,16,4,250,"barquette"],["Poke bowl saumon",140,7,19,4,350,"bol"],["Poke bowl poulet",135,9,18,3,350,"bol"],["Box sushis / makis (12 pièces)",150,5,27,2,280,"box"],
+["Plat micro-ondable pâtes bolo",120,6,15,3.5,300,"barquette"],["Plat micro-ondable poulet riz",115,8,15,2.5,300,"barquette"],["Plat micro-ondable chili",110,7,12,3.5,300,"barquette"],["Hachis parmentier (barquette)",115,6,10,5.5,300,"barquette"],
+["Box pâtes carbonara",165,7,19,7,300,"box"],["Quiche lorraine (part)",270,9,18,18,150,"part"],["Pizza individuelle jambon fromage",230,10,27,9,200,"pizza"],["Soupe de légumes (brique)",35,1,5,1,300,"bol"],
+["Gaspacho",35,0.8,4,1.6,250,"verre"],["Œufs durs (×2, sachet)",140,12.5,0.8,10,100,"sachet"],["Blanc de poulet en tranches",105,22,1,1.5,120,"barquette"],["Jambon blanc",115,20,1,3.5,80,"2 tranches"],
+["Skyr nature",62,10.5,4,0.2,150,"pot"],["Protéine pudding / crème protéinée",85,10,8,1.5,200,"pot"],["Barre protéinée",370,30,35,12,55,"barre"],["Shaker protéiné prêt à boire",65,10,4,1,330,"bouteille"]]],
 ["Sandwichs et restauration rapide","🍔",[
 ["Sandwich jambon-beurre",270,12,32,10,200,"sandwich"],["Sandwich poulet crudités",210,10,26,7,250,"sandwich"],["Panini",270,12,30,11,200,"panini"],["Wrap au poulet",200,11,22,7,200,"wrap"],
 ["Croque-monsieur",260,13,22,13,130,"croque"],["Hot-dog",270,10,25,15,130,"hot-dog"],["Hamburger",250,12,30,9,105,"burger"],["Cheeseburger",260,13,28,11,115,"burger"],

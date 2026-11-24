@@ -2,6 +2,11 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:35,d:"24/11",t:"🛒 Manger autre chose : fait maison ou tout prêt",x:[
+  "Dans la fiche d'un repas, « 🛒 Autre chose » remplace le plat prévu ce jour-là par ce que tu veux vraiment manger.",
+  "Acheté tout prêt : cherche un produit, une marque ou un code-barres dans les catalogues des magasins (Open Food Facts, produits vendus en France), filtre par enseigne (Carrefour, Leclerc, Lidl, Auchan…), règle la quantité. Un rayon traiteur (mini wraps, salades en barquette, poke bowls, plats micro-ondables…) marche même hors ligne.",
+  "Fait maison : compose ton repas ingrédient par ingrédient.",
+  "Tes autres repas de la journée s'ajustent tout seuls, et « ⭐ Mes repas » garde tes repas habituels pour les reprendre en un geste."]},
  {id:34,d:"24/11",t:"✓✗ Bon geste, puis geste à éviter",x:[
   "Chaque animation 3D joue maintenant en deux temps : une répétition correcte (bandeau vert « ✓ Bon geste »), puis la même avec l'erreur la plus fréquente (bandeau rouge « ✗ À éviter » : dos rond, genoux qui rentrent, élan du buste, épaules qui montent…).",
   "Le bouton ✓✗ sous la scène coupe ou remet ce mode.",
