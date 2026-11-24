@@ -33,7 +33,6 @@ function vCorps(){const p=PROF,S=avState(),now=avEstimate(false),go=p.tw!=null?a
   :`${fr(curWeight(),1)} kg · environ ${pct(now.bf)} de masse grasse.`;
  return back+`<div class="card stack av-card"><div class="av-view" id="av-view"><canvas id="av-cv" aria-label="Avatar 3D : glisse pour le faire tourner"></canvas><div class="av-load small muted" id="av-load">Chargement de l'avatar…</div></div>
   ${seg}<p class="small muted" style="margin:0" id="av-info">${info}</p></div>
- ${an3dCard()}
  <div class="card stack"><div class="row"><div class="lab sp">Muscles</div><button class="lnk small" id="av-reset">${go?"Revenir à l'objectif":"Revenir à aujourd'hui"}</button></div>
   ${AV_M.map(([k,l,e])=>`<div class="sl av-sl"><div class="row"><label for="av-${k}" class="sp">${e} ${l}</label><b id="avv-${k}">${S.v[k]}</b></div><input type="range" id="av-${k}" data-avm="${k}" min="0" max="100" step="1" value="${S.v[k]}"></div>`).join("")}
   <p class="small muted" style="margin:0">Estimation à partir de ta taille, ton âge, ton poids et ton niveau : la génétique, le sommeil et la régularité changent beaucoup le résultat. Pas un avis médical.</p></div>`}
@@ -55,7 +54,7 @@ function avParse(buf){const dv=new DataView(buf),u=o=>dv.getUint32(o,1),nv=u(4),
   const f=new Float32Array(n*3);let mx=0;for(let i=0;i<n*3;i++){f[i]=d[i]*sc}for(let i=0;i<n;i++)mx=Math.max(mx,Math.hypot(f[i*3],f[i*3+1],f[i*3+2]));D.push({ids,f,mx})}
  return{nv,P,body:all.subarray(0,tb*3),shorts:all.subarray(tb*3,(tb+ts)*3),eyes:all.subarray((tb+ts)*3),D,h:sz[1]}}
 
-function corpsMount(){if(AN.on&&$("#an3d"))an3dMount();else an3dStop();const cv=$("#av-cv");if(!cv)return;const sex=PROF.sex==="f"?"f":"m";
+function corpsMount(){const cv=$("#av-cv");if(!cv)return;const sex=PROF.sex==="f"?"f":"m";
  Promise.all([avLoadThree(),avLoadBin(sex)]).then(([,M])=>{if(!document.body.contains(cv))return;avBuild(cv,M,sex);$("#av-load")?.remove()})
   .catch(()=>{const l=$("#av-load");if(l)l.textContent="Avatar indisponible hors ligne. Reviens avec du réseau."})}
 
@@ -107,23 +106,33 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-av],#av-re
  if(b.id==="av-reset"){avSet(PROF.tw!=null?"goal":"now");render();return}
  avSet(b.dataset.av);render()});
 
-/* Anatomie 3D (moteur Atlas) : mannequin anatomique, le groupe choisi s'allume. Monté seulement sur demande (une scène WebGL de plus). */
-const A3D_GROUPS={pecs:["grand-pectoral","petit-pectoral"],dos:["grand-dorsal","grand-rond","rhomboides","erecteurs-rachis"],epaules:["deltoide-anterieur","deltoide-moyen","deltoide-posterieur","supra-epineux","infra-epineux","petit-rond"],bras:["biceps-brachial","brachial","triceps-brachial","brachio-radial"],abdos:["grand-droit","oblique-externe"],trapezes:["trapeze"],jambes:["droit-femoral","vaste-lateral","vaste-medial","vaste-intermediaire","biceps-femoral","semi-tendineux","semi-membraneux","grand-adducteur","sartorius"],fessiers:["grand-fessier","moyen-fessier","tenseur-fascia-lata"],mollets:["gastrocnemien","soleaire","fibulaires"]};
-const AN={on:false,g:null,h:null,el:null,iv:0};
-function anGroups(){const pr=(PROF.prio||[]).filter(k=>A3D_GROUPS[k]);return AN.g==="prio"||!AN.g?pr:[AN.g]}
-function anRoles(){const r={};for(const k of anGroups())for(const id of A3D_GROUPS[k])r[id]="principal";return r}
-function an3dCard(){const pr=(PROF.prio||[]).some(k=>A3D_GROUPS[k]),g=AN.g||(pr?"prio":"pecs");AN.g=g;
+/* Onglet Anatomie (moteur Atlas) : mannequin anatomique ; un groupe ou un muscle touché s'allume, avec son nom et son rôle. */
+const A3D_GROUPS={pecs:["grand-pectoral","petit-pectoral","dentele-anterieur"],dos:["grand-dorsal","grand-rond","rhomboides","erecteurs-rachis"],epaules:["deltoide-anterieur","deltoide-moyen","deltoide-posterieur","supra-epineux","infra-epineux","petit-rond","subscapulaire"],bras:["biceps-brachial","brachial","triceps-brachial","brachio-radial"],abdos:["grand-droit","oblique-externe"],trapezes:["trapeze"],jambes:["droit-femoral","vaste-lateral","vaste-medial","vaste-intermediaire","biceps-femoral","semi-tendineux","semi-membraneux","grand-adducteur","sartorius","ilio-psoas"],fessiers:["grand-fessier","moyen-fessier","tenseur-fascia-lata"],mollets:["gastrocnemien","soleaire","fibulaires","tibial-anterieur"]};
+const A3D_MUS={"grand-pectoral":["Grand pectoral","Rapproche le bras du corps et pousse vers l'avant : développé, pompes, écarté."],"petit-pectoral":["Petit pectoral","Sous le grand pectoral, abaisse et avance l'omoplate."],"dentele-anterieur":["Dentelé antérieur","Plaque l'omoplate contre les côtes : finit les pompes, protège l'épaule."],
+"grand-dorsal":["Grand dorsal","Tire le bras vers le bas et l'arrière : tractions, tirages, rowings. Donne la largeur du dos."],"grand-rond":["Grand rond","Aide le grand dorsal à tirer le bras vers le bas."],"rhomboides":["Rhomboïdes","Serrent les omoplates : rowings, face pull. Bons pour la posture."],"erecteurs-rachis":["Érecteurs du rachis","Tiennent le dos droit : soulevé de terre, squat, extensions lombaires."],
+"deltoide-anterieur":["Deltoïde antérieur","Avant de l'épaule : lève le bras devant, travaille aux développés."],"deltoide-moyen":["Deltoïde moyen","Côté de l'épaule : lève le bras sur le côté (élévations latérales). Élargit la carrure."],"deltoide-posterieur":["Deltoïde postérieur","Arrière de l'épaule : tire le bras vers l'arrière (oiseau, face pull)."],"supra-epineux":["Supra-épineux","Coiffe des rotateurs : démarre l'élévation du bras, stabilise l'épaule."],"infra-epineux":["Infra-épineux","Coiffe des rotateurs : tourne le bras vers l'extérieur."],"petit-rond":["Petit rond","Coiffe des rotateurs : rotation externe du bras."],"subscapulaire":["Subscapulaire","Coiffe des rotateurs : rotation interne du bras."],
+"biceps-brachial":["Biceps","Plie le coude et tourne la paume vers le haut : curls, tractions."],"brachial":["Brachial","Sous le biceps, plie le coude quelle que soit la prise."],"triceps-brachial":["Triceps","Tend le coude : dips, extensions, développés. Les deux tiers du volume du bras."],"brachio-radial":["Brachio-radial","Avant-bras : plie le coude prise marteau."],
+"grand-droit":["Grand droit","Les « tablettes » : enroule le buste (crunch), gaine le tronc."],"oblique-externe":["Oblique externe","Côtés du ventre : rotation et inclinaison du buste, gainage."],"trapeze":["Trapèze","Haut du dos et cou : hausse les épaules (shrugs) et tient les omoplates."],"sterno-cleido-mastoidien":["Sterno-cléido-mastoïdien","Cou : tourne et fléchit la tête."],
+"droit-femoral":["Droit fémoral","Quadriceps : tend le genou et lève la cuisse."],"vaste-lateral":["Vaste latéral","Quadriceps, côté extérieur : tend le genou (squat, presse)."],"vaste-medial":["Vaste médial","Quadriceps, goutte au-dessus du genou : tend le genou, stabilise la rotule."],"vaste-intermediaire":["Vaste intermédiaire","Quadriceps profond : tend le genou."],"biceps-femoral":["Biceps fémoral","Ischio-jambier : plie le genou, tend la hanche (leg curl, soulevé roumain)."],"semi-tendineux":["Semi-tendineux","Ischio-jambier : plie le genou, tend la hanche."],"semi-membraneux":["Semi-membraneux","Ischio-jambier profond : plie le genou, tend la hanche."],"grand-adducteur":["Grand adducteur","Intérieur de la cuisse : serre les jambes, aide au squat."],"sartorius":["Sartorius","Le plus long muscle du corps : fléchit hanche et genou."],"ilio-psoas":["Ilio-psoas","Fléchisseur de hanche : lève la cuisse (relevés de jambes)."],
+"grand-fessier":["Grand fessier","Tend la hanche : hip thrust, squat, fentes. Le plus gros muscle du corps."],"moyen-fessier":["Moyen fessier","Écarte la jambe et stabilise le bassin (abducteurs)."],"tenseur-fascia-lata":["Tenseur du fascia lata","Côté de la hanche : écarte et stabilise la jambe."],
+"gastrocnemien":["Gastrocnémien","Mollet visible : monte sur la pointe des pieds jambes tendues."],"soleaire":["Soléaire","Mollet profond : travaille surtout genoux pliés (mollets assis)."],"fibulaires":["Fibulaires","Côté de la jambe : stabilisent la cheville."],"tibial-anterieur":["Tibial antérieur","Devant du tibia : relève la pointe du pied."]};
+const AN={g:null,sel:null,h:null,el:null,iv:0};
+const anGroupOf=id=>Object.keys(A3D_GROUPS).find(k=>A3D_GROUPS[k].includes(id))||null;
+function anRoles(){const r={};if(AN.sel){const g=anGroupOf(AN.sel);if(g)for(const id of A3D_GROUPS[g])r[id]="secondaire";r[AN.sel]="principal";return r}
+ const gs=AN.g==="prio"?(PROF.prio||[]).filter(k=>A3D_GROUPS[k]):AN.g?[AN.g]:[];for(const k of gs)for(const id of A3D_GROUPS[k])r[id]="principal";return r}
+const anLab=k=>{const m=AV_M.find(x=>x[0]===k);return m?m[2]+" "+m[1]:k};
+function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN.sel);return `<b>${m[0]}</b>${g?` <span class="muted small">· ${anLab(g)}</span>`:""}<br><span class="small">${m[1]}</span>`}
+ return `<span class="small muted">Touche un muscle sur le mannequin pour voir son nom et son rôle. Glisse à l'horizontale pour le tourner.</span>`}
+function vAnat(){const pr=(PROF.prio||[]).some(k=>A3D_GROUPS[k]);if(AN.g==null&&!AN.sel)AN.g=pr?"prio":"pecs";const g=AN.sel?null:AN.g;
  const chip=(k,l)=>`<button data-ang="${k}" aria-pressed="${g===k}">${l}</button>`;
- return `<div class="card stack"><div class="lab">Anatomie 3D</div>
-  <div class="an-chips">${(pr?chip("prio","⭐ Mes priorités"):"")+AV_M.filter(([k])=>A3D_GROUPS[k]).map(([k,l,e])=>chip(k,e+" "+l)).join("")}</div>
-  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle" id="an-go">◐ Toucher pour afficher l'anatomie 3D</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
-  <p class="small muted" style="margin:0">Glisse sur le mannequin pour le tourner. Le groupe choisi s'allume en rouge.</p></div>`}
+ return `<div class="card stack">
+  <div class="an3d" id="an3d"><div class="a3d-box"><div class="a3d-idle">Chargement 3D…</div><div class="a3d-ctl a3d-ghost">${["face","profil","dos","3/4"].map(v=>`<button>${v}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div></div>
+  <div id="an-info" class="an-info">${anInfo()}</div></div>
+ <div class="card stack"><div class="lab">Groupes</div><div class="an-chips">${(pr?chip("prio","⭐ Mes priorités"):"")+AV_M.filter(([k])=>A3D_GROUPS[k]).map(([k])=>chip(k,anLab(k))).join("")}</div></div>`}
+function anRefresh(){if(AN.h)AN.h.set(anRoles());const i=$("#an-info");if(i)i.innerHTML=anInfo();document.querySelectorAll("[data-ang]").forEach(b=>b.setAttribute("aria-pressed",!AN.sel&&b.dataset.ang===AN.g))}
 function an3dStop(){clearInterval(AN.iv);if(AN.h){try{AN.h.stop()}catch(e){}}AN.h=null;AN.el=null}
-function an3dMount(){const el=$("#an3d");if(!el)return;an3dStop();
- if(!window.a3dAnatomy){const i=$("#an-go");if(i)i.textContent="Anatomie 3D indisponible sur cet appareil.";return}
- AN.on=true;AN.el=el;const i=$("#an-go");if(i)i.textContent="Chargement 3D…";
- window.a3dAnatomy(el,anRoles()).then(h=>{if(AN.el!==el||!el.isConnected){h.stop();return}AN.h=h;
-  AN.iv=setInterval(()=>{if(!el.isConnected)an3dStop()},1500)}).catch(()=>{const i=$("#an-go");if(i)i.textContent="Anatomie 3D indisponible hors ligne. Reviens avec du réseau."})}
-document.addEventListener("click",e=>{const c=e.target.closest("[data-ang]");
- if(c){AN.g=c.dataset.ang;document.querySelectorAll("[data-ang]").forEach(b=>b.setAttribute("aria-pressed",b===c));if(AN.h)AN.h.set(anRoles());else an3dMount();return}
- if(e.target.closest("#an-go"))an3dMount()});
+function anatMount(){const el=$("#an3d");if(!el)return;an3dStop();const idle=t=>{const i=el.querySelector(".a3d-idle");if(i)i.textContent=t};
+ if(!window.a3dAnatomy)return idle("Anatomie 3D indisponible sur cet appareil.");
+ AN.el=el;window.a3dAnatomy(el,anRoles(),id=>{AN.sel=id;anRefresh()}).then(h=>{if(AN.el!==el||!el.isConnected){h.stop();return}AN.h=h;
+  AN.iv=setInterval(()=>{if(!el.isConnected)an3dStop()},1500)}).catch(()=>idle("Anatomie 3D indisponible hors ligne. Reviens avec du réseau."))}
+document.addEventListener("click",e=>{const c=e.target.closest("[data-ang]");if(!c)return;AN.g=c.dataset.ang;AN.sel=null;anRefresh()});

@@ -100,8 +100,8 @@ input[type=range]{width:100%;margin:12px 0 4px;accent-color:var(--pink);height:2
 .thm{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--muted);font:500 15px/1 var(--body);display:grid;place-items:center;padding:0}
 nav.tabs{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:532px;margin:0 auto;z-index:15;
   background:var(--sheen),var(--glass-bar);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--edge);border-radius:30px;box-shadow:var(--hi),0 16px 40px -10px rgba(0,0,0,.7);
-  display:grid;grid-template-columns:repeat(6,1fr);padding:5px}
-nav.tabs button{background:none;border:0;border-radius:24px;display:flex;flex-direction:column;align-items:center;gap:2px;font:500 10.5px var(--body);color:var(--muted);padding:6px 0;min-height:54px}
+  display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:5px 3px}
+nav.tabs button{background:none;border:0;border-radius:24px;display:flex;flex-direction:column;align-items:center;gap:2px;font:500 9.5px var(--body);color:var(--muted);padding:6px 0;min-height:54px;min-width:0;white-space:nowrap;overflow:hidden;letter-spacing:-.35px}
 nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 nav.tabs button[aria-current="page"]{color:var(--acc);background:rgba(255,255,255,.10);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
 .week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
@@ -292,3 +292,4 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 .an-chips{display:flex;flex-wrap:wrap;gap:6px}
 .an-chips button{min-height:32px;padding:4px 10px;border-radius:999px;border:1px solid var(--line,rgba(255,255,255,.14));background:transparent;color:inherit;font:inherit;font-size:13px}
 .an-chips button[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+.an-info{min-height:44px;line-height:1.4}

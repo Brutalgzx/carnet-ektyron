@@ -136,7 +136,38 @@ const STAND_ANIM = {
 };
 const ANAT_VIEWS: Record<string, [number, number, number]> = { face: [0, 1.0, 3.2], profil: [3.2, 1.0, 0], dos: [0, 1.0, -3.2], "3/4": [2.3, 1.2, 2.3] };
 
-function AnatomyView({ ctl }: { ctl: { set?: (r: MuscleRoles) => void } }) {
+type AnatCtl = { set?: (r: MuscleRoles) => void; pick?: (id: string) => void };
+/** Toucher court (pas un glissé) sur la scène → muscle visé (le premier devant, sous la peau). */
+function Picker({ ctl }: { ctl: AnatCtl }) {
+  const { gl, camera, scene } = useThree();
+  useEffect(() => {
+    const el = gl.domElement;
+    let d: { x: number; y: number; t: number } | null = null;
+    const down = (e: PointerEvent) => { d = { x: e.clientX, y: e.clientY, t: performance.now() }; };
+    const up = (e: PointerEvent) => {
+      if (!d) return;
+      const moved = Math.hypot(e.clientX - d.x, e.clientY - d.y), dt = performance.now() - d.t;
+      d = null;
+      if (moved > 10 || dt > 600 || !ctl.pick) return;
+      const r = el.getBoundingClientRect();
+      const v = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      const rc = new THREE.Raycaster();
+      rc.setFromCamera(v, camera);
+      const ms: THREE.Object3D[] = [];
+      scene.traverse((o) => { if (o.name.startsWith("M__") && o.visible) ms.push(o); });
+      const h = rc.intersectObjects(ms, false)[0];
+      if (h) ctl.pick(h.object.name.split("__")[1]);
+    };
+    const cancel = () => { d = null; };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", cancel);
+    return () => { el.removeEventListener("pointerdown", down); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", cancel); };
+  }, [gl, camera, scene, ctl]);
+  return null;
+}
+
+function AnatomyView({ ctl }: { ctl: AnatCtl }) {
   const [roles, setRoles] = useState<MuscleRoles>({});
   const [view, setView] = useState("face");
   const [nonce, setNonce] = useState(0);
@@ -156,10 +187,11 @@ function AnatomyView({ ctl }: { ctl: { set?: (r: MuscleRoles) => void } }) {
           <ContactShadows position={[0, 0.002, 0]} opacity={0.5} blur={2.5} scale={6} />
           <OrbitControls makeDefault enablePan={false} minDistance={1.2} maxDistance={6} target={[0, 0.95, 0]} />
           <AnatCam pos={ANAT_VIEWS[view]} nonce={nonce} />
+          <Picker ctl={ctl} />
         </Canvas>
         <div className="a3d-leg">
-          {(["principal"] as const).map((r) => (
-            <span key={r}><i style={{ background: ROLE_COLORS[r] }} />groupe choisi</span>
+          {(["principal", "secondaire"] as const).filter((r) => r === "principal" || Object.values(roles).includes(r)).map((r) => (
+            <span key={r}><i style={{ background: ROLE_COLORS[r] }} />{r === "principal" ? "choisi" : "même groupe"}</span>
           ))}
         </div>
       </div>
@@ -183,9 +215,9 @@ function AnatCam({ pos, nonce }: { pos: [number, number, number]; nonce: number 
 
 (window as unknown as { A3D_ENGINE: unknown }).A3D_ENGINE = {
   /** Onglet Corps : mannequin anatomique debout ; set(roles) allume les muscles (id → principal / secondaire). */
-  anatomy(el: HTMLElement, roles: MuscleRoles = {}) {
+  anatomy(el: HTMLElement, roles: MuscleRoles = {}, onPick?: (id: string) => void) {
     const root = createRoot(el);
-    const ctl: { set?: (r: MuscleRoles) => void } = {};
+    const ctl: AnatCtl = { pick: onPick };
     root.render(<AnatomyView ctl={ctl} />);
     let pending: MuscleRoles | null = roles;
     const set = (r: MuscleRoles) => { if (ctl.set) ctl.set(r); else pending = r; };

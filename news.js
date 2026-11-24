@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:30,d:"24/11",t:"🫀 Onglet Anatomie",x:[
+  "L'anatomie 3D a maintenant son propre onglet en bas de l'écran (l'onglet Aujourd'hui s'appelle désormais Accueil pour faire de la place).",
+  "Touche un muscle sur le mannequin : il s'allume, avec son nom et son rôle ; les autres muscles du même groupe s'allument en orange.",
+  "Ou choisis un groupe en dessous (pecs, dos, jambes…, ou « Mes priorités »)."]},
  {id:29,d:"24/11",t:"🫀 Anatomie 3D dans Corps",x:[
   "L'onglet Corps a une nouvelle carte : le mannequin anatomique 3D, muscle par muscle.",
   "Choisis un groupe (pecs, dos, jambes…) ou « Mes priorités » : les muscles concernés s'allument.",

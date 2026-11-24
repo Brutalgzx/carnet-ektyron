@@ -15,9 +15,9 @@ function a3dOf(id,a){return A3D_MAP[id]||A3D_MAP[a]||null}
  const ok=(()=>{try{const c=document.createElement("canvas");return !!(window.WebGLRenderingContext&&(c.getContext("webgl2")||c.getContext("webgl")))}catch(e){return false}})();
  if(!ok){window.A3D_OFF=true;return}
  let eng=null,loading=null,cur=null,stop=null;const vis=new Map();
- const load=()=>eng?Promise.resolve(eng):loading||(loading=new Promise((res,rej)=>{const s=document.createElement("script");s.src="atlas3d/atlas3d.js?v=5";
+ const load=()=>eng?Promise.resolve(eng):loading||(loading=new Promise((res,rej)=>{const s=document.createElement("script");s.src="atlas3d/atlas3d.js?v=6";
   s.onload=()=>window.A3D_ENGINE?res(eng=window.A3D_ENGINE):rej();s.onerror=rej;document.head.appendChild(s)}));
- window.a3dAnatomy=(el,roles)=>{if(cur)off();return load().then(E=>{el.innerHTML="";return E.anatomy(el,roles)})};
+ window.a3dAnatomy=(el,roles,pick)=>{if(cur)off();return load().then(E=>{el.innerHTML="";return E.anatomy(el,roles,pick)})};
  const fallback=el=>{const v=el.dataset.v;el.outerHTML=v?`<video class="anim anim-v${el.classList.contains("g-anim")?" g-anim":""}" data-src="renders/${v}.mp4?v=${v==="rowu"?2:1}" muted loop playsinline preload="none"></video>`:""};
  /* Emplacement au repos = même gabarit que le lecteur (scène + barre de boutons + crédit) : la hauteur ne change pas au montage, la page ne saute pas. */
  const idle=(el,txt="◐ Vue 3D")=>{const t=(el.dataset.a3d||"")[0]!=="~";el.innerHTML=`<div class="a3d-box"><div class="a3d-idle">${txt}</div><div class="a3d-ctl a3d-ghost">${["❚❚","×0,5","face","profil","dos","3/4","Muscles"].concat(t?["Technique"]:[]).map(b=>`<button tabindex="-1">${b}</button>`).join("")}</div><div class="a3d-cred">Anatomie : BodyParts3D © DBCLS, CC BY 4.0 (modifié)</div></div>`};
