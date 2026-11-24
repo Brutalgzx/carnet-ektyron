@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>A3D probe</title>
+<div id=c style="width:200px;height:200px"></div><pre id=o></pre>
+<script>A3D_BASE="../atlas3d/";A3D_PROBE={}</script><script>document.write(`<script src="../atlas3d/atlas3d.js?${Date.now()}"><\/script>`)</script><script>
+// Positions monde (sol = y 0) des pieds, mains, bassin… à 11 instants par animation. Résultat dans window.OUT.
+const E=window.A3D_ENGINE,q=new URLSearchParams(location.search),ids=(q.get("ids")||E.anims.join(",")).split(","),w=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{const ctl={};let st=null;window.OUT={};
+ for(const id of ids){if(st)st.show(id);else{st=E.mount(c,id,false,{paused:true,ctl});let k=0;while(!A3D_PROBE.t&&k++<200)await w(100)}await w(400);
+  const rows=[];for(let i=0;i<=10;i++){const t=i/10+0.0001*Math.random();ctl.set(t,"3/4");let k=0;while((A3D_PROBE.t[0]!==t||A3D_PROBE.id!==id)&&k++<60)await w(30);await w(60);rows.push(JSON.parse(JSON.stringify(A3D_PROBE)))}OUT[id]=rows}
+ document.title="done"})();
+window.SUM=()=>{const f=a=>Math.min(...a).toFixed(2)+"…"+Math.max(...a).toFixed(2);return Object.entries(OUT).map(([id,R])=>`${id}: sole ${f(R.flatMap(r=>[r.sole0[1],r.sole1[1]]))} hand ${f(R.flatMap(r=>[r.hand0[1],r.hand1[1]]))} handZ ${f(R.map(r=>r.hand0[2]))} handX ${f(R.map(r=>Math.abs(r.hand0[0])))} root ${f(R.map(r=>r.root[1]))} rootZ ${f(R.map(r=>r.root[2]))} ankle ${f(R.map(r=>r.an0[1]))} knee ${f(R.map(r=>r.kn0[1]))} neck ${f(R.map(r=>r.neck[1]))}`).join("\n")};
+</script>

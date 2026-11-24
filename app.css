@@ -270,8 +270,9 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 #all-q,.srch{display:block;width:100%;margin-top:4px;height:46px;text-align:left;font:500 16px var(--body);padding:0 14px;background:var(--card);color:var(--ink);border:1px solid var(--line)}
 /* Fiche exercice 3D (atlas3d) */
 .a3d{aspect-ratio:auto;background:#05070B;overflow:hidden;position:relative}
-.a3d-idle{height:min(52vh,460px);display:flex;align-items:center;justify-content:center;color:#8a93a3;font-size:14px;cursor:pointer}
-.a3d-stage{position:relative;height:min(52vh,460px);touch-action:none}
+.a3d-idle{height:min(52vh,460px);height:min(52svh,460px);display:flex;align-items:center;justify-content:center;color:#8a93a3;font-size:14px;cursor:pointer}
+.a3d-stage{position:relative;height:min(52vh,460px);height:min(52svh,460px)}
+.a3d-stage,.a3d-stage *{touch-action:pan-y!important}
 .a3d-phase{position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.55);font-size:12px;font-weight:600;color:#fcd34d}
 .a3d-phase.a3d-con{color:#f87171}.a3d-phase.a3d-exc{color:#7dd3fc}
 .a3d-leg{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:2px;padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.55);font-size:11px;color:#e5e7eb}
@@ -285,4 +286,5 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 .a3d-tech p{margin:0 0 6px}.a3d-tech b{display:block;color:#fff;font-size:12px;margin-top:4px}
 .a3d-tech b.a3d-con{color:#f87171}.a3d-tech b.a3d-exc{color:#7dd3fc}
 .a3d-tech ul{margin:2px 0 6px;padding-left:18px}.a3d-tech small{display:block;color:#8a93a3;font-size:11px;margin-top:6px}
+.a3d-ghost{pointer-events:none;opacity:.35}
 .a3d-cred{padding:0 8px 6px;background:#0b0f17;color:#6b7280;font-size:10px;text-align:center}

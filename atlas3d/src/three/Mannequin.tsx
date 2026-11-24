@@ -381,10 +381,14 @@ function propObject(p: Prop): THREE.Object3D {
     case "rack":
       for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.05, 1.3, 0.05), dark, [0.55 * s, 0.65, 0]);
       break;
-    case "seat":
+    case "seat": {
+      // Pied du siège jusqu'au sol, quelle que soit la hauteur d'assise.
+      const h = Math.max(0.05, (p.position?.[1] ?? 0.28) - 0.04);
       add(new THREE.BoxGeometry(0.42, 0.08, 0.42), pad, [0, 0, 0]);
-      add(new THREE.BoxGeometry(0.06, 0.28, 0.06), dark, [0, -0.15, 0]);
+      add(new THREE.BoxGeometry(0.06, h, 0.06), dark, [0, -0.04 - h / 2, 0]);
+      add(new THREE.BoxGeometry(0.4, 0.03, 0.4), dark, [0, -0.04 - h + 0.015, 0]);
       break;
+    }
     case "backrest":
       add(new THREE.BoxGeometry(0.4, 0.62, 0.08), pad, [0, 0, 0]);
       break;
@@ -396,13 +400,18 @@ function propObject(p: Prop): THREE.Object3D {
       break;
     case "pullupBar":
       bar(1.4);
-      for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.06, 2.35, 0.06), dark, [0.68 * s, -1.15, 0]);
+      { // montants jusqu'au sol (avant : 2,35 m fixes, qui traversaient le sol pour une barre basse)
+        const h = (p.position?.[1] ?? 2.3) + 0.05;
+        for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.06, h, 0.06), dark, [0.68 * s, -h / 2 + 0.05, 0]);
+      }
       break;
     case "parallelBars":
+      // Écartement = celui des mains (0,30 m de l'axe), montants jusqu'au sol.
       for (const s of [-1, 1]) {
-        add(new THREE.CylinderGeometry(0.02, 0.02, 0.9, 12), steel, [0.25 * s, 0, 0.05], [Math.PI / 2, 0, 0]);
-        add(new THREE.BoxGeometry(0.05, 1.2, 0.05), dark, [0.25 * s, -0.6, 0.45]);
-        add(new THREE.BoxGeometry(0.05, 1.2, 0.05), dark, [0.25 * s, -0.6, -0.35]);
+        const h = p.position?.[1] ?? 1.2;
+        add(new THREE.CylinderGeometry(0.02, 0.02, 0.9, 12), steel, [0.3 * s, 0, 0.05], [Math.PI / 2, 0, 0]);
+        add(new THREE.BoxGeometry(0.05, h, 0.05), dark, [0.3 * s, -h / 2, 0.45]);
+        add(new THREE.BoxGeometry(0.05, h, 0.05), dark, [0.3 * s, -h / 2, -0.35]);
       }
       break;
     case "kettlebell":
@@ -547,6 +556,10 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
         m.mat.emissiveIntensity = 0.12 + 1.0 * act * ((m.mesh.userData.weight as number) ?? 0);
       }
     const p = poseAt(anim, t);
+    const foreAxis = rig.el.map((e) => {
+      const w = e.children.find((c) => (c as THREE.Bone).isBone);
+      return w ? w.position.clone().normalize() : new THREE.Vector3(0, -1, 0);
+    });
     const restAbd = rig.anatomical?.restAbd ?? 0;
     const r = rig;
     r.root.position.set(0, 0, 0);
@@ -559,6 +572,15 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
       r.sh[i].rotation.set(-D(p.shFlex), 0, D(p.shAbd - restAbd) * s);
       if (p.shHor) r.sh[i].quaternion.premultiply(qH.setFromAxisAngle(Y_AXIS, D(p.shHor) * s));
       r.el[i].rotation.set(-D(p.elbow), 0, 0);
+      // Pronation répartie coude / poignet pour éviter l'effet « papillote » de la peau à un seul endroit.
+      if (p.pron) {
+        r.el[i].quaternion.multiply(qH.setFromAxisAngle(foreAxis[i], D(p.pron) * s * 0.45));
+        const wr = r.hand[i].parent;
+        if (wr && wr !== r.el[i]) wr.quaternion.setFromAxisAngle(foreAxis[i], D(p.pron) * s * 0.55);
+      } else {
+        const wr = r.hand[i].parent;
+        if (wr && wr !== r.el[i]) wr.quaternion.identity();
+      }
       r.hip[i].rotation.set(-D(p.hipFlex), 0, D(p.hipAbd) * s);
       r.kn[i].rotation.set(D(p.knee), 0, 0);
       r.an[i].rotation.set(-D(p.ankle), 0, 0);
@@ -578,6 +600,12 @@ export default function Mannequin({ anim, timeRef, anatomy, roles, showProps = t
     }
     r.root.updateMatrixWorld(true);
 
+    // Sonde de contrôle (tools/a3d-check.html) : positions monde des points de contact.
+    const W = window as unknown as { A3D_PROBE?: Record<string, number[]> };
+    if (W.A3D_PROBE) {
+      const g = (o: THREE.Object3D) => o.getWorldPosition(new THREE.Vector3()).toArray().map((x) => +x.toFixed(3));
+      W.A3D_PROBE = { id: anim.id as unknown as number[], t: [t], sole0: g(r.sole[0]), sole1: g(r.sole[1]), hand0: g(r.hand[0]), hand1: g(r.hand[1]), root: g(r.root), neck: g(r.neck), kn0: g(r.kn[0]), an0: g(r.an[0]), el0: g(r.el[0]) };
+    }
     // Accessoires accrochés
     for (const { p, obj, extra } of props) {
       if (p.attach === "hands") {

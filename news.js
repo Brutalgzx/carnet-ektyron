@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:26,d:"24/11",t:"🧍 Fiches 3D corrigées",x:[
+  "La page défile normalement même quand ton doigt part de la scène 3D (tourner la scène : glisser à l'horizontale), et elle ne saute plus pendant le chargement.",
+  "Prises de main réalistes : pronation (mains par-dessus) pour tractions, muscle-up, rowings, développés et pompes, prise neutre pour les dips et élévations, supination pour les curls.",
+  "Corrigés : sièges sous les fesses et pieds au sol sur les machines, barre du développé couché jusqu'à la poitrine, hip thrust épaules sur le banc, mains au sol aux pompes, repose-pieds du tirage horizontal, banc à lombaires, rack et appuis d'épaules ajoutés."]},
  {id:25,d:"24/11",t:"🧍 Exercices en 3D",x:[
   "Les fiches d'exercices passent en 3D pour plus de 40 mouvements : un corps anatomique qui fait le geste, muscles colorés (rouge = principal, orange = secondaire, bleu = stabilisateur).",
   "Tourne autour au doigt, choisis la vue (face, profil, dos, 3/4), ralentis ×0,5 ou mets en pause.",

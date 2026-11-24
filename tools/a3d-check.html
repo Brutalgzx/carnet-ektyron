@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>A3D check</title>
+<style>body{background:#111;color:#ddd;font:12px sans-serif;margin:4px}#o{display:flex;flex-wrap:wrap}.r{display:flex;gap:2px;margin:1px 4px 1px 0;position:relative}.r b{position:absolute;left:2px;top:2px;font-size:11px;color:#fc0}.c{width:var(--s,250px);height:var(--s,250px);position:relative}.c .a3d-ctl,.c .a3d-cred,.c .a3d-phase,.c .a3d-leg,.c .a3d-mach{display:none}.c .a3d-stage{height:var(--s,250px)}img{width:var(--s,250px);height:var(--s,250px)}</style>
+<div id=o></div><script>A3D_BASE="../atlas3d/"</script><script>document.write(`<script src="../atlas3d/atlas3d.js?${Date.now()}"><\/script>`)</script><script>
+// ?ids=a,b,c&cfg=profil:0,profil:.5,3/4:0,face:.5&anat=0
+const q=new URLSearchParams(location.search),E=window.A3D_ENGINE;if(q.get("s"))document.documentElement.style.setProperty("--s",q.get("s")+"px");
+const ids=(q.get("ids")||E.anims.join(",")).split(","),cfg=(q.get("cfg")||"profil:0,profil:0.5,3/4:0,3/4:0.5").split(",").map(c=>c.split(":"));
+const w=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{const c=document.createElement("div");c.className="c";document.body.prepend(c);let root=null;
+ const ctl={},mount=id=>{if(root)return root.show(id);root=E.mount(c,id,false,{t:0,view:cfg[0][0],paused:true,anatomy:q.get("anat")==="1",snap:true,ctl})};
+ for(const id of ids){mount(id);await w(o.children.length?700:3000);const row=document.createElement("div");row.className="r";row.innerHTML=`<b>${id}</b>`;o.appendChild(row);
+ for(const [v,t,d,f] of cfg){const a=[+t,v,+(d||1),f?f.split("/").map(Number):undefined];ctl.set(...a);await w(400);ctl.set(...a);await w(400);const cv=c.querySelector("canvas");const img=new Image();img.src=cv.toDataURL();row.appendChild(img)}}
+ c.remove();document.title="done"})();
+</script>
