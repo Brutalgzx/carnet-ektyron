@@ -130,7 +130,7 @@ const A3D_MUSC={"grand-pectoral":["pecs"],"petit-pectoral":["pecs"],"dentele-ant
 const EXT={H:"Polyarticulaire lourd",M:"Polyarticulaire",I:"Isolation"};
 function anExos(id){const ids=[...new Set((A3D_MUSC[id]||[]).flatMap(k=>MUSC[k]?MUSC[k][1]:[]))].filter(x=>EX[x]);
  const ok=x=>typeof pickOk!=="function"||pickOk(x,PROF);return ids.sort((a,b)=>ok(b)-ok(a))
-  .map(x=>`<div class="an-exo"><b>${esc(EX[x][0])}</b>${ok(x)?"":` <span class="small muted">· pas dans ta salle</span>`}${animTag(x,EX[x][4],esc(EX[x][0]))}<p class="small" style="margin:6px 0 0">${esc(EX[x][5])}</p><p class="small muted" style="margin:4px 0 0">${EXT[EX[x][3]]||""}</p></div>`)}
+  .map(x=>`<div class="an-exo"><b>${esc(EX[x][0])}</b>${ok(x)?"":` <span class="small muted">· pas dans ta salle</span>`}${animTag(x,EX[x][4],esc(EX[x][0]))}<p class="small" style="margin:6px 0 0">${esc(EX[x][5])}</p><p class="small muted" style="margin:4px 0 0">${EXT[EX[x][3]]||""}</p>${ok(x)?`<button class="btn ghost" data-anadd="${x}" style="margin-top:8px">＋ Ajouter à une séance</button>`:""}</div>`)}
 /* Tous les exercices du muscle sont affichés d'un coup, chacun avec son animation : on fait défiler, rien à déplier. Sur l'Accueil (raccourci), juste le muscle et un bouton vers l'onglet Anatomie. */
 function anInfo(){if(AN.sel){const m=A3D_MUS[AN.sel]||[AN.sel,""],g=anGroupOf(AN.sel),home=view==="today",xs=home?[]:anExos(AN.sel),n=home?new Set((A3D_MUSC[AN.sel]||[]).flatMap(k=>MUSC[k]?MUSC[k][1]:[]).filter(x=>EX[x])).size:xs.length,
   t=`${n} exercice${n>1?"s":""} qui le cible${n>1?"nt":""}`;return `<b>${m[0]}</b>${g?` <span class="muted small">· ${anLab(g)}</span>`:""}<br><span class="small">${m[1]}</span>
@@ -159,3 +159,22 @@ function anatHome(){if(!window.a3dAnatomy)return "";if(AN.g==null&&!AN.sel)AN.g=
   <div id="an-info" class="an-info">${anInfo()}</div></div>`}
 /* Après un nouvel affichage : on remet la scène 3D déjà chargée au lieu de la relancer. */
 function anatKeep(K){const el=$("#an3d");if(!el)return;if(K&&AN.h&&AN.el===K){el.replaceWith(K);AN.h.set(anRoles())}else anatMount()}
+
+/* « ＋ Ajouter à une séance » : 1) choisir la séance de la semaine, 2) choisir sa place parmi les exercices. Enregistré comme une séance modifiée à la main (PROF.custom), comme l'éditeur de l'onglet Séances. */
+let ANADD=null;
+function anAddDays(){const id=ANADD,D=WEEK.filter(d=>TRAIN&&TRAIN[d]);
+ pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">Ajouter ${esc(EX[id][0])}</h2><button class="chip" data-close aria-label="Fermer">✕</button></div>
+ <p class="small muted" style="margin:0">À quelle séance de la semaine ?</p>
+ ${D.length?`<div class="opts">${D.map(d=>{const S=TRAIN[d],has=S.x.some(e=>e.id===id);return `<button class="opt" data-anday="${d}"${has?" disabled":""} style="min-height:52px;padding:10px 14px"><span><b>${DLONG[d]} · ${esc(S.t)}</b><small>${has?"Déjà dans cette séance":`${S.x.length} exercice${S.x.length>1?"s":""}`}</small></span></button>`}).join("")}</div>`:`<p>Aucune séance dans ta semaine pour l'instant.</p>`}`,"Ajouter à une séance")}
+function anAddPos(d){const id=ANADD,S=TRAIN[d],slot=i=>`<button class="btn ghost" data-anpos="${i}" data-d="${d}" style="padding:8px">＋ ${i===0?"En premier":i===S.x.length?"En dernier":"Ici"}</button>`;
+ pkSheet(`<div class="row" style="padding-top:18px"><h2 class="sp" style="margin:0">${DLONG[d]} · ${esc(S.t)}</h2><button class="chip" data-anaddback aria-label="Retour">←</button></div>
+ <p class="small muted" style="margin:0">Où placer <b>${esc(EX[id][0])}</b> ? Touche l'emplacement voulu.</p>
+ <div class="stack" style="gap:6px">${slot(0)}${S.x.map((e,i)=>`<div class="card" style="padding:10px 14px"><b>${i+1}. ${esc(EX[e.id]?EX[e.id][0]:e.n||e.id)}</b></div>${i<S.x.length-1?slot(i+1):""}`).join("")}${S.x.length?slot(S.x.length):""}</div>`,"Choisir la place")}
+document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t||!PROF)return;const D=t.dataset;
+ if(D.anadd){ANADD=D.anadd;anAddDays();return}
+ if(!ANADD)return;
+ if(D.anaddback!==undefined){anAddDays();return}
+ if(D.anday){anAddPos(+D.anday);return}
+ if(D.anpos!=null&&D.d!=null){const d=+D.d,S=TRAIN[d],ids=S.x.map(x=>x.id).filter(x=>x!==ANADD),n=EX[ANADD][0];ids.splice(+D.anpos,0,ANADD);
+  PROF.custom=PROF.custom||{};PROF.custom[d]={k:S.k,ids};ANADD=null;$("#sheet")?.remove();saveProg();
+  toast(TRAIN[d]&&TRAIN[d].x.some(x=>x.id===ids[+D.anpos])?`${n} ajouté au ${DLONG[d].toLowerCase()}, ${+D.anpos===0?"en premier":`en ${+D.anpos+1}ᵉ position`}.`:`${n} n'a pas pu être ajouté à cette séance.`)}});

@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:38,d:"24/11",t:"＋ Ajouter un exercice à ta séance depuis l'Anatomie",x:[
+  "Sous chaque exercice d'un muscle, « ＋ Ajouter à une séance » : choisis le jour de ta semaine, puis sa place parmi les exercices (en premier, entre deux, en dernier).",
+  "La séance est enregistrée comme modifiée par toi ; « remettre la séance du coach » dans l'onglet Séances annule."]},
  {id:37,d:"24/11",t:"🫀 L'anatomie sur l'Accueil",x:[
   "L'onglet Anatomie passe juste après Accueil dans la barre du bas.",
   "Le mannequin anatomique est aussi sur l'Accueil : touche un muscle, puis « Voir les exercices » pour aller à sa liste.",
