@@ -2,6 +2,10 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:36,d:"24/11",t:"＋ Ajouter mon plat depuis l'Accueil",x:[
+  "Dans « Nutrition du jour » sur l'Accueil, le bouton « ＋ Ajouter mon plat » ouvre le catalogue des supermarchés (Carrefour, Leclerc, Lidl, Auchan, Intermarché, Super U, Monoprix…).",
+  "📷 Scan : vise le code-barres d'un produit avec l'appareil photo, il est retrouvé tout seul.",
+  "Choisis le repas (petit-déj, déjeuner, collation, dîner), à la place du plat prévu ou en plus ; tes produits récents et « ⭐ Mes plats » sont gardés pour aller plus vite."]},
  {id:35,d:"24/11",t:"🛒 Manger autre chose : fait maison ou tout prêt",x:[
   "Dans la fiche d'un repas, « 🛒 Autre chose » remplace le plat prévu ce jour-là par ce que tu veux vraiment manger.",
   "Acheté tout prêt : cherche un produit, une marque ou un code-barres dans les catalogues des magasins (Open Food Facts, produits vendus en France), filtre par enseigne (Carrefour, Leclerc, Lidl, Auchan…), règle la quantité. Un rayon traiteur (mini wraps, salades en barquette, poke bowls, plats micro-ondables…) marche même hors ligne.",
