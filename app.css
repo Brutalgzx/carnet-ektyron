@@ -266,7 +266,7 @@ nav.tabs button.live{color:var(--acc)} nav.tabs button.live svg{filter:drop-shad
 [data-theme="light"] .hc.sel{outline-color:#16161A}
 [data-theme="light"] .chk.on{color:#fff}
 [data-theme="light"] #sheet{background:rgba(0,0,0,.3)}
-[data-theme="light"] #pk-card,[data-theme="light"] .duo-face{background:var(--card)!important;box-shadow:var(--hi)}
+[data-theme="light"] #pk-card{background:var(--card)!important;box-shadow:var(--hi)}
 #all-q,.srch{display:block;width:100%;margin-top:4px;height:46px;text-align:left;font:500 16px var(--body);padding:0 14px;background:var(--card);color:var(--ink);border:1px solid var(--line)}
 /* Fiche exercice 3D (atlas3d) */
 .a3d{aspect-ratio:auto;background:#05070B;overflow:hidden;position:relative}

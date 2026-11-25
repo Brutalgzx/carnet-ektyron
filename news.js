@@ -2,6 +2,9 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:41,d:"25/11",t:"👯 Le mode Duo disparaît",x:[
+  "Le bouton « Duo » et les séances à deux en alternant les séries ont été retirés.",
+  "Pour suivre la progression de tes potes, rien ne change : Profil → Entre potes, avec ton code de groupe."]},
  {id:40,d:"25/11",t:"🛒 Liste de courses : seulement ce qu'il te faut vraiment",x:[
   "Tu fais tes courses en milieu de semaine ? En haut de la liste, choisis « À partir du dîner de mercredi » : les repas déjà passés ne sont plus comptés.",
   "La liste parle en paquets entiers (1 filet d'oignons de 1 kg, 2 boîtes de 6 œufs…) avec leur vrai prix, et te dit ce qu'il restera après la semaine.",
@@ -144,7 +147,7 @@ const NK="coach-news-seen",newsTop=()=>NEWS.length?NEWS[0].id:0;
 function newsShow(){let seen=LS.get(NK,null);
  if(!PROF){LS.set(NK,newsTop());return}if(seen==null)seen=newsTop()-1;
  const L=NEWS.filter(n=>n.id>seen);if(!L.length)return;
- if(document.body.classList.contains("g-on")||document.body.classList.contains("duo-on"))return;
+ if(document.body.classList.contains("g-on"))return;
  let el=$("#news");if(!el){el=document.createElement("div");el.id="news";document.body.appendChild(el)}
  el.innerHTML=`<div class="news-in stack"><div class="lab">Nouveau dans l'appli</div><h2>Ce qui a changé</h2>
   ${L.slice(0,5).map(n=>`<div class="card stack"><b>${esc(n.t)}</b><small class="muted">${esc(n.d)}</small>${n.x.map(p=>`<div class="small">${esc(p)}</div>`).join("")}</div>`).join("")}
