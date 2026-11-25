@@ -2,6 +2,11 @@
    À CHAQUE MISE À JOUR visible : ajouter une entrée EN HAUT de NEWS (id unique croissant, date, titre, 1 à 4 phrases simples).
    Un nouvel utilisateur ne voit rien (tout est marqué « vu » à sa première ouverture). */
 const NEWS=[
+ {id:40,d:"25/11",t:"🛒 Liste de courses : seulement ce qu'il te faut vraiment",x:[
+  "Tu fais tes courses en milieu de semaine ? En haut de la liste, choisis « À partir du dîner de mercredi » : les repas déjà passés ne sont plus comptés.",
+  "La liste parle en paquets entiers (1 filet d'oignons de 1 kg, 2 boîtes de 6 œufs…) avec leur vrai prix, et te dit ce qu'il restera après la semaine.",
+  "Ta semaine finie, le coach te montre ce qu'il devrait te rester : tu confirmes ou tu corriges, et la liste suivante ne te fait pas racheter ce que tu as déjà.",
+  "« 🏠 J'ai déjà des choses à la maison » : indique-le à tout moment."]},
  {id:39,d:"24/11",t:"🏋️ Machines 3D plus réalistes, animations sans attente",x:[
   "Le hack squat ressemble enfin au vrai : rails inclinés à 45°, chariot avec dossier et épaulières, disques sur les côtés, plateforme de pieds inclinée.",
   "Leg extension et leg curl : le rouleau est bien placé (devant les tibias pour l'extension, derrière les chevilles pour le curl), un coussin bloque les cuisses au leg curl assis, plus rien ne traverse la machine.",
